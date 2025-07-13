@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CCS Martingale</title>
+  <link rel="icon" href="https://i.imgur.com/trollface.png" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 10px;
+      max-width: 700px;
+      margin: auto;
+    }
+    h2 {
+      margin-bottom: 4px;
+    }
+    .credit {
+      font-size: 10px;
+      color: #888;
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 4px;
+      font-size: 14px;
+    }
+    button {
+      margin-top: 12px;
+      padding: 6px 12px;
+      font-size: 14px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+    th, td {
+      border: 1px solid #aaa;
+      padding: 6px;
+      text-align: left;
+      font-size: 14px;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    #next-step-info {
+      margin-top: 10px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h2>CCS Martingale</h2>
+  <div class="credit">by @mencretsu</div>
+
+  <label>Asset:</label>
+  <input id="asset" type="text" oninput="formatInput(this)" />
+
+  <label>Entry value:</label>
+  <input id="entry" type="text" oninput="formatInput(this)" />
+
+  <label>Return factor:</label>
+  <input id="payout" type="number" step="0.01" />
+
+  <label>Multiplier:</label>
+  <input id="multiplier" type="number" step="0.01" />
+
+  <button onclick="hitung()">Hitung</button>
+
+  <div id="result"></div>
+
+  <script>
+    function formatRupiah(angka) {
+      return angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+    function parseInput(input) {
+      return parseInt(input.replace(/\./g, '')) || 0;
+    }
+
+    function formatInput(el) {
+      const val = el.value.replace(/\./g, '').replace(/\D/g, '');
+      el.value = formatRupiah(val);
+    }
+
+    function hitung() {
+      const asset = parseInput(document.getElementById("asset").value);
+      const entry = parseInput(document.getElementById("entry").value);
+      const payout = parseFloat(document.getElementById("payout").value);
+      const multiplier = parseFloat(document.getElementById("multiplier").value);
+
+      let detail = "";
+      let current = entry;
+      let step = 0;
+      let remainMinus = asset;
+      let remainPlus = asset;
+
+      detail += `
+        <table>
+          <thead>
+            <tr>
+              <th>Step</th>
+              <th>Amount</th>
+              <th>Profit Session</th>
+              <th>Return</th>
+              <th>Remaining (-)</th>
+              <th>Remaining (+)</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      while (remainMinus >= current) {
+        const profit = Math.floor(current * payout) - current;
+        const totalReturn = current + profit;
+
+        remainMinus -= current;
+        remainPlus = remainMinus + totalReturn;
+
+        detail += `<tr>
+          <td>Step ${step + 1}</td>
+          <td>@ ${formatRupiah(current)}</td>
+          <td>@ ${formatRupiah(profit)}</td>
+          <td>@ ${formatRupiah(totalReturn)}</td>
+          <td>@ ${formatRupiah(remainMinus)}</td>
+          <td>@ ${formatRupiah(remainPlus)}</td>
+        </tr>`;
+
+        current = Math.floor(current * multiplier);
+        step++;
+      }
+
+      detail += "</tbody></table>";
+
+      const nextStepCost = Math.floor(entry * Math.pow(multiplier, step));
+      const totalNextAsset = asset + nextStepCost - remainMinus;
+      const tambahanAsset = totalNextAsset - asset;
+
+      const nextInfo = `<div id="next-step-info">
+        <em>Untuk lanjut ke step berikutnya, lu butuh tambahan <strong>@ ${formatRupiah(tambahanAsset)}</strong><br>
+        (total asset yang dibutuhin: <strong>@ ${formatRupiah(totalNextAsset)}</strong>)</em>
+      </div>`;
+
+      document.getElementById("result").innerHTML = detail + nextInfo;
+    }
+  </script>
+</body>
+</html>
