@@ -125,11 +125,11 @@
 
         detail += `<tr>
           <td>Step ${step + 1}</td>
-          <td>@ ${formatRupiah(current)}</td>
-          <td>@ ${formatRupiah(profit)}</td>
-          <td>@ ${formatRupiah(totalReturn)}</td>
-          <td>@ ${formatRupiah(remainMinus)}</td>
-          <td>@ ${formatRupiah(remainPlus)}</td>
+          <td> ${formatRupiah(current)}</td>
+          <td> ${formatRupiah(profit)}</td>
+          <td> ${formatRupiah(totalReturn)}</td>
+          <td> ${formatRupiah(remainMinus)}</td>
+          <td> ${formatRupiah(remainPlus)}</td>
         </tr>`;
 
         current = Math.floor(current * multiplier);
@@ -143,8 +143,8 @@
       const tambahanAsset = totalNextAsset - asset;
 
       const nextInfo = `<div id="next-step-info">
-        <em>Untuk lanjut ke step berikutnya, lu butuh tambahan <strong>@ ${formatRupiah(tambahanAsset)}</strong><br>
-        (total asset yang dibutuhin: <strong>@ ${formatRupiah(totalNextAsset)}</strong>)</em>
+        <em>Untuk lanjut ke step berikutnya, butuh tambahan <strong> ${formatRupiah(tambahanAsset)}</strong><br>
+        (total asset yang dibutuhin: <strong> ${formatRupiah(totalNextAsset)}</strong>)</em>
       </div>`;
 
       document.getElementById("result").innerHTML = detail + nextInfo;
