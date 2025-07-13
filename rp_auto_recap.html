@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Rekap Otomatis</title>
+  <style>
+    body { font-family: monospace; padding: 20px; }
+    textarea { width: 100%; height: 300px; }
+    .total { margin-top: 20px; font-size: 20px; font-weight: bold; color: green; }
+  </style>
+</head>
+<body>
+
+  <h2>Tempel Teks Rekapan di Bawah:</h2>
+  <textarea id="inputText" placeholder="Paste teks di sini..."></textarea>
+
+  <button onclick="hitungTotal()">💰 Hitung Total Rp</button>
+
+  <div class="total" id="output">Total: Rp 0</div>
+
+  <script>
+    function hitungTotal() {
+      const text = document.getElementById("inputText").value;
+      const matches = text.match(/Rp\s?[\d,.]+/gi);
+      let total = 0;
+
+      if (matches) {
+        matches.forEach(item => {
+          // Ambil angka, hilangin Rp dan koma, ubah ke float
+          const angka = parseFloat(item.replace(/[^0-9]/g, ''));
+          if (!isNaN(angka)) {
+            total += angka;
+          }
+        });
+      }
+
+      // Format ribuan pakai titik
+      const formatted = "Rp " + total.toLocaleString("id-ID");
+      document.getElementById("output").innerText = "Total: " + formatted;
+    }
+  </script>
+
+</body>
+</html>
