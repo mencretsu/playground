@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Kalkulator APR/APY</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      max-width: 400px;
+      margin: auto;
+      background: #f9f9f9;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0;
+      font-size: 16px;
+    }
+    #result {
+      margin-top: 20px;
+      background: #fff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+  </style>
+</head>
+<body>
+  <h2>Kalkulator APR / APY</h2>
+
+  <label>Modal (USD)</label>
+  <input type="number" id="amount" value="">
+
+  <label>Persentase (%)</label>
+  <input type="number" id="rate" value="">
+
+  <label>Tipe</label>
+  <select id="type">
+    <option value="apr">APR (bunga tetap)</option>
+    <option value="apy">APY (bunga berbunga)</option>
+  </select>
+
+  <label>Kurs USD ke IDR</label>
+  <input type="number" id="kurs" value="16000">
+
+  <button onclick="hitung()">Hitung</button>
+
+  <div id="result"></div>
+
+  <script>
+    function hitung() {
+      const amount = parseFloat(document.getElementById("amount").value);
+      const rate = parseFloat(document.getElementById("rate").value) / 100;
+      const type = document.getElementById("type").value;
+      const kurs = parseFloat(document.getElementById("kurs").value);
+
+      let dailyRate;
+      if (type === "apr") {
+        dailyRate = rate / 365;
+      } else {
+        dailyRate = Math.pow(1 + rate, 1/365) - 1;
+      }
+
+      const dailyProfitUSD = amount * dailyRate;
+      const dailyProfitIDR = dailyProfitUSD * kurs;
+
+      document.getElementById("result").innerHTML = `
+        <b>Hasil Per Hari:</b><br>
+        💵 USD: $${dailyProfitUSD.toFixed(4)}<br>
+        💸 IDR: Rp ${dailyProfitIDR.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+      `;
+    }
+  </script>
+</body>
+</html>
