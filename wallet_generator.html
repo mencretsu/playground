@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ERC20 Wallet Generator</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #111;
+      color: #fff;
+    }
+    h1 { font-size: 24px; margin-bottom: 10px; }
+    button {
+      padding: 10px;
+      font-size: 16px;
+      margin: 10px 0;
+      width: 100%;
+    }
+    pre {
+      white-space: pre-wrap;
+      background: #222;
+      padding: 15px;
+      border-radius: 8px;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Wallet Generator (ETH/BSC)</h1>
+  <button onclick="generateWallet()">Generate Wallet</button>
+  <pre id="output">Klik tombol di atas buat mulai.</pre>
+
+  <!-- Ethers.js -->
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.umd.min.js"></script>
+  <script>
+    async function generateWallet() {
+      const wallet = ethers.Wallet.createRandom();
+      document.getElementById('output').textContent = `
+[ETH/BSC WALLET]
+Address : ${wallet.address}
+Private : ${wallet.privateKey}
+Mnemonic: ${wallet.mnemonic.phrase}
+      `.trim();
+    }
+  </script>
+</body>
+</html>
