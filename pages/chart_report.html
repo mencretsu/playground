@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Daily Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f5f5f5; }
+    input, button { margin: 5px; padding: 5px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; background: white; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    input[type="number"], input[type="date"] { width: 100%; box-sizing: border-box; }
+    .btn-hapus { color: red; cursor: pointer; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h2>Daily Tracker</h2>
+  <input type="date" id="tanggal">
+  <input type="number" id="nilai" placeholder="Masukkan nilai">
+  <button onclick="tambahData()">Tambah</button>
+  <button onclick="backupData()">Backup (JSON)</button>
+  <input type="file" onchange="restoreData(event)">
+  <br>
+  <button onclick="exportExcel()">Export Excel</button>
+  <input type="file" onchange="importExcel(event)" accept=".xlsx,.xls">
+  <button onclick="resetData()">Reset Data</button>
+
+  <table>
+    <thead>
+      <tr><th>Tanggal</th><th>Nilai</th><th>Aksi</th></tr>
+    </thead>
+    <tbody id="dataTabel"></tbody>
+  </table>
+  <canvas id="grafik" width="400" height="200"></canvas>
+<div id="ringkasan"></div>
+  <script>
+    let data = JSON.parse(localStorage.getItem('trackerData') || '[]');
+
+    function simpanData() {
+      localStorage.setItem('trackerData', JSON.stringify(data));
+      tampilkanData();
+    }
+
+    function tambahData() {
+      const tanggal = document.getElementById('tanggal').value || new Date().toISOString().split('T')[0];
+      const nilai = parseInt(document.getElementById('nilai').value);
+      if (!isNaN(nilai)) {
+        data.push({ tanggal, nilai });
+        simpanData();
+      }
+    }
+
+    function tampilkanData() {
+      const tbody = document.getElementById('dataTabel');
+      tbody.innerHTML = '';
+      data.forEach((d, i) => {
+        const tr = document.createElement('tr');
+
+        // Format hari
+        const hari = new Date(d.tanggal).toLocaleDateString('id-ID', {
+          weekday: 'long'
+        });
+
+        // Kolom tanggal
+        const tdTanggal = document.createElement('td');
+        tdTanggal.textContent = `${hari}, ${d.tanggal}`;
+        tdTanggal.ondblclick = () => {
+          const input = document.createElement('input');
+          input.type = 'date';
+          input.value = d.tanggal;
+          input.onblur = () => {
+            d.tanggal = input.value;
+            simpanData();
+          };
+          tdTanggal.innerHTML = '';
+          tdTanggal.appendChild(input);
+          input.focus();
+        };
+
+        // Kolom nilai
+        const tdNilai = document.createElement('td');
+        tdNilai.textContent = d.nilai.toLocaleString('id-ID');
+        tdNilai.ondblclick = () => {
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.value = d.nilai;
+          input.onblur = () => {
+            d.nilai = parseInt(input.value) || 0;
+            simpanData();
+          };
+          tdNilai.innerHTML = '';
+          tdNilai.appendChild(input);
+          input.focus();
+        };
+
+        // Tombol hapus
+        const tdHapus = document.createElement('td');
+        const btn = document.createElement('span');
+        btn.textContent = '❌';
+        btn.className = 'btn-hapus';
+        btn.onclick = () => {
+          if (confirm(`Hapus data tanggal ${d.tanggal}?`)) {
+            data.splice(i, 1);
+            simpanData();
+          }
+        };
+        tdHapus.appendChild(btn);
+
+        tr.appendChild(tdTanggal);
+        tr.appendChild(tdNilai);
+        tr.appendChild(tdHapus);
+        tbody.appendChild(tr);
+      });
+      
+      updateChart();
+  updateRingkasan(); 
+    }
+
+    function backupData() {
+      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'tracker-backup.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function restoreData(event) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          data = JSON.parse(reader.result);
+          simpanData();
+        } catch (e) {
+          alert("File rusak atau bukan JSON!");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function exportExcel() {
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Data Tracker");
+      XLSX.writeFile(wb, "tracker-data.xlsx");
+    }
+
+    function importExcel(event) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const workbook = XLSX.read(e.target.result, { type: "binary" });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const imported = XLSX.utils.sheet_to_json(sheet);
+        data = imported.map(d => ({
+          tanggal: d.tanggal || d.Tanggal || new Date().toISOString().split('T')[0],
+          nilai: parseInt(d.nilai || d.Nilai || 0)
+        }));
+        simpanData();
+      };
+      reader.readAsBinaryString(file);
+    }
+
+    function resetData() {
+      if (confirm("Yakin mau reset semua data?")) {
+        data = [];
+        simpanData();
+      }
+    }
+
+    let chart;
+    function updateChart() {
+      const ctx = document.getElementById('grafik').getContext('2d');
+      const labels = data.map(d => d.tanggal);
+      const values = data.map(d => d.nilai);
+
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Nilai Harian',
+            data: values,
+            borderColor: 'blue',
+            backgroundColor: 'lightblue',
+            tension: 0.3,
+            fill: true,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false }
+          },
+          scales: {
+            y: { ticks: { callback: v => v.toLocaleString('id-ID') } }
+          }
+        }
+      });
+    }
+function updateRingkasan() {
+  const mingguan = {};
+  const bulanan = {};
+
+  data.forEach(d => {
+    const dateObj = new Date(d.tanggal);
+    const minggu = getWeekNumber(dateObj);
+    const bulan = dateObj.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+
+    mingguan[minggu] = (mingguan[minggu] || 0) + d.nilai;
+    bulanan[bulan] = (bulanan[bulan] || 0) + d.nilai;
+  });
+
+  const div = document.getElementById('ringkasan');
+  div.innerHTML = '';
+
+  const tableMinggu = document.createElement('table');
+  tableMinggu.innerHTML = '<thead><tr><th>Minggu ke-</th><th>Total Nilai</th></tr></thead>';
+  const tbodyMinggu = document.createElement('tbody');
+  for (const m in mingguan) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${m}</td><td>${mingguan[m].toLocaleString('id-ID')}</td>`;
+    tbodyMinggu.appendChild(tr);
+  }
+  tableMinggu.appendChild(tbodyMinggu);
+  div.appendChild(document.createElement('hr'));
+  div.appendChild(document.createTextNode('Total per Minggu'));
+  div.appendChild(tableMinggu);
+
+  const tableBulan = document.createElement('table');
+  tableBulan.innerHTML = '<thead><tr><th>Bulan</th><th>Total Nilai</th></tr></thead>';
+  const tbodyBulan = document.createElement('tbody');
+  for (const b in bulanan) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${b}</td><td>${bulanan[b].toLocaleString('id-ID')}</td>`;
+    tbodyBulan.appendChild(tr);
+  }
+  tableBulan.appendChild(tbodyBulan);
+  div.appendChild(document.createElement('hr'));
+  div.appendChild(document.createTextNode('Total per Bulan'));
+  div.appendChild(tableBulan);
+}
+
+function getWeekNumber(d) {
+  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${weekNo}`;
+}
+    tampilkanData();
+  </script>
+</body>
+</html>
