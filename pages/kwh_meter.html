@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Kalkulator Watt Manual</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+    .baris { display: flex; gap: 10px; margin-bottom: 5px; }
+    .baris input { flex: 1; }
+    .output { margin-top: 20px; background: #f0f0f0; padding: 10px; border-radius: 10px; }
+  </style>
+</head>
+<body>
+  <h2>🔌 Kalkulator Listrik Manual</h2>
+
+  <div id="inputList">
+    <div class="baris">
+      <input type="number" placeholder="Watt" class="watt">
+      <input type="number" placeholder="Jumlah" class="jumlah">
+    </div>
+  </div>
+
+  <button onclick="tambahBaris()">➕ Tambah Input</button>
+
+  <label>Jam per Hari:</label>
+  <input type="number" id="jam" value="2">
+
+  <label>Tarif PLN per kWh (Rp):</label>
+  <input type="number" id="tarif" value="1444">
+
+  <button onclick="hitung()">Hitung</button>
+
+  <div class="output" id="hasil"></div>
+
+  <script>
+    function tambahBaris() {
+      const container = document.getElementById('inputList');
+      const div = document.createElement('div');
+      div.className = 'baris';
+      div.innerHTML = `
+        <input type="number" placeholder="Watt" class="watt">
+        <input type="number" placeholder="Jumlah" class="jumlah">
+      `;
+      container.appendChild(div);
+    }
+
+    function hitung() {
+      const wattInputs = document.querySelectorAll('.watt');
+      const jumlahInputs = document.querySelectorAll('.jumlah');
+      const jam = parseFloat(document.getElementById('jam').value);
+      const tarif = parseFloat(document.getElementById('tarif').value);
+
+      let totalWatt = 0;
+
+      for (let i = 0; i < wattInputs.length; i++) {
+        const watt = parseFloat(wattInputs[i].value);
+        const jumlah = parseInt(jumlahInputs[i].value);
+        if (!isNaN(watt) && !isNaN(jumlah)) {
+          totalWatt += watt * jumlah;
+        }
+      }
+
+      const kwh = (totalWatt * jam) / 1000;
+      const biayaHarian = kwh * tarif;
+      const biayaBulanan = biayaHarian * 30;
+
+      document.getElementById('hasil').innerHTML = `
+        ⚙️ Total Watt: <b>${totalWatt} W</b><br>
+        ⚡ Konsumsi per Hari: <b>${kwh.toFixed(2)} kWh</b><br>
+        💰 Biaya Harian: <b>Rp ${biayaHarian.toLocaleString()}</b><br>
+        📆 Biaya Bulanan: <b>Rp ${biayaBulanan.toLocaleString()}</b>
+      `;
+    }
+  </script>
+</body>
+</html>
