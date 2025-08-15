@@ -32,6 +32,8 @@
       color: #fff;
       border: 1px solid #444;
     }
+    .better { background: #004d00; }
+    .worse { background: #4d0000; }
   </style>
 </head>
 <body>
@@ -70,21 +72,14 @@
       "HKD","VND"
     ];
 
-    async function fetchAllRates() {
+    async function fetchRatesUSD() {
       try {
-        const [usdRes, idrRes] = await Promise.all([
-          fetch(`https://api.exchangerate.host/latest?base=USD`),
-          fetch(`https://api.exchangerate.host/latest?base=IDR`)
-        ]);
-        const usdData = await usdRes.json();
-        const idrData = await idrRes.json();
-        return {
-          usdRates: usdData.rates || {},
-          idrRates: idrData.rates || {}
-        };
+        const res = await fetch(`https://api.exchangerate.host/latest?base=USD`);
+        const data = await res.json();
+        return data.rates || {};
       } catch (err) {
         console.error("Error fetching rates:", err);
-        return { usdRates: {}, idrRates: {} };
+        return {};
       }
     }
 
@@ -93,7 +88,7 @@
       const feeDirect = parseFloat(document.getElementById('feeDirect').value) / 100 || 0;
       const feeIndirect = parseFloat(document.getElementById('feeIndirect').value) / 100 || 0;
 
-      const { usdRates, idrRates } = await fetchAllRates();
+      const usdRates = await fetchRatesUSD();
       const directRate = usdRates["IDR"] || null;
       const directIDR = directRate ? amountUSDT * directRate * (1 - feeDirect) : 0;
 
@@ -113,8 +108,9 @@
 
       // Indirect paths
       for (let cur of currencies) {
-        const rate1 = usdRates[cur] || null;              // USD → CUR
-        const rate2 = idrRates[cur] ? 1 / idrRates[cur] : null; // CUR → IDR
+        const rate1 = usdRates[cur] || null; // USD → CUR
+        const usdToIDR = usdRates["IDR"] || null; // USD → IDR
+        const rate2 = (usdToIDR && rate1) ? usdToIDR / usdRates[cur] : null; // CUR → IDR via USD
 
         if (rate1 && rate2) {
           const received = amountUSDT * rate1 * (1 - feeIndirect) * rate2 * (1 - feeIndirect);
@@ -123,6 +119,9 @@
             : '-';
 
           const tr = document.createElement('tr');
+          if (directIDR && received > directIDR) tr.classList.add("better");
+          else if (directIDR && received < directIDR) tr.classList.add("worse");
+
           tr.innerHTML = `
             <td>USDT → ${cur} → IDR</td>
             <td>${rate1.toFixed(4)}</td>
