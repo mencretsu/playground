@@ -16,11 +16,12 @@
 
 <h2>Kalkulator Kurs USD → IDR (Direct & Indirect)</h2>
 
-<label>USD: <input id="usd" type="number" value="100"></label><br>
-<label>Fee Direct (%): <input id="feeDirect" type="number" value="0"></label><br>
-<label>Fee Indirect (%): <input id="feeIndirect" type="number" value="0"></label><br>
-<label>Refresh Interval (detik): <input id="interval" type="number" value="10"></label><br>
-
+<div style="display:flex; flex-wrap:wrap; gap:15px; margin-bottom:10px;">
+    <label>USD: <input id="usd" type="number" value="100" style="width:80px;"></label>
+    <label>Fee Direct (%): <input id="feeDirect" type="number" value="0" style="width:60px;"></label>
+    <label>Fee Indirect (%): <input id="feeIndirect" type="number" value="0" style="width:60px;"></label>
+    <label>Refresh Interval (detik): <input id="interval" type="number" value="10" style="width:50px;"></label>
+</div>
 <table id="ratesTable">
     <thead>
         <tr>
