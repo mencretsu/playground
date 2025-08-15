@@ -21,7 +21,13 @@
 
 <table id="ratesTable">
   <thead>
-    <tr><th>Path</th><th>Rate 1</th><th>Rate 2</th><th>IDR Received</th><th>Diff vs Direct</th></tr>
+    <tr>
+      <th>Path</th>
+      <th>Rate 1</th>
+      <th>Rate 2</th>
+      <th>IDR Received</th>
+      <th>Diff vs Direct</th>
+    </tr>
   </thead>
   <tbody></tbody>
 </table>
@@ -69,7 +75,6 @@ async function updateRates() {
 
   // Indirect
   for (let cur of currencies) {
-    if (cur === "USD") continue;
     const rate1 = usdRates[cur] || null; // USD → cur
     const rate2 = idrRates[cur] ? 1 / idrRates[cur] : null; // cur → IDR
     if (rate1 && rate2) {
@@ -110,87 +115,4 @@ document.querySelectorAll('input').forEach(inp => inp.addEventListener('change',
 startAutoUpdate();
 </script>
 </body>
-</html>    if (rate1 && rate2) {
-      const received = amount * rate1 * (1 - feeIndirect) * rate2 * (1 - feeIndirect);
-      const diff = directIDR ? ((received - directIDR) / directIDR * 100).toFixed(2) + '%' : '-';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>USDT → ${cur} → IDR</td><td>${rate1.toFixed(4)}</td><td>${rate2.toFixed(4)}</td><td>${received.toLocaleString()}</td><td>${diff}</td>`;
-      tbody.appendChild(tr);
-    } else {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>USDT → ${cur} → IDR</td><td>${rate1 ? rate1.toFixed(4) : '-'}</td><td>${rate2 ? rate2.toFixed(4) : '-'}</td><td>-</td><td>-</td>`;
-      tbody.appendChild(tr);
-    }
-  }
-}
-
-async function updateRates() {
-  const amountUSDT = parseFloat(document.getElementById('usdt').value) || 0;
-  const feeDirect = parseFloat(document.getElementById('feeDirect').value) / 100 || 0;
-  const feeIndirect = parseFloat(document.getElementById('feeIndirect').value) / 100 || 0;
-  const rates = await fetchRates();
-  calculateCross(amountUSDT, feeDirect, feeIndirect, rates);
-}
-
-let timer;
-function startAutoUpdate() {
-  clearInterval(timer);
-  updateRates();
-  const sec = parseInt(document.getElementById('interval').value) * 1000;
-  timer = setInterval(updateRates, sec);
-}
-
-document.querySelectorAll('input').forEach(inp => inp.addEventListener('change', startAutoUpdate));
-startAutoUpdate();
-</script></body>
-</html>  }
-}
-
-async function updateRates() {
-  const amountUSDT = parseFloat(document.getElementById('usdt').value) || 0;
-  const feeDirect = parseFloat(document.getElementById('feeDirect').value) / 100 || 0;
-  const feeIndirect = parseFloat(document.getElementById('feeIndirect').value) / 100 || 0;
-
-  const { usdRates, idrRates } = await fetchAllRates();
-  const directRate = usdRates["IDR"] || null;
-  const directIDR = directRate ? amountUSDT * directRate * (1 - feeDirect) : 0;
-
-  const tbody = document.querySelector('#ratesTable tbody');
-  tbody.innerHTML = "";
-
-  // Direct row
-  const trDirect = document.createElement('tr');
-  trDirect.innerHTML = `<td>USDT → IDR</td><td>${directRate?.toFixed(4) || '-'}</td><td>-</td><td>${directIDR ? directIDR.toLocaleString() : '-'}</td><td>-</td>`;
-  tbody.appendChild(trDirect);
-
-  // Indirect paths
-  for (let cur of currencies) {
-    if (cur === "USD") continue;
-    const rate1 = usdRates[cur] || null;
-    const rate2 = idrRates[cur] ? 1 / idrRates[cur] : null; // IDR->CUR to CUR->IDR
-    if (rate1 && rate2) {
-      const received = amountUSDT * rate1 * (1 - feeIndirect) * rate2 * (1 - feeIndirect);
-      const diff = directIDR ? ((received - directIDR) / directIDR * 100).toFixed(2) + '%' : '-';
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>USDT → ${cur} → IDR</td><td>${rate1.toFixed(4)}</td><td>${rate2.toFixed(4)}</td><td>${received.toLocaleString()}</td><td>${diff}</td>`;
-      tbody.appendChild(tr);
-    } else {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>USDT → ${cur} → IDR</td><td>${rate1 ? rate1.toFixed(4) : '-'}</td><td>${rate2 ? rate2.toFixed(4) : '-'}</td><td>-</td><td>-</td>`;
-      tbody.appendChild(tr);
-    }
-  }
-}
-
-let timer;
-function startAutoUpdate() {
-  clearInterval(timer);
-  updateRates();
-  const sec = parseInt(document.getElementById('interval').value) * 1000;
-  timer = setInterval(updateRates, sec);
-}
-
-document.querySelectorAll('input').forEach(inp => inp.addEventListener('change', startAutoUpdate));
-startAutoUpdate();
-</script></body>
 </html>
