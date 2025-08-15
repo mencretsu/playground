@@ -15,9 +15,10 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
+      font-size: 14px;
     }
     th, td {
-      padding: 8px;
+      padding: 6px;
       border: 1px solid #444;
       text-align: center;
     }
@@ -72,14 +73,16 @@
       "HKD","VND"
     ];
 
-    async function fetchRatesUSD() {
+    async function fetchAllRates() {
       try {
-        const res = await fetch(`https://api.exchangerate.host/latest?base=USD`);
-        const data = await res.json();
-        return data.rates || {};
+        const usdRes = await fetch(`https://api.exchangerate.host/latest?base=USD`);
+        const usdData = await usdRes.json();
+        const idrRes = await fetch(`https://api.exchangerate.host/latest?base=IDR`);
+        const idrData = await idrRes.json();
+        return { usdRates: usdData.rates || {}, idrRates: idrData.rates || {} };
       } catch (err) {
         console.error("Error fetching rates:", err);
-        return {};
+        return { usdRates: {}, idrRates: {} };
       }
     }
 
@@ -88,14 +91,14 @@
       const feeDirect = parseFloat(document.getElementById('feeDirect').value) / 100 || 0;
       const feeIndirect = parseFloat(document.getElementById('feeIndirect').value) / 100 || 0;
 
-      const usdRates = await fetchRatesUSD();
+      const { usdRates, idrRates } = await fetchAllRates();
       const directRate = usdRates["IDR"] || null;
       const directIDR = directRate ? amountUSDT * directRate * (1 - feeDirect) : 0;
 
       const tbody = document.querySelector('#ratesTable tbody');
       tbody.innerHTML = "";
 
-      // Direct row
+      // Direct path
       const trDirect = document.createElement('tr');
       trDirect.innerHTML = `
         <td>USDT → IDR</td>
@@ -108,9 +111,9 @@
 
       // Indirect paths
       for (let cur of currencies) {
+        if (cur === "USD") continue;
         const rate1 = usdRates[cur] || null; // USD → CUR
-        const usdToIDR = usdRates["IDR"] || null; // USD → IDR
-        const rate2 = (usdToIDR && rate1) ? usdToIDR / usdRates[cur] : null; // CUR → IDR via USD
+        const rate2 = idrRates[cur] ? 1 / idrRates[cur] : null; // CUR → IDR
 
         if (rate1 && rate2) {
           const received = amountUSDT * rate1 * (1 - feeIndirect) * rate2 * (1 - feeIndirect);
@@ -134,8 +137,8 @@
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>USDT → ${cur} → IDR</td>
-            <td>${rate1 ? rate1.toFixed(4) : '-'}</td>
-            <td>${rate2 ? rate2.toFixed(4) : '-'}</td>
+            <td>-</td>
+            <td>-</td>
             <td>-</td>
             <td>-</td>
           `;
