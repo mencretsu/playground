@@ -1,0 +1,87 @@
+<!DOCTYPE html><html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cross-Rate Checker</title>
+<style>
+  body { background: #121212; color: #fff; font-family: sans-serif; padding: 10px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { padding: 8px; border: 1px solid #444; text-align: center; }
+  th { background: #222; }
+  input { width: 100%; padding: 6px; margin: 4px 0; background: #1e1e1e; color: #fff; border: 1px solid #444; }
+</style>
+</head>
+<body>
+<h2>Cross-Rate Checker (Realtime)</h2>
+<label>Amount in USDT: <input type="number" id="usdt" value="1000"></label>
+<label>Direct Fee (%): <input type="number" id="feeDirect" value="0.5"></label>
+<label>Indirect Fee per Leg (%): <input type="number" id="feeIndirect" value="0.3"></label>
+<label>Refresh Interval (seconds): <input type="number" id="interval" value="30"></label><table id="ratesTable">
+  <thead>
+    <tr><th>Path</th><th>Rate 1</th><th>Rate 2</th><th>IDR Received</th><th>Diff vs Direct</th></tr>
+  </thead>
+  <tbody></tbody>
+</table><script>
+const currencies = ["USD", "CNY", "JPY", "KRW", "EUR", "SGD", "MYR", "THB", "AUD", "GBP", "PHP", "HKD", "VND"];
+
+async function fetchAllRates() {
+  try {
+    const usdRes = await fetch(`https://api.exchangerate.host/latest?base=USD&symbols=${currencies.join(',')},IDR`);
+    const idrRes = await fetch(`https://api.exchangerate.host/latest?base=IDR&symbols=${currencies.join(',')}`);
+    const usdData = await usdRes.json();
+    const idrData = await idrRes.json();
+    return { usdRates: usdData.rates || {}, idrRates: idrData.rates || {} };
+  } catch (err) {
+    console.error("Error fetching rates:", err);
+    return { usdRates: {}, idrRates: {} };
+  }
+}
+
+async function updateRates() {
+  const amountUSDT = parseFloat(document.getElementById('usdt').value) || 0;
+  const feeDirect = parseFloat(document.getElementById('feeDirect').value) / 100 || 0;
+  const feeIndirect = parseFloat(document.getElementById('feeIndirect').value) / 100 || 0;
+
+  const { usdRates, idrRates } = await fetchAllRates();
+  const directRate = usdRates["IDR"] || null;
+  const directIDR = directRate ? amountUSDT * directRate * (1 - feeDirect) : 0;
+
+  const tbody = document.querySelector('#ratesTable tbody');
+  tbody.innerHTML = "";
+
+  // Direct row
+  const trDirect = document.createElement('tr');
+  trDirect.innerHTML = `<td>USDT → IDR</td><td>${directRate?.toFixed(4) || '-'}</td><td>-</td><td>${directIDR ? directIDR.toLocaleString() : '-'}</td><td>-</td>`;
+  tbody.appendChild(trDirect);
+
+  // Indirect paths
+  for (let cur of currencies) {
+    if (cur === "USD") continue;
+    const rate1 = usdRates[cur] || null;
+    const rate2 = idrRates[cur] ? 1 / idrRates[cur] : null; // IDR->CUR to CUR->IDR
+    if (rate1 && rate2) {
+      const received = amountUSDT * rate1 * (1 - feeIndirect) * rate2 * (1 - feeIndirect);
+      const diff = directIDR ? ((received - directIDR) / directIDR * 100).toFixed(2) + '%' : '-';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>USDT → ${cur} → IDR</td><td>${rate1.toFixed(4)}</td><td>${rate2.toFixed(4)}</td><td>${received.toLocaleString()}</td><td>${diff}</td>`;
+      tbody.appendChild(tr);
+    } else {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>USDT → ${cur} → IDR</td><td>${rate1 ? rate1.toFixed(4) : '-'}</td><td>${rate2 ? rate2.toFixed(4) : '-'}</td><td>-</td><td>-</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+}
+
+let timer;
+function startAutoUpdate() {
+  clearInterval(timer);
+  updateRates();
+  const sec = parseInt(document.getElementById('interval').value) * 1000;
+  timer = setInterval(updateRates, sec);
+}
+
+document.querySelectorAll('input').forEach(inp => inp.addEventListener('change', startAutoUpdate));
+startAutoUpdate();
+</script></body>
+</html>
