@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smali API Generator</title>
+  <style>
+    body { font-family: monospace; background: #111; color: #eee; padding: 20px; }
+    input { padding: 6px; margin: 4px; font-size: 14px; }
+    button { padding: 8px 16px; margin-top: 10px; cursor: pointer; font-size: 14px; }
+    pre { background: #222; padding: 15px; margin-top: 20px; border-radius: 8px; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h2>Smali Block Generator</h2>
+  <label>Start Line: <input type="number" id="line" value="171"></label><br>
+  <label>Start Hex Index: <input type="text" id="hex" value="0xA6"></label><br>
+  <label>Jumlah Entry: <input type="number" id="count" value="5"></label><br>
+  <label>Prefix String: <input type="text" id="prefix" value="APIbaru-"></label><br>
+  <button onclick="generate()">Generate</button>
+  <button onclick="copyOutput()">Copy</button>
+  <pre id="output"></pre>
+
+  <script>
+    function generate() {
+      let line = parseInt(document.getElementById("line").value);
+      let hex = document.getElementById("hex").value.trim();
+      let count = parseInt(document.getElementById("count").value);
+      let prefix = document.getElementById("prefix").value;
+
+      // handle hex awal
+      if (hex.startsWith("0x") || hex.startsWith("0X")) {
+        hex = hex.slice(2);
+      }
+      let hexNum = parseInt(hex, 16);
+
+      let result = "";
+      for (let i = 0; i < count; i++) {
+        let apiName = prefix + (i+1);
+        let currentLine = line + i;
+        let currentHex = "0x" + (hexNum + i).toString(16);
+
+        result += `.line ${currentLine}\n`;
+        result += `const-string v1, "${apiName}"\n\n`;
+        result += `const/16 v2, ${currentHex}\n\n`;
+        result += `aput-object v1, v0, v2\n\n`;
+        result += `.line 5\n`;
+        result += `nop\n\n`;
+      }
+
+      document.getElementById("output").textContent = result;
+    }
+
+    function copyOutput() {
+      let text = document.getElementById("output").textContent;
+      if (!text.trim()) {
+        alert("Belum ada hasil untuk disalin!");
+        return;
+      }
+      navigator.clipboard.writeText(text).then(() => {
+        alert("✅ Berhasil disalin ke clipboard!");
+      });
+    }
+  </script>
+</body>
+</html>
