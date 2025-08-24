@@ -4,14 +4,17 @@
   <meta charset="UTF-8">
   <title>Daily Tracker</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
   <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 20px; background: #f5f5f5; }
-    input, button { margin: 5px; padding: 5px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 10px; background: white; }
-    th, td { border: 1px solid #ccc; padding: 8px; text-align: center; }
+    body { font-family: sans-serif; padding: 10px; background: #f5f5f5; }
+    input, button { margin: 3px; padding: 5px; font-size: 14px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 10px; background: white; font-size: 14px; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
     input[type="number"], input[type="date"] { width: 100%; box-sizing: border-box; }
     .btn-hapus { color: red; cursor: pointer; font-weight: bold; }
+    .persen-plus { color: green; font-weight: bold; }
+    .persen-minus { color: red; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -28,7 +31,7 @@
 
   <table>
     <thead>
-      <tr><th>Tanggal</th><th>Nilai</th><th>Aksi</th></tr>
+      <tr><th>Tanggal</th><th>Nilai</th><th>Selisih</th><th>Aksi</th></tr>
     </thead>
     <tbody id="dataTabel"></tbody>
   </table>
@@ -58,9 +61,7 @@
         const tr = document.createElement('tr');
 
         // Format hari
-        const hari = new Date(d.tanggal).toLocaleDateString('id-ID', {
-          weekday: 'long'
-        });
+        const hari = new Date(d.tanggal).toLocaleDateString('id-ID', { weekday: 'long' });
 
         // Kolom tanggal
         const tdTanggal = document.createElement('td');
@@ -94,6 +95,17 @@
           input.focus();
         };
 
+        // Kolom persentase perubahan
+        const tdPersen = document.createElement('td');
+        if (i > 0) {
+          const prev = data[i - 1].nilai;
+          const diff = ((d.nilai - prev) / prev * 100).toFixed(1);
+          tdPersen.textContent = (diff > 0 ? `+${diff}%` : `${diff}%`);
+          tdPersen.className = diff >= 0 ? 'persen-plus' : 'persen-minus';
+        } else {
+          tdPersen.textContent = "-";
+        }
+
         // Tombol hapus
         const tdHapus = document.createElement('td');
         const btn = document.createElement('span');
@@ -109,67 +121,13 @@
 
         tr.appendChild(tdTanggal);
         tr.appendChild(tdNilai);
+        tr.appendChild(tdPersen);
         tr.appendChild(tdHapus);
         tbody.appendChild(tr);
       });
       
       updateChart();
-  updateRingkasan(); 
-    }
-
-    function backupData() {
-      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'tracker-backup.json';
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    function restoreData(event) {
-      const file = event.target.files[0];
-      const reader = new FileReader();
-      reader.onload = () => {
-        try {
-          data = JSON.parse(reader.result);
-          simpanData();
-        } catch (e) {
-          alert("File rusak atau bukan JSON!");
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    function exportExcel() {
-      const ws = XLSX.utils.json_to_sheet(data);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Data Tracker");
-      XLSX.writeFile(wb, "tracker-data.xlsx");
-    }
-
-    function importExcel(event) {
-      const file = event.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const workbook = XLSX.read(e.target.result, { type: "binary" });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const imported = XLSX.utils.sheet_to_json(sheet);
-        data = imported.map(d => ({
-          tanggal: d.tanggal || d.Tanggal || new Date().toISOString().split('T')[0],
-          nilai: parseInt(d.nilai || d.Nilai || 0)
-        }));
-        simpanData();
-      };
-      reader.readAsBinaryString(file);
-    }
-
-    function resetData() {
-      if (confirm("Yakin mau reset semua data?")) {
-        data = [];
-        simpanData();
-      }
+      updateRingkasan(); 
     }
 
     let chart;
@@ -195,7 +153,11 @@
         options: {
           responsive: true,
           plugins: {
-            legend: { display: false }
+            legend: { display: false },
+            zoom: {
+              pan: { enabled: true, mode: 'x' },
+              zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
+            }
           },
           scales: {
             y: { ticks: { callback: v => v.toLocaleString('id-ID') } }
