@@ -1,222 +1,443 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <title>Daily Tracker</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+  <meta charset="UTF-8" />
+  <title>Daily Tracker — TradingView Style</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Lightweight Charts (TradingView) -->
+  <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+  <script src="https://s3.tradingview.com/tv.js"></script>
+  <!-- SheetJS -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
   <style>
-    body { font-family: sans-serif; padding: 10px; background: #f5f5f5; }
-    input, button { margin: 3px; padding: 5px; font-size: 14px; }
-    table { border-collapse: collapse; width: 100%; margin-top: 10px; background: white; font-size: 14px; }
-    th, td { border: 1px solid #ccc; padding: 6px; text-align: center; }
-    input[type="number"], input[type="date"] { width: 100%; box-sizing: border-box; }
-    .btn-hapus { color: red; cursor: pointer; font-weight: bold; }
-    .persen-plus { color: green; font-weight: bold; }
-    .persen-minus { color: red; font-weight: bold; }
+    :root {
+      --bg: #f5f5f5;
+      --card: #ffffff;
+      --text: #222;
+      --muted: #666;
+      --grid: #e9e9e9;
+      --green: #1a8f3a;
+      --red: #e53935;
+      --blue: #2979ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+      margin: 0; padding: 10px; background: var(--bg); color: var(--text);
+    }
+    h2 { margin: 6px 0 10px; font-size: 18px; }
+    .controls { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+    .controls button, .controls input[type="date"], .controls input[type="number"], .controls input[type="file"] {
+      width: 100%; padding: 8px; font-size: 14px; border: 1px solid #ccc; border-radius: 10px; background: #fff;
+    }
+    .btn-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 6px; }
+    table {
+      border-collapse: collapse; width: 100%; margin-top: 10px; background: var(--card); font-size: 14px; border-radius: 12px; overflow: hidden;
+    }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background: #fafafa; font-weight: 600; }
+    .btn-hapus { color: var(--red); cursor: pointer; font-weight: bold; }
+    .persen-plus { color: var(--green); font-weight: 700; }
+    .persen-minus { color: var(--red); font-weight: 700; }
+
+    /* Chart container fix: kasih tinggi pasti biar nggak blank */
+    .chart-wrap {
+      position: relative;
+      width: 100%;
+      height: 320px;           /* <— tinggi pasti */
+      margin-top: 12px;
+      background: var(--card);
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    #tvchart { width: 100%; height: 100%; }
+
+    /* Tooltip custom ala TradingView */
+    .tv-tooltip {
+      position: absolute;
+      pointer-events: none;
+      top: 8px; left: 8px;
+      background: rgba(255,255,255,0.95);
+      color: #111;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 6px 8px;
+      font-size: 12px;
+      line-height: 1.2;
+      min-width: 120px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .tooltip-row { display: flex; justify-content: space-between; gap: 8px; }
+    .muted { color: var(--muted); }
+    .kpi { font-weight: 700; }
+    .kpi.green { color: var(--green); }
+    .kpi.red { color: var(--red); }
+
+    hr.sep { border: none; border-top: 1px dashed #ddd; margin: 14px 0; }
+    @media (max-width: 480px) {
+      .controls { grid-template-columns: 1fr 1fr; }
+      .btn-row { grid-template-columns: repeat(2, 1fr); }
+      table { font-size: 13px; }
+      .chart-wrap { height: 300px; }
+    }
   </style>
 </head>
 <body>
   <h2>Daily Tracker</h2>
-  <input type="date" id="tanggal">
-  <input type="number" id="nilai" placeholder="Masukkan nilai">
-  <button onclick="tambahData()">Tambah</button>
-  <button onclick="backupData()">Backup (JSON)</button>
-  <input type="file" onchange="restoreData(event)">
-  <br>
-  <button onclick="exportExcel()">Export Excel</button>
-  <input type="file" onchange="importExcel(event)" accept=".xlsx,.xls">
-  <button onclick="resetData()">Reset Data</button>
+
+  <div class="controls">
+    <input type="date" id="tanggal" />
+    <input type="number" id="nilai" placeholder="Masukkan nilai" />
+    <button id="btnTambah">Tambah</button>
+  </div>
+
+  <div class="btn-row">
+    <button id="btnBackup">Backup (JSON)</button>
+    <input type="file" id="fileRestore" />
+    <button id="btnExportXLSX">Export Excel</button>
+    <input type="file" id="fileImportXLSX" accept=".xlsx,.xls" />
+  </div>
+
+  <div class="btn-row" style="margin-top:6px;">
+    <button id="btnReset" style="grid-column: span 2; background:#fff3f3; border:1px solid #f3c4c4;">Reset Data</button>
+    <button id="btnFit" title="Fit to data">Fit Chart</button>
+    <button id="btnToday" title="Scroll ke kanan (terbaru)">Ke Terbaru</button>
+  </div>
 
   <table>
     <thead>
-      <tr><th>Tanggal</th><th>Nilai</th><th>Selisih</th><th>Aksi</th></tr>
+      <tr><th>Tanggal</th><th>Nilai</th><th>% vs Sebelumnya</th><th>Aksi</th></tr>
     </thead>
     <tbody id="dataTabel"></tbody>
   </table>
-  <canvas id="grafik" width="400" height="200"></canvas>
-<div id="ringkasan"></div>
+
+  <!-- Chart TradingView style -->
+  <div class="chart-wrap">
+    <div id="tvchart"></div>
+    <div id="tvtooltip" class="tv-tooltip" style="display:none">
+      <div class="tooltip-row"><span class="muted">Tanggal</span><span id="tt-date" class="kpi"></span></div>
+      <div class="tooltip-row"><span class="muted">Nilai</span><span id="tt-value" class="kpi"></span></div>
+      <div class="tooltip-row"><span class="muted">% vs prev</span><span id="tt-pct" class="kpi"></span></div>
+    </div>
+  </div>
+
+  <div id="ringkasan"></div>
+
   <script>
+    // ====== STATE ======
     let data = JSON.parse(localStorage.getItem('trackerData') || '[]');
 
+    // ====== HELPERS ======
+    const fmtNum = (v) => Number(v).toLocaleString('id-ID');
+    const toYMD = (d) => new Date(d).toISOString().split('T')[0];
+
     function simpanData() {
+      // sort by tanggal biar urut (penting buat % dan chart)
+      data.sort((a, b) => (a.tanggal > b.tanggal ? 1 : -1));
       localStorage.setItem('trackerData', JSON.stringify(data));
       tampilkanData();
     }
 
-    function tambahData() {
-      const tanggal = document.getElementById('tanggal').value || new Date().toISOString().split('T')[0];
+    // ====== TOMBOL & INPUT ======
+    document.getElementById('btnTambah').onclick = () => {
+      const tanggal = document.getElementById('tanggal').value || toYMD(new Date());
       const nilai = parseInt(document.getElementById('nilai').value);
-      if (!isNaN(nilai)) {
-        data.push({ tanggal, nilai });
-        simpanData();
-      }
-    }
+      if (isNaN(nilai)) return;
+      data.push({ tanggal, nilai });
+      document.getElementById('nilai').value = '';
+      simpanData();
+    };
 
+    document.getElementById('btnBackup').onclick = () => {
+      const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'tracker-backup.json'; a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    document.getElementById('fileRestore').onchange = (e) => {
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const parsed = JSON.parse(reader.result);
+          if (!Array.isArray(parsed)) throw new Error();
+          data = parsed.map(d => ({ tanggal: d.tanggal, nilai: parseInt(d.nilai) || 0 }))
+                       .filter(d => d.tanggal && !isNaN(d.nilai));
+          simpanData();
+        } catch {
+          alert("File rusak atau bukan JSON!");
+        }
+      };
+      reader.readAsText(file);
+    };
+
+    document.getElementById('btnExportXLSX').onclick = () => {
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Data Tracker");
+      XLSX.writeFile(wb, "tracker-data.xlsx");
+    };
+
+    document.getElementById('fileImportXLSX').onchange = (e) => {
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const wb = XLSX.read(evt.target.result, { type: "binary" });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const imported = XLSX.utils.sheet_to_json(sheet);
+        data = imported.map(d => ({
+          tanggal: d.tanggal || d.Tanggal || toYMD(new Date()),
+          nilai: parseInt(d.nilai || d.Nilai || 0)
+        }));
+        simpanData();
+      };
+      reader.readAsBinaryString(file);
+    };
+
+    document.getElementById('btnReset').onclick = () => {
+      if (confirm("Yakin mau reset semua data?")) { data = []; simpanData(); }
+    };
+
+    // ====== TABEL ======
     function tampilkanData() {
       const tbody = document.getElementById('dataTabel');
       tbody.innerHTML = '';
+
       data.forEach((d, i) => {
         const tr = document.createElement('tr');
 
-        // Format hari
         const hari = new Date(d.tanggal).toLocaleDateString('id-ID', { weekday: 'long' });
 
-        // Kolom tanggal
-        const tdTanggal = document.createElement('td');
-        tdTanggal.textContent = `${hari}, ${d.tanggal}`;
-        tdTanggal.ondblclick = () => {
+        // tanggal (dblclick edit)
+        const tdTgl = document.createElement('td');
+        tdTgl.textContent = `${hari}, ${d.tanggal}`;
+        tdTgl.ondblclick = () => {
           const input = document.createElement('input');
-          input.type = 'date';
-          input.value = d.tanggal;
-          input.onblur = () => {
-            d.tanggal = input.value;
-            simpanData();
-          };
-          tdTanggal.innerHTML = '';
-          tdTanggal.appendChild(input);
-          input.focus();
+          input.type = 'date'; input.value = d.tanggal;
+          input.onblur = () => { d.tanggal = input.value || d.tanggal; simpanData(); };
+          tdTgl.innerHTML = ''; tdTgl.appendChild(input); input.focus();
         };
 
-        // Kolom nilai
-        const tdNilai = document.createElement('td');
-        tdNilai.textContent = d.nilai.toLocaleString('id-ID');
-        tdNilai.ondblclick = () => {
+        // nilai (dblclick edit)
+        const tdNil = document.createElement('td');
+        tdNil.textContent = fmtNum(d.nilai);
+        tdNil.ondblclick = () => {
           const input = document.createElement('input');
-          input.type = 'number';
-          input.value = d.nilai;
-          input.onblur = () => {
-            d.nilai = parseInt(input.value) || 0;
-            simpanData();
-          };
-          tdNilai.innerHTML = '';
-          tdNilai.appendChild(input);
-          input.focus();
+          input.type = 'number'; input.value = d.nilai;
+          input.onblur = () => { d.nilai = parseInt(input.value) || 0; simpanData(); };
+          tdNil.innerHTML = ''; tdNil.appendChild(input); input.focus();
         };
 
-        // Kolom persentase perubahan
-        const tdPersen = document.createElement('td');
+        // persen vs sebelumnya
+        const tdPct = document.createElement('td');
         if (i > 0) {
-          const prev = data[i - 1].nilai;
-          const diff = ((d.nilai - prev) / prev * 100).toFixed(1);
-          tdPersen.textContent = (diff > 0 ? `+${diff}%` : `${diff}%`);
-          tdPersen.className = diff >= 0 ? 'persen-plus' : 'persen-minus';
+          const prev = data[i-1].nilai;
+          const pct = prev === 0 ? 0 : ((d.nilai - prev) / prev * 100);
+          const pctTxt = `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}%`;
+          tdPct.textContent = pctTxt;
+          tdPct.className = pct >= 0 ? 'persen-plus' : 'persen-minus';
         } else {
-          tdPersen.textContent = "-";
+          tdPct.textContent = '-';
         }
 
-        // Tombol hapus
-        const tdHapus = document.createElement('td');
+        // hapus
+        const tdAct = document.createElement('td');
         const btn = document.createElement('span');
         btn.textContent = '❌';
         btn.className = 'btn-hapus';
         btn.onclick = () => {
           if (confirm(`Hapus data tanggal ${d.tanggal}?`)) {
-            data.splice(i, 1);
-            simpanData();
+            data.splice(i, 1); simpanData();
           }
         };
-        tdHapus.appendChild(btn);
+        tdAct.appendChild(btn);
 
-        tr.appendChild(tdTanggal);
-        tr.appendChild(tdNilai);
-        tr.appendChild(tdPersen);
-        tr.appendChild(tdHapus);
+        tr.appendChild(tdTgl);
+        tr.appendChild(tdNil);
+        tr.appendChild(tdPct);
+        tr.appendChild(tdAct);
         tbody.appendChild(tr);
       });
-      
+
       updateChart();
-      updateRingkasan(); 
+      updateRingkasan();
     }
 
-    let chart;
-    function updateChart() {
-      const ctx = document.getElementById('grafik').getContext('2d');
-      const labels = data.map(d => d.tanggal);
-      const values = data.map(d => d.nilai);
+    // ====== CHART (Lightweight Charts) ======
+    let chart, lineSeries, ro;
+    const container = document.getElementById('tvchart');
+    const tooltipEl = document.getElementById('tvtooltip');
+    const ttDate = document.getElementById('tt-date');
+    const ttValue = document.getElementById('tt-value');
+    const ttPct = document.getElementById('tt-pct');
 
-      if (chart) chart.destroy();
-      chart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Nilai Harian',
-            data: values,
-            borderColor: 'blue',
-            backgroundColor: 'lightblue',
-            tension: 0.3,
-            fill: true,
-          }]
+    function buildChart() {
+      // destroy & rebuild (simple + aman)
+      if (ro) { ro.disconnect(); ro = null; }
+      container.innerHTML = '';
+
+      chart = LightweightCharts.createChart(container, {
+        width: container.clientWidth,
+        height: container.clientHeight,
+        layout: { background: { color: '#ffffff' }, textColor: '#333' },
+        grid: { vertLines: { color: '#efefef' }, horzLines: { color: '#efefef' } },
+        rightPriceScale: { borderVisible: false },
+        timeScale: {
+          borderVisible: false,
+          rightOffset: 2,
+          fixLeftEdge: false,
+          fixRightEdge: false,
+          timeVisible: true,           // biar bisa handle jam kalau suatu saat jam-menit
+          secondsVisible: false
         },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: { display: false },
-            zoom: {
-              pan: { enabled: true, mode: 'x' },
-              zoom: { wheel: { enabled: true }, pinch: { enabled: true }, mode: 'x' }
-            }
-          },
-          scales: {
-            y: { ticks: { callback: v => v.toLocaleString('id-ID') } }
-          }
-        }
+        crosshair: {
+          mode: LightweightCharts.CrosshairMode.Normal,
+        },
+        handleScroll: {
+          mouseWheel: true,
+          pressedMouseMove: true,
+          horzTouchDrag: true,
+          vertTouchDrag: false,
+        },
+        handleScale: {
+          axisPressedMouseMove: true,
+          mouseWheel: true,
+          pinch: true,
+        },
+        localization: {
+          priceFormatter: (p) => fmtNum(p),
+        },
       });
+
+      lineSeries = chart.addLineSeries({
+        color: '#2979ff',
+        lineWidth: 2,
+        priceLineVisible: false,
+        lastValueVisible: true,
+      });
+
+      // Tooltip crosshair
+      chart.subscribeCrosshairMove((param) => {
+        if (!param || !param.time || !param.seriesData) {
+          tooltipEl.style.display = 'none';
+          return;
+        }
+        const point = param.seriesData.get(lineSeries);
+        if (!point) { tooltipEl.style.display = 'none'; return; }
+
+        const t = point.time; // BusinessDay or string 'YYYY-MM-DD'
+        const val = point.value;
+
+        // cari index untuk % vs prev
+        const arr = lineSeries._data || []; // fallback kalau gak ada
+        // lebih aman: bangun dari dataPoints terakhir yang kita set
+        const dp = currentDataPoints;
+        const idx = dp.findIndex(x => x.time === t);
+        let pctTxt = '-';
+        if (idx > 0) {
+          const prev = dp[idx-1].value;
+          const pct = prev === 0 ? 0 : ((val - prev) / prev * 100);
+          const sign = pct >= 0 ? '+' : '';
+          pctTxt = `${sign}${pct.toFixed(1)}%`;
+          ttPct.className = 'kpi ' + (pct >= 0 ? 'green' : 'red');
+        } else {
+          ttPct.className = 'kpi';
+        }
+
+        ttDate.textContent = typeof t === 'string' ? t : `${t.year}-${String(t.month).padStart(2,'0')}-${String(t.day).padStart(2,'0')}`;
+        ttValue.textContent = fmtNum(val);
+        ttPct.textContent = pctTxt;
+        tooltipEl.style.display = 'block';
+      });
+
+      // Auto-resize pakai ResizeObserver (biar nggak blank kalau container berubah)
+      ro = new ResizeObserver(() => {
+        chart.applyOptions({
+          width: container.clientWidth,
+          height: container.clientHeight,
+        });
+      });
+      ro.observe(container);
     }
-function updateRingkasan() {
-  const mingguan = {};
-  const bulanan = {};
 
-  data.forEach(d => {
-    const dateObj = new Date(d.tanggal);
-    const minggu = getWeekNumber(dateObj);
-    const bulan = dateObj.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+    let currentDataPoints = [];
+    function updateChart() {
+      if (!chart) buildChart();
 
-    mingguan[minggu] = (mingguan[minggu] || 0) + d.nilai;
-    bulanan[bulan] = (bulanan[bulan] || 0) + d.nilai;
-  });
+      // convert ke {time:'YYYY-MM-DD', value:Number}
+      currentDataPoints = data.map(d => ({ time: d.tanggal, value: d.nilai }));
+      lineSeries.setData(currentDataPoints);
 
-  const div = document.getElementById('ringkasan');
-  div.innerHTML = '';
+      // fit content kalau data sedikit; kalau banyak tetap bisa scroll/zoom
+      chart.timeScale().fitContent();
 
-  const tableMinggu = document.createElement('table');
-  tableMinggu.innerHTML = '<thead><tr><th>Minggu ke-</th><th>Total Nilai</th></tr></thead>';
-  const tbodyMinggu = document.createElement('tbody');
-  for (const m in mingguan) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${m}</td><td>${mingguan[m].toLocaleString('id-ID')}</td>`;
-    tbodyMinggu.appendChild(tr);
-  }
-  tableMinggu.appendChild(tbodyMinggu);
-  div.appendChild(document.createElement('hr'));
-  div.appendChild(document.createTextNode('Total per Minggu'));
-  div.appendChild(tableMinggu);
+      // tombol helper
+      document.getElementById('btnFit').onclick = () => chart.timeScale().fitContent();
+      document.getElementById('btnToday').onclick = () => chart.timeScale().scrollToRealTime();
+    }
 
-  const tableBulan = document.createElement('table');
-  tableBulan.innerHTML = '<thead><tr><th>Bulan</th><th>Total Nilai</th></tr></thead>';
-  const tbodyBulan = document.createElement('tbody');
-  for (const b in bulanan) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${b}</td><td>${bulanan[b].toLocaleString('id-ID')}</td>`;
-    tbodyBulan.appendChild(tr);
-  }
-  tableBulan.appendChild(tbodyBulan);
-  div.appendChild(document.createElement('hr'));
-  div.appendChild(document.createTextNode('Total per Bulan'));
-  div.appendChild(tableBulan);
-}
+    // ====== RINGKASAN ======
+    function updateRingkasan() {
+      const mingguan = {}, bulanan = {};
+      data.forEach(d => {
+        const dateObj = new Date(d.tanggal);
+        const minggu = getWeekNumber(dateObj);
+        const bulan = dateObj.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+        mingguan[minggu] = (mingguan[minggu] || 0) + d.nilai;
+        bulanan[bulan] = (bulanan[bulan] || 0) + d.nilai;
+      });
 
-function getWeekNumber(d) {
-  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const dayNum = d.getUTCDay() || 7;
-  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
-  return `${d.getUTCFullYear()}-W${weekNo}`;
-}
+      const div = document.getElementById('ringkasan');
+      div.innerHTML = '';
+
+      const tableMinggu = document.createElement('table');
+      tableMinggu.innerHTML = '<thead><tr><th>Minggu ke-</th><th>Total Nilai</th></tr></thead>';
+      const tbodyMinggu = document.createElement('tbody');
+      for (const m in mingguan) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${m}</td><td>${(mingguan[m]).toLocaleString('id-ID')}</td>`;
+        tbodyMinggu.appendChild(tr);
+      }
+      tableMinggu.appendChild(tbodyMinggu);
+      div.appendChild(document.createElement('hr')).className = 'sep';
+      div.appendChild(document.createTextNode('Total per Minggu'));
+      div.appendChild(tableMinggu);
+
+      const tableBulan = document.createElement('table');
+      tableBulan.innerHTML = '<thead><tr><th>Bulan</th><th>Total Nilai</th></tr></thead>';
+      const tbodyBulan = document.createElement('tbody');
+      for (const b in bulanan) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${b}</td><td>${(bulanan[b]).toLocaleString('id-ID')}</td>`;
+        tbodyBulan.appendChild(tr);
+      }
+      tableBulan.appendChild(tbodyBulan);
+      div.appendChild(document.createElement('hr')).className = 'sep';
+      div.appendChild(document.createTextNode('Total per Bulan'));
+      div.appendChild(tableBulan);
+    }
+
+    function getWeekNumber(d) {
+      d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+      return `${d.getUTCFullYear()}-W${weekNo}`;
+    }
+
+    // ====== INIT ======
+    // set default tanggal = hari ini (UX kecil)
+    document.getElementById('tanggal').value = toYMD(new Date());
     tampilkanData();
+
+    // Sembunyikan tooltip saat pointer keluar chart
+    document.querySelector('.chart-wrap').addEventListener('mouseleave', () => {
+      tooltipEl.style.display = 'none';
+    });
   </script>
 </body>
 </html>
