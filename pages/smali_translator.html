@@ -1,0 +1,314 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Smali → Java/Kotlin (Paste Translator • HTML Only)</title>
+  <style>
+    :root { --bg:#0b1020; --card:#121833; --ink:#f2f5ff; --mut:#9fb2ff; --line:#223; --pri:#6c7cff; --ok:#22c55e; }
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial,sans-serif}
+    .wrap{max-width:1100px;margin:auto;padding:20px}
+    h1{margin:8px 0 4px;font-size:24px}
+    .hint{color:var(--mut);font-size:.95rem}
+    .grid{display:grid;gap:12px;grid-template-columns:1fr}
+    @media(min-width:1100px){.grid{grid-template-columns:1fr 1fr}}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:12px}
+    textarea{width:100%;min-height:320px;background:#0f1430;color:var(--ink);border:1px solid #2a355f;border-radius:12px;padding:12px;font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;tab-size:2}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .btn{border:0;padding:10px 14px;border-radius:12px;background:var(--pri);color:white;font-weight:700;cursor:pointer}
+    .btn.alt{background:#1b2347}
+    .btn.ok{background:var(--ok);color:#04130a}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#1b2347;border:1px solid #2a355f}
+    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    label.switch{display:inline-flex;gap:8px;align-items:center}
+    select, input[type="checkbox"], input[type="radio"]{accent-color:var(--pri)}
+    details{margin-top:8px}
+    summary{cursor:pointer}
+    .small{font-size:.9rem;color:var(--mut)}
+    .footer{opacity:.7;margin-top:8px}
+    .ex{font-size:.85rem;color:#d7e0ff;background:#0f1430;border:1px dashed #2a355f;border-radius:12px;padding:10px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Smali → Java/Kotlin (Paste‑only Translator)</h1>
+    <div class="hint">Tempel kode <span class="mono">.smali</span> atau potongan disassembly DEX, lalu terjemahkan ke Java/Kotlin secara heuristik. Semua di browser (HTML only).</div><div class="grid" style="margin-top:12px">
+  <div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div class="row">
+        <label class="switch"><input type="radio" name="lang" value="java" checked> <span>Java</span></label>
+        <label class="switch"><input type="radio" name="lang" value="kotlin"> <span>Kotlin</span></label>
+      </div>
+      <div class="row">
+        <label class="switch"><input id="hexDec" type="checkbox" checked> <span>Konversi hex → desimal</span></label>
+        <label class="switch"><input id="comments" type="checkbox" checked> <span>Tambahkan komentar</span></label>
+      </div>
+    </div>
+    <textarea id="in" placeholder="Paste potongan smali di sini…">
+
+.method public final saveHistory(Landroid/content/Context;Ljava/lang/String;Ljava/util/List;)V .registers 15 .param p1, "context"  # Landroid/content/Context; .param p2, "userId"   # Ljava/lang/String; .param p3, "history"  # Ljava/util/List; .annotation system Ldalvik/annotation/Signature; value = { "(", "Landroid/content/Context;", "Ljava/lang/String;", "Ljava/util/List<", "Ljava/lang/String;", ">;)V" } .end annotation
+
+const-string v0, "context"
+invoke-static {p1, v0}, Lkotlin/jvm/internal/Intrinsics;->checkNotNullParameter(Ljava/lang/Object;Ljava/lang/String;)V
+
+const-string v0, "userId"
+invoke-static {p2, v0}, Lkotlin/jvm/internal/Intrinsics;->checkNotNullParameter(Ljava/lang/Object;Ljava/lang/String;)V
+
+const-string v0, "history"
+invoke-static {p3, v0}, Lkotlin/jvm/internal/Intrinsics;->checkNotNullParameter(Ljava/lang/Object;Ljava/lang/String;)V
+
+const/high16 v3, 0x14000000
+invoke-virtual {p0, v3}, Landroid/content/Intent;->setFlags(I)Landroid/content/Intent;
+
+return-void
+
+.end method</textarea> <div class="row"> <button class="btn" id="run">Translate</button> <button class="btn alt" id="clear">Clear</button> </div> </div>
+
+<div class="card">
+    <div class="row" style="justify-content:space-between">
+      <div class="pill">Output</div>
+      <div class="row">
+        <button class="btn ok" id="copy">Copy</button>
+      </div>
+    </div>
+    <textarea id="out" readonly placeholder="Hasil Java/Kotlin muncul di sini…"></textarea>
+    <details>
+      <summary>Catatan</summary>
+      <div class="small">
+        Translator ini bersifat heuristik (rule‑based). Tujuannya bantu baca cepat hasil decompile, bukan 100% akurat.
+        Yang di-handle:
+        <ul>
+          <li>Header method → signature Java/Kotlin (sebagian besar tipe umum)</li>
+          <li><span class="mono">.param</span> → nama parameter</li>
+          <li><span class="mono">const-string</span>, <span class="mono">const/4</span>, <span class="mono">const/high16</span></li>
+          <li><span class="mono">invoke-static</span>, <span class="mono">invoke-virtual</span> (bentuk dasar)</li>
+          <li><span class="mono">return</span> dan <span class="mono">return-void</span></li>
+        </ul>
+      </div>
+    </details>
+    <div class="footer small">Made for GitHub Pages • single HTML file • no server.</div>
+  </div>
+</div>
+
+<div class="card ex" style="margin-top:12px">
+  Tips: Flag intent <span class="mono">0x14000000</span> ≈ <span class="mono">FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TOP</span>. Aktifkan konversi hex → desimal kalau mau angka biasa.
+</div>
+
+  </div><script>
+(function(){
+  const $ = sel => document.querySelector(sel);
+  const $$ = sel => Array.from(document.querySelectorAll(sel));
+  const input = $('#in');
+  const output = $('#out');
+  const hexDec = $('#hexDec');
+  const comments = $('#comments');
+  const btnRun = $('#run');
+  const btnCopy = $('#copy');
+  const btnClear = $('#clear');
+
+  const TYPE_MAP = {
+    'V':'void','Z':'boolean','B':'byte','S':'short','C':'char','I':'int','J':'long','F':'float','D':'double'
+  };
+
+  function mapObjType(sig){
+    // e.g., Ljava/lang/String; → String
+    if(!sig) return 'void';
+    if(TYPE_MAP[sig]) return TYPE_MAP[sig];
+    if(sig.startsWith('L') && sig.endsWith(';')){
+      const raw = sig.slice(1,-1).replace(/\//g,'.');
+      const simple = raw.split('.').pop();
+      return simple || raw;
+    }
+    if(sig.startsWith('[')){
+      return mapObjType(sig.slice(1)) + '[]';
+    }
+    return sig;
+  }
+
+  function parseParams(sig){
+    // sig: e.g., Landroid/content/Context;Ljava/lang/String;Ljava/util/List;
+    const params = [];
+    for(let i=0;i<sig.length;){
+      const ch = sig[i];
+      if(TYPE_MAP[ch]){ params.push(TYPE_MAP[ch]); i+=1; continue; }
+      if(ch==='L'){
+        const j = sig.indexOf(';', i);
+        params.push(mapObjType(sig.slice(i, j+1)));
+        i = j+1; continue;
+      }
+      if(ch==='['){
+        // array type
+        let k=i; while(sig[k]==='[') k++;
+        let t = TYPE_MAP[sig[k]] || mapObjType(sig.slice(k, sig.indexOf(';',k)+1));
+        params.push((TYPE_MAP[sig[k]]?TYPE_MAP[sig[k]]:mapObjType(sig.slice(k, sig.indexOf(';',k)+1)))+'[]'.repeat(k-i));
+        i = (TYPE_MAP[sig[k]]?k+1: sig.indexOf(';',k)+1);
+        continue;
+      }
+      // unknown chunk
+      i++;
+    }
+    return params;
+  }
+
+  function getLang(){
+    const r = $$('input[name="lang"]').find(x=>x.checked);
+    return r ? r.value : 'java';
+  }
+
+  function toCamel(name){
+    return name.replace(/[^a-zA-Z0-9]+/g,' ').trim().replace(/\s+(.)/g,(m,g1)=>g1.toUpperCase());
+  }
+
+  function hexToDecAll(line){
+    return line.replace(/0x[0-9a-fA-F]+/g, (m)=>{
+      try{
+        const val = parseInt(m,16);
+        return String(val);
+      }catch(_){return m}
+    });
+  }
+
+  function mapKnownFlags(n){
+    const x = Number(n);
+    const parts = [];
+    if(x & 0x10000000) parts.push('FLAG_ACTIVITY_NEW_TASK');
+    if(x & 0x04000000) parts.push('FLAG_ACTIVITY_CLEAR_TOP');
+    if(x & 0x20000000) parts.push('FLAG_ACTIVITY_SINGLE_TOP');
+    return parts.length? ' // '+parts.join(' | '):'';
+  }
+
+  function translate(){
+    const src = input.value.replace(/\r\n?/g,'\n');
+    const lang = getLang();
+
+    const lines = src.split('\n');
+    const paramsByP = {}; // p1 → name
+    let methodSig = null;
+    let retType = 'void';
+    let out = [];
+
+    for(let i=0;i<lines.length;i++){
+      let ln = lines[i].trim();
+      if(!ln) continue;
+
+      // .param pX, "name"
+      let m = ln.match(/^\.param\s+p(\d+),\s+"([^"]+)"/);
+      if(m){ paramsByP['p'+m[1]] = toCamel(m[2]); continue; }
+
+      // .method header
+      m = ln.match(/^\.method\s+([\w\s$-]*)\s+([\w$<>]+)([^)]*)([\wL;])?/);
+      if(m){
+        const mods = m[1].trim();
+        const name = m[2];
+        const paramSig = m[3]||'';
+        const rSig = m[4]||'V';
+        const paramTypes = parseParams(paramSig);
+        retType = mapObjType(rSig);
+        // Build params with names
+        const params = [];
+        for(let idx=0; idx<paramTypes.length; idx++){
+          const pReg = 'p'+(idx+1); // typical, may differ on non-static
+          const pname = paramsByP[pReg] || ('p'+(idx+1));
+          params.push({type:paramTypes[idx], name:pname});
+        }
+        if(lang==='java'){
+          out.push(`public ${mods.includes('static')?'static ':''}${mods.includes('final')?'final ':''}${retType} ${name}(${params.map(p=>p.type+' '+p.name).join(', ')}) {`);
+        }else{
+          out.push(`fun ${name}(${params.map(p=>`${p.name}: ${p.type}`).join(', ')}): ${retType} {`);
+        }
+        methodSig = {name};
+        continue;
+      }
+
+      // return-void / return vX
+      m = ln.match(/^return-void/);
+      if(m){ out.push('  return;'); continue; }
+      m = ln.match(/^return\s+(v\d+|p\d+)/);
+      if(m){ out.push(`  return ${m[1]};`); continue; }
+
+      // const-string vX, "..."
+      m = ln.match(/^const-string\s+(v\d+),\s+"([\s\S]*?)"$/);
+      if(m){
+        const decl = lang==='java' ? `String ${m[1]} = "${m[2]}";` : `val ${m[1]}: String = "${m[2]}"`;
+        out.push('  '+decl);
+        continue;
+      }
+
+      // const/4 vX, N  or  const vX, 0x...
+      m = ln.match(/^const(?:\/4|\/16|\/high16)?\s+(v\d+),\s+([\w-]+)$/);
+      if(m){
+        let val = m[2];
+        let note = '';
+        if(/^0x/i.test(val)){
+          const dec = parseInt(val,16);
+          if(hexDec.checked){ val = String(dec); }
+          note = mapKnownFlags(dec);
+        }
+        const decl = lang==='java'? `int ${m[1]} = ${val};` : `var ${m[1]}: Int = ${val}`;
+        out.push('  '+decl + (comments.checked? note:''));
+        continue;
+      }
+
+      // invoke-static {args}, Lpkg/Cls;->method(sig)Ret
+      m = ln.match(/^invoke-static\s+\{([^}]*)\},\s+L([^;]+);->([^(]+)\(([^)]*)([\wL;])/);
+      if(m){
+        const args = (m[1].trim()? m[1].split(/\s*,\s*/): []).join(', ');
+        const cls = m[2].split('/').pop();
+        const method = m[3];
+        const call = `${cls}.${method}(${args})`;
+        out.push('  '+call+';');
+        continue;
+      }
+
+      // invoke-virtual {recv, args}, Lpkg/Cls;->method(sig)Ret
+      m = ln.match(/^invoke-virtual\s+\{([^}]*)\},\s+L([^;]+);->([^(]+)\(([^)]*)([\wL;])/);
+      if(m){
+        const parts = m[1].trim()? m[1].split(/\s*,\s*/): [];
+        const recv = parts.shift() || '/*recv*/';
+        const args = parts.join(', ');
+        const method = m[3];
+        const call = `${recv}.${method}(${args})`;
+        out.push('  '+call+';');
+        continue;
+      }
+
+      // generic move-result into vX (best effort)
+      m = ln.match(/^move-result(?:-object)?\s+(v\d+)/);
+      if(m){ out.push(`  // ${m[1]} = <result of previous call>`); continue; }
+
+      // labels / if / goto (emit as comment)
+      if(/^:/.test(ln) || /^(if-\w+|goto)/.test(ln)){
+        out.push('  // '+ln);
+        continue;
+      }
+
+      // setFlags pattern hint
+      m = ln.match(/^invoke-virtual\s+\{([^}]*)\},\s+Landroid\/content\/Intent;->setFlags\(ILandroid\/content\/Intent;/);
+      if(m){
+        const a = m[1].split(',').map(s=>s.trim());
+        const recv = a[0];
+        const flag = a[1]||'v?';
+        out.push(`  ${recv}.setFlags(${flag});${comments.checked? '  // set intent flags':''}`);
+        continue;
+      }
+
+      // fallback: keep as comment so user tidak kehilangan info
+      out.push('  // '+ln);
+    }
+
+    if(methodSig){ out.push('}'); }
+
+    let text = out.join('\n');
+    if(hexDec.checked){ text = hexToDecAll(text); }
+    output.value = text;
+  }
+
+  btnRun.addEventListener('click', translate);
+  btnCopy.addEventListener('click', ()=>{ output.select(); document.execCommand('copy'); btnCopy.textContent='Copied'; setTimeout(()=>btnCopy.textContent='Copy',1000); });
+  btnClear.addEventListener('click', ()=>{ input.value=''; output.value=''; });
+})();
+</script></body>
+</html>
