@@ -1,0 +1,148 @@
+<!doctype html>
+
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Hex ⇄ Decimal Converter</title>
+  <style>
+    :root{--bg:#0f172a;--card:#0b1220;--muted:#94a3b8;--accent:#06b6d4;--accent-2:#7c3aed}
+    *{box-sizing:border-box}
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;min-height:100vh;margin:0;background:linear-gradient(180deg,var(--bg),#071024);color:#e6eef6;display:flex;align-items:center;justify-content:center;padding:20px}
+    .wrap{width:100%;max-width:760px}
+    header{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+    h1{font-size:18px;margin:0}
+    p.lead{margin:0;color:var(--muted);font-size:13px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:16px;border-radius:14px;box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    .row{display:flex;gap:12px}
+    .col{flex:1;display:flex;flex-direction:column;gap:8px}
+    label{font-size:12px;color:var(--muted)}
+    input[type=text]{padding:12px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;font-size:16px}
+    .controls{display:flex;gap:8px;margin-top:8px}
+    button{flex:1;padding:12px;border-radius:10px;border:0;background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#021024;font-weight:600;font-size:15px}
+    .small{padding:10px;font-size:14px}
+    .result{margin-top:12px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.03)}
+    .result b{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    .chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .chip{background:rgba(255,255,255,0.03);padding:6px 8px;border-radius:999px;font-size:13px;color:var(--muted)}
+    .footer{margin-top:12px;font-size:12px;color:var(--muted)}
+    .row.mobile-stack{flex-direction:column}
+    @media(min-width:640px){.row.mobile-stack{flex-direction:row}}
+    .copy-btn{background:transparent;border:1px solid rgba(255,255,255,0.05);color:var(--accent);padding:8px 10px;border-radius:8px;font-weight:600}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(180deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:700;color:#021024">Hx</div>
+      <div>
+        <h1>Hex ⇄ Decimal Converter</h1>
+        <p class="lead"> input hex (0x...) atau angka desimal lalu tekan Convert. Auto-detect prefix 0x.</p>
+      </div>
+    </header><div class="card">
+  <div class="row mobile-stack">
+    <div class="col">
+      <label for="input">Input (hex atau decimal)</label>
+      <input id="input" type="text" inputmode="numeric" placeholder="0x14 atau 20" />
+      <div class="chips" id="hints">
+        <div class="chip">0xF → 15</div>
+        <div class="chip">0x10 → 16</div>
+        <div class="chip">0x14 → 20</div>
+      </div>
+    </div>
+
+    <div class="col" style="max-width:220px">
+      <label for="mode">Mode (opsional)</label>
+      <select id="mode" style="padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:inherit;font-size:16px">
+        <option value="auto">Auto-detect</option>
+        <option value="hex-to-dec">Hex → Decimal</option>
+        <option value="dec-to-hex">Decimal → Hex</option>
+      </select>
+
+      <div style="height:8px"></div>
+      <button id="convert" class="small">Convert</button>
+      <button id="swap" class="small" style="margin-top:8px;background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--accent)">Clear</button>
+    </div>
+  </div>
+
+  <div class="result" id="result" aria-live="polite">
+    <b>Hasil</b>
+    <div id="outHex">Hex: —</div>
+    <div id="outDec">Decimal: —</div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button id="copyHex" class="copy-btn">Copy Hex</button>
+      <button id="copyDec" class="copy-btn">Copy Dec</button>
+    </div>
+  </div>
+
+  <div class="footer">Tips: tambahkan <code>0x</code> untuk input hex. Bisa pakai angka negatif juga (mis. -0xA atau -10).</div>
+</div>
+
+  </div>  <script>
+    const input = document.getElementById('input');
+    const mode = document.getElementById('mode');
+    const convertBtn = document.getElementById('convert');
+    const swapBtn = document.getElementById('swap');
+    const outHex = document.getElementById('outHex');
+    const outDec = document.getElementById('outDec');
+    const copyHex = document.getElementById('copyHex');
+    const copyDec = document.getElementById('copyDec');
+
+    function parseInput(str){
+      if (!str) return null;
+      str = str.trim();
+      // handle sign
+      let sign = 1;
+      if (str.startsWith('-')){ sign = -1; str = str.slice(1).trim(); }
+
+      // auto-detect hex
+      const isHex = str.startsWith('0x') || /^[0-9a-fA-F]+$/.test(str) && /[a-fA-F]/.test(str);
+      if (str.startsWith('0x')){
+        const parsed = parseInt(str, 16);
+        return {hex: '0x' + Math.abs(parsed).toString(16).toUpperCase(), dec: parsed * sign};
+      }
+
+      if (isHex && (mode.value==='auto' || mode.value==='hex-to-dec')){
+        const parsed = parseInt(str, 16);
+        return {hex: '0x' + Math.abs(parsed).toString(16).toUpperCase(), dec: parsed * sign};
+      }
+
+      // otherwise parse as decimal
+      const num = Number(str);
+      if (!Number.isFinite(num)) return null;
+      const abs = Math.abs(num);
+      const hex = '0x' + Math.floor(abs).toString(16).toUpperCase();
+      return {hex: (num<0?'-':'') + hex, dec: Math.floor(num)};
+    }
+
+    function render(){
+      const val = input.value;
+      const parsed = parseInput(val);
+      if (!parsed){ outHex.textContent = 'Hex: —'; outDec.textContent = 'Decimal: —'; return; }
+      outHex.textContent = 'Hex: ' + parsed.hex;
+      outDec.textContent = 'Decimal: ' + parsed.dec;
+    }
+
+    convertBtn.addEventListener('click', render);
+    input.addEventListener('keydown', (e)=>{ if (e.key==='Enter') render(); });
+
+    swapBtn.addEventListener('click', ()=>{ input.value=''; render(); input.focus(); });
+
+    copyHex.addEventListener('click', async ()=>{
+      const text = outHex.textContent.replace('Hex: ','');
+      try{ await navigator.clipboard.writeText(text); copyHex.textContent='Copied'; setTimeout(()=>copyHex.textContent='Copy Hex',1000);}catch(e){alert('Clipboard error')}
+    });
+
+    copyDec.addEventListener('click', async ()=>{
+      const text = outDec.textContent.replace('Decimal: ','');
+      try{ await navigator.clipboard.writeText(text); copyDec.textContent='Copied'; setTimeout(()=>copyDec.textContent='Copy Dec',1000);}catch(e){alert('Clipboard error')}
+    });
+
+    // auto render on input after short debounce
+    let t;
+    input.addEventListener('input', ()=>{ clearTimeout(t); t=setTimeout(render,220); });
+
+    // initial sample
+    input.value = '0x14'; render();
+  </script></body>
+</html>
