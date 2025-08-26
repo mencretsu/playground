@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gemini API Bulk Checker</title>
+<style>
+#progressContainer {
+    width: 100%;
+    background-color: #eee;
+    margin-top: 10px;
+}
+#progressBar {
+    width: 0%;
+    height: 20px;
+    background-color: #4CAF50;
+    text-align: center;
+    color: white;
+}
+</style>
+</head>
+<body>
+<h2>Gemini API Bulk Checker</h2>
+
+<label>Masukin API key, satu per baris:</label><br>
+<textarea id="apiKeys" rows="10" cols="50" placeholder="GEMINI_API_KEY_1&#10;GEMINI_API_KEY_2"></textarea><br><br>
+<label>Delay tiap request (ms): <input type="number" id="delay" value="500"></label><br><br>
+<button onclick="cekBanyak()">Cek Semua</button>
+
+<div id="progressContainer">
+  <div id="progressBar">0%</div>
+</div>
+
+<pre id="status" style="background:#f0f0f0;padding:10px;margin-top:10px;"></pre>
+
+<p style="margin-top:10px; font-size:0.9em;">
+<b>Keterangan status code:</b><br>
+✅ 200 → OK, API key aktif<br>
+❌ 400 → Bad Request, format request salah<br>
+❌ 401 → Unauthorized, API key invalid / expired<br>
+❌ 403 → Forbidden, key diblokir / tidak punya akses<br>
+⚠ 429 → Too Many Requests, rate limit<br>
+❌ 500 → Internal Server Error<br>
+❌ 502 / 503 / 504 → Server error / unavailable
+</p>
+
+<script>
+async function cekBanyak() {
+    const statusEl = document.getElementById('status');
+    const keysText = document.getElementById('apiKeys').value.trim();
+    const delayMs = parseInt(document.getElementById('delay').value) || 500;
+    const progressBar = document.getElementById('progressBar');
+
+    if(!keysText) {
+        statusEl.textContent = "Masukin minimal 1 API key bro!";
+        return;
+    }
+
+    const keys = keysText.split("\n").map(k=>k.trim()).filter(k=>k);
+    statusEl.textContent = "Checking " + keys.length + " API key...\n\n";
+
+    let countActive = 0, countError = 0, countRateLimit = 0;
+
+    for(let i=0; i<keys.length; i++){
+        const key = keys[i];
+
+        try {
+            const res = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-goog-api-key": key
+                },
+                body: JSON.stringify({ contents: [{ parts: [{ text: "" }] }] })
+            });
+
+            if(res.status === 200) {
+                statusEl.textContent += `✅ ${key} aktif (200 OK)\n`;
+                countActive++;
+            } else if(res.status === 429) {
+                statusEl.textContent += `⚠ ${key} Too Many Requests (429) - rate limit\n`;
+                countRateLimit++;
+            } else {
+                statusEl.textContent += `❌ ${key} error / tidak aktif (Status: ${res.status})\n`;
+                countError++;
+            }
+
+        } catch(err) {
+            statusEl.textContent += `❌ ${key} error: ${err.message}\n`;
+            countError++;
+        }
+
+        // update progress bar
+        const percent = Math.round(((i+1)/keys.length)*100);
+        progressBar.style.width = percent + "%";
+        progressBar.textContent = percent + "%";
+
+        // delay tiap request
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+
+    statusEl.textContent += `\n📝 Done! Total akun: ${keys.length}, Aktif: ${countActive}, Error: ${countError}, Rate Limit: ${countRateLimit}`;
+}
+</script>
+
+</body>
+</html>
