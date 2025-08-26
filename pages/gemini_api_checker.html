@@ -5,17 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gemini API Bulk Checker</title>
 <style>
+body { font-family: sans-serif; padding: 10px; }
+textarea { width: 100%; font-size: 16px; }
+button { padding: 10px 20px; font-size: 16px; margin-top: 10px; }
 #progressContainer {
-    width: 100%;
-    background-color: #eee;
-    margin-top: 10px;
+    width: 100%; background-color: #eee; margin-top: 10px; border-radius: 5px; overflow: hidden;
 }
 #progressBar {
-    width: 0%;
-    height: 20px;
-    background-color: #4CAF50;
-    text-align: center;
-    color: white;
+    width: 0%; height: 20px; background-color: #4CAF50; text-align: center; color: white; line-height: 20px;
+}
+#status {
+    background:#f0f0f0; padding:10px; margin-top:10px; max-height:300px; overflow-y:auto; font-size:14px;
+}
+#keterangan {
+    margin-top:10px; font-size:14px;
 }
 </style>
 </head>
@@ -23,26 +26,29 @@
 <h2>Gemini API Bulk Checker</h2>
 
 <label>Masukin API key, satu per baris:</label><br>
-<textarea id="apiKeys" rows="10" cols="50" placeholder="GEMINI_API_KEY_1&#10;GEMINI_API_KEY_2"></textarea><br><br>
-<label>Delay tiap request (ms): <input type="number" id="delay" value="500"></label><br><br>
+<textarea id="apiKeys" rows="10" placeholder="GEMINI_API_KEY_1&#10;GEMINI_API_KEY_2"></textarea><br>
+
+<label>Delay tiap request (ms): <input type="number" id="delay" value="500" style="width:80px;"></label><br>
+
 <button onclick="cekBanyak()">Cek Semua</button>
 
 <div id="progressContainer">
   <div id="progressBar">0%</div>
 </div>
 
-<pre id="status" style="background:#f0f0f0;padding:10px;margin-top:10px;"></pre>
+<pre id="status"></pre>
 
-<p style="margin-top:10px; font-size:0.9em;">
-<b>Keterangan status code:</b><br>
+<div id="keterangan">
+<b>Status code:</b><br>
 ✅ 200 → OK, API key aktif<br>
 ❌ 400 → Bad Request, format request salah<br>
 ❌ 401 → Unauthorized, API key invalid / expired<br>
 ❌ 403 → Forbidden, key diblokir / tidak punya akses<br>
 ⚠ 429 → Too Many Requests, rate limit<br>
 ❌ 500 → Internal Server Error<br>
-❌ 502 / 503 / 504 → Server error / unavailable
-</p>
+❌ 502 / 503 / 504 → Server error / unavailable<br><br>
+<i>Info kuota bisa muncul dari header response: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset</i>
+</div>
 
 <script>
 async function cekBanyak() {
@@ -74,19 +80,24 @@ async function cekBanyak() {
                 body: JSON.stringify({ contents: [{ parts: [{ text: "" }] }] })
             });
 
+            const rateLimit = res.headers.get('X-RateLimit-Limit') || 'n/a';
+            const rateRemaining = res.headers.get('X-RateLimit-Remaining') || 'n/a';
+            const rateReset = res.headers.get('X-RateLimit-Reset') || 'n/a';
+            const info = `(Kuota: ${rateRemaining}/${rateLimit}, Reset: ${rateReset})`;
+
             if(res.status === 200) {
-                statusEl.textContent += `✅ ${key} aktif (200 OK)\n`;
+                statusEl.textContent += `✅ Aktif: ${key} ${info}\n`;
                 countActive++;
             } else if(res.status === 429) {
-                statusEl.textContent += `⚠ ${key} Too Many Requests (429) - rate limit\n`;
+                statusEl.textContent += `⚠ Rate Limit: ${key} ${info}\n`;
                 countRateLimit++;
             } else {
-                statusEl.textContent += `❌ ${key} error / tidak aktif (Status: ${res.status})\n`;
+                statusEl.textContent += `❌ Error: ${key} (Status ${res.status}) ${info}\n`;
                 countError++;
             }
 
         } catch(err) {
-            statusEl.textContent += `❌ ${key} error: ${err.message}\n`;
+            statusEl.textContent += `❌ Error: ${key} (${err.message})\n`;
             countError++;
         }
 
@@ -99,7 +110,8 @@ async function cekBanyak() {
         await new Promise(resolve => setTimeout(resolve, delayMs));
     }
 
-    statusEl.textContent += `\n📝 Done! Total akun: ${keys.length}, Aktif: ${countActive}, Error: ${countError}, Rate Limit: ${countRateLimit}`;
+    // summary gampang dibaca
+    statusEl.textContent += `\n📝 Summary:\nTotal akun: ${keys.length}\nAktif: ${countActive}\nError: ${countError}\nRate Limit: ${countRateLimit}`;
 }
 </script>
 
