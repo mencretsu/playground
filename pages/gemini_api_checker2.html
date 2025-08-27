@@ -1,40 +1,114 @@
-<!DOCTYPE html><html lang="id">
+<!DOCTYPE html>
+<html lang="id">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Gemini API Key → Project Checker</title>
   <style>
-    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', 'Apple Color Emoji', 'Segoe UI Emoji'; }
-    body { margin: 24px; background:#0b0c10; color:#e6e6e6; }
-    h1 { font-size: 1.25rem; margin: 0 0 8px; }
-    .card { background:#121318; border:1px solid #20222b; border-radius:16px; padding:16px; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
-    textarea { width:100%; min-height:120px; resize:vertical; box-sizing:border-box; border-radius:12px; padding:12px; background:#0f1117; color:#e6e6e6; border:1px solid #22252f; }
-    .row { display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
-    button { cursor:pointer; padding:10px 14px; border-radius:12px; border:1px solid #2a2f3b; background:#1a1f2a; color:#e6e6e6; font-weight:600; }
-    button:hover { filter:brightness(1.1); }
-    .muted { color:#9aa1ad; font-size:.9rem; }
-    table { width:100%; border-collapse: collapse; margin-top:16px; }
-    th, td { padding:10px 12px; border-bottom:1px dashed #2a2f3b; font-size:.95rem; }
-    th { text-align:left; color:#aab3c2; font-weight:700; }
-    .pill { font-size:.8rem; padding:4px 8px; border-radius:999px; border:1px solid #2a2f3b; display:inline-block; }
-    .ok { background:#0e2a13; border-color:#1f6f2a; color:#b6f5c2; }
-    .warn { background:#2a1b0e; border-color:#915a2a; color:#ffd9a6; }
-    .err { background:#2a0e0e; border-color:#8a2a2a; color:#ffb3b3; }
-    .copy { padding:6px 10px; border-radius:10px; font-size:.85rem; }
-    .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-top:12px; }
-    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+    body { margin:16px; background:#0b0c10; color:#e6e6e6; font-family: sans-serif; }
+    h1 { font-size: 1.2rem; margin-bottom:12px; }
+    textarea, input, select {
+      width:100%; padding:10px; border-radius:8px;
+      border:1px solid #2a2f3b; background:#0f1117; color:#e6e6e6;
+      box-sizing:border-box; margin-top:8px;
+    }
+    button {
+      cursor:pointer; padding:10px; border-radius:8px;
+      border:1px solid #2a2f3b; background:#1a1f2a;
+      color:#e6e6e6; font-weight:600; margin-top:8px; width:100%;
+    }
+    button:disabled { opacity:.6; }
+    .card {
+      background:#11141c; padding:12px; border-radius:10px;
+      margin-top:12px; box-shadow:0 1px 3px rgba(0,0,0,.4);
+    }
+    .mono { font-family: monospace; word-break:break-all; }
+    .pill {
+      font-size:.8rem; padding:4px 8px; border-radius:6px;
+      display:inline-block; margin-top:4px;
+    }
+    .ok { background:#0e2a13; color:#b6f5c2; }
+    .err { background:#2a0e0e; color:#ffb3b3; }
+    .warn { background:#2a1b0e; color:#ffd9a6; }
+    .muted { color:#9aa1ad; font-size:.85rem; }
   </style>
 </head>
 <body>
   <h1>🔎 Gemini API Key → Project Checker</h1>
-  <p class="muted">Tempel beberapa API key (satu per baris). Tool ini kirim <span class="mono">GET /v1/models</span> ringan per key dan mengambil <span class="mono">x-goog-project-number</span> dari header (jika diekspos), atau mengekstrak nomor project dari pesan error API bila ada.</p>  <div class="card">
-    <label for="keys" class="muted">API Keys (satu per baris)</label>
-    <textarea id="keys" placeholder="AIzaSy...\nAIzaSy...\nAIzaSy..."></textarea>
-    <div class="grid">
-      <div>
-        <label class="muted">Endpoint</label>
-        <input id="endpoint" type="text" style="width:100%;padding:10px;border-radius:10px;border:1px solid #22252f;background:#0f1117;color:#e6e6e6" value="https://generativelanguage.googleapis.com/v1/models">
-      </div>
+  <p class="muted">Tempel API key (satu per baris).</p>
+
+  <textarea id="keys" placeholder="AIzaSy..."></textarea>
+  <input id="endpoint" type="text" value="https://generativelanguage.googleapis.com/v1/models">
+  <select id="mode">
+    <option value="key">?key=API_KEY</option>
+    <option value="auth">Authorization: Bearer API_KEY</option>
+  </select>
+  <button id="run">Cek Project</button>
+  <button id="sample">Isi Contoh</button>
+
+  <div id="result"></div>
+
+<script>
+const $ = (sel) => document.querySelector(sel);
+
+function maskKey(key){
+  if(!key) return '';
+  return key.slice(0,5)+'…'+key.slice(-4);
+}
+
+async function probeKey(key, endpoint, mode){
+  const url = new URL(endpoint);
+  let init = { method:'GET', mode:'cors' };
+  if(mode==='key') url.searchParams.set('key', key);
+  else init.headers = { 'Authorization':'Bearer '+key };
+
+  let projectNumber=null, status='OK';
+  try {
+    const res = await fetch(url.toString(), init);
+    const hdr = res.headers.get('x-goog-project-number');
+    if(hdr) projectNumber = hdr.trim();
+    let data=null; try{data=await res.clone().json();}catch{}
+    if(!projectNumber && data && data.error && data.error.message){
+      const m=String(data.error.message).match(/project\s(\d{6,})/i);
+      if(m) projectNumber=m[1];
+      status='Error';
+    }
+    if(!projectNumber && res.ok) status='OK';
+    if(!res.ok && status==='OK') status='Error';
+  }catch(err){ status='Network'; }
+  return { key, projectNumber, status };
+}
+
+$('#sample').addEventListener('click',()=>{
+  $('#keys').value=['AIzaSyA********1111','AIzaSyB********2222'].join('\n');
+});
+
+$('#run').addEventListener('click',async()=>{
+  const keys=$('#keys').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+  if(keys.length===0){alert('Isi dulu API key.');return;}
+  $('#run').disabled=true;$('#run').textContent='Ngecek…';
+  const endpoint=$('#endpoint').value.trim();
+  const mode=$('#mode').value;
+
+  const result=$('#result');
+  result.innerHTML='';
+  for(let i=0;i<keys.length;i++){
+    const r=await probeKey(keys[i],endpoint,mode);
+    const div=document.createElement('div');
+    div.className='card';
+    div.innerHTML=`
+      <div><b>Key #${i+1}</b></div>
+      <div class="mono">${maskKey(r.key)}</div>
+      <div>Project: <span class="mono">${r.projectNumber||'-'}</span></div>
+      <div>Status: <span class="pill ${r.status==='OK'?'ok':(r.status==='Error'?'warn':'err')}">${r.status}</span></div>
+    `;
+    result.appendChild(div);
+  }
+  $('#run').disabled=false;$('#run').textContent='Cek Project';
+});
+</script>
+</body>
+</html>      </div>
       <div>
         <label class="muted">Mode</label>
         <select id="mode" style="width:100%;padding:10px;border-radius:10px;border:1px solid #22252f;background:#0f1117;color:#e6e6e6">
