@@ -27,11 +27,11 @@
         
         // Load images
         const catImg = new Image();
-        catImg.src = '/pages/ncat_assets/nyancat.png';
+        catImg.src = 'ncat_assets/nyancat.png';
         const pipeImg = new Image();
-        pipeImg.src = '/pages_ncat_assets/pipe.png';
+        pipeImg.src = 'ncat_assets/pipe.png';
         const bgImg = new Image();
-        bgImg.src = '/pages/ncat_assets/background.png';
+        bgImg.src = 'ncat_assets/background.png';
 
         // Game constants
         const GRAVITY = 0.5;
