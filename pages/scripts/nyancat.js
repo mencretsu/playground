@@ -34,7 +34,7 @@
         bgImg.src = 'ncat_assets/background.png';
 
         // Game constants
-        const GRAVITY = 0.5;
+        const GRAVITY = 0.2;
         const JUMP = -8;
         const PIPE_SPEED = 5;
         const PIPE_GAP = 200;
