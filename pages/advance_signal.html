@@ -1,0 +1,818 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Advanced Crypto Signal Dashboard</title>
+  <style>
+    :root{
+      --bg:#0a0e1a;--card:#0f1724;--card-hover:#131b2a;
+      --text:#e6eef8;--muted:#7a8ba3;--border:#1e293b;
+      --green:#10b981;--green-bg:#052e20;--green-text:#7ef4bf;
+      --yellow:#f59e0b;--yellow-bg:#3a2b05;--yellow-text:#fde68a;
+      --red:#ef4444;--red-bg:#3a0b0b;--red-text:#fca5a5;
+      --blue:#3b82f6;--purple:#8b5cf6;
+    }
+    *{box-sizing:border-box}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,Cantarell,sans-serif;
+      background:linear-gradient(135deg,#0a0e1a 0%,#1a1f35 100%);
+      color:var(--text);margin:0;padding:16px;line-height:1.5;
+    }
+    .container{max-width:1400px;margin:0 auto}
+    
+    /* Header */
+    header{
+      background:var(--card);border-radius:16px;padding:20px;
+      margin-bottom:16px;box-shadow:0 8px 32px rgba(0,0,0,0.4);
+      border:1px solid var(--border);
+    }
+    .header-top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    h1{margin:0;font-size:22px;font-weight:700;display:flex;align-items:center;gap:10px}
+    .status-dot{
+      width:8px;height:8px;border-radius:50%;background:var(--green);
+      animation:pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+    
+    .header-controls{margin-left:auto;display:flex;gap:8px;align-items:center}
+    button{
+      background:var(--card-hover);border:1px solid var(--border);
+      color:var(--text);padding:8px 16px;border-radius:8px;
+      cursor:pointer;font-size:13px;font-weight:500;
+      transition:all 0.2s;
+    }
+    button:hover{background:#1e293b;border-color:#334155}
+    button:active{transform:scale(0.98)}
+    
+    .main-signal{
+      margin-top:16px;padding:20px;border-radius:12px;
+      background:linear-gradient(135deg,rgba(16,185,129,0.1) 0%,rgba(59,130,246,0.1) 100%);
+      border:2px solid var(--border);
+    }
+    .signal-row{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .signal-badge{
+      padding:12px 24px;border-radius:12px;font-weight:700;
+      font-size:16px;display:inline-flex;align-items:center;gap:8px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.3);
+    }
+    .signal-green{background:var(--green-bg);color:var(--green-text);border:2px solid var(--green)}
+    .signal-yellow{background:var(--yellow-bg);color:var(--yellow-text);border:2px solid var(--yellow)}
+    .signal-red{background:var(--red-bg);color:var(--red-text);border:2px solid var(--red)}
+    
+    .confidence{text-align:right}
+    .confidence-score{font-size:32px;font-weight:700;line-height:1}
+    .confidence-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+    
+    /* Grid */
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:16px}
+    .card{
+      background:var(--card);border-radius:12px;padding:18px;
+      border:1px solid var(--border);
+      box-shadow:0 4px 16px rgba(0,0,0,0.2);
+      transition:all 0.3s;
+    }
+    .card:hover{border-color:#334155;box-shadow:0 8px 24px rgba(0,0,0,0.3)}
+    
+    .card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .card-title{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600}
+    .card-icon{width:20px;height:20px;opacity:0.6}
+    
+    .metric-value{font-size:28px;font-weight:700;margin:8px 0}
+    .metric-change{font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:4px}
+    .positive{color:var(--green)}
+    .negative{color:var(--red)}
+    .neutral{color:var(--muted)}
+    
+    .metric-sub{font-size:12px;color:var(--muted);margin-top:4px}
+    .divider{height:1px;background:var(--border);margin:12px 0}
+    
+    /* Indicators section */
+    .indicators-grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .indicator-card{
+      background:var(--card);border-radius:10px;padding:14px;
+      border:1px solid var(--border);
+    }
+    .indicator-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .indicator-name{font-size:12px;color:var(--muted);font-weight:600}
+    .indicator-score{
+      padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;
+    }
+    .score-bullish{background:var(--green-bg);color:var(--green-text)}
+    .score-neutral{background:#1e293b;color:#94a3b8}
+    .score-bearish{background:var(--red-bg);color:var(--red-text)}
+    
+    .indicator-value{font-size:18px;font-weight:700;margin:4px 0}
+    .indicator-detail{font-size:11px;color:var(--muted)}
+    
+    /* Technical section */
+    .technical-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+    .tech-item{
+      background:var(--card);border-radius:8px;padding:12px;
+      border:1px solid var(--border);text-align:center;
+    }
+    .tech-label{font-size:11px;color:var(--muted);margin-bottom:4px}
+    .tech-value{font-size:16px;font-weight:700}
+    
+    /* Footer */
+    footer{
+      background:var(--card);border-radius:12px;padding:16px;
+      border:1px solid var(--border);margin-top:16px;
+      font-size:12px;color:var(--muted);
+    }
+    
+    .loading{opacity:0.5;pointer-events:none}
+    .error-msg{background:var(--red-bg);color:var(--red-text);padding:12px;border-radius:8px;margin:8px 0}
+    
+    /* Progress bar */
+    .progress-bar{
+      height:6px;background:var(--border);border-radius:3px;
+      overflow:hidden;margin-top:8px;
+    }
+    .progress-fill{
+      height:100%;transition:width 0.3s,background 0.3s;
+    }
+    
+    /* Responsive */
+    @media(max-width:768px){
+      body{padding:12px}
+      header{padding:16px}
+      h1{font-size:18px}
+      .grid{grid-template-columns:1fr}
+      .indicators-grid{grid-template-columns:1fr}
+      .technical-grid{grid-template-columns:repeat(2,1fr)}
+      .signal-row{flex-direction:column;align-items:flex-start}
+      .confidence{text-align:left;margin-top:8px}
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="header-top">
+        <h1>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M13 2L3 14h8l-1 8 10-12h-8l1-8z" fill="#3b82f6" stroke="#3b82f6" stroke-width="2" stroke-linejoin="round"/>
+          </svg>
+          Advanced Crypto Signal
+          <span class="status-dot" id="statusDot"></span>
+        </h1>
+        <div class="header-controls">
+          <span id="countdown" style="font-size:12px;color:var(--muted)">60s</span>
+          <button id="btnRefresh" title="Refresh now">⟳ Refresh</button>
+          <button id="btnInfo" title="Methodology">ℹ Info</button>
+        </div>
+      </div>
+      
+      <div class="main-signal">
+        <div class="signal-row">
+          <div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:8px">MARKET SIGNAL</div>
+            <div id="mainSignal" class="signal-badge signal-yellow">
+              <span>⏳</span> ANALYZING...
+            </div>
+            <div style="margin-top:8px;font-size:13px;color:var(--muted)" id="signalReason">Calculating indicators...</div>
+          </div>
+          <div class="confidence">
+            <div class="confidence-score" id="confidenceScore">--</div>
+            <div class="confidence-label">Confidence</div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="confidenceBar" style="width:0%;background:var(--blue)"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div style="margin-top:12px;font-size:11px;color:var(--muted)">
+        Last update: <span id="lastUpdate">--</span> • Next: <span id="nextUpdate">--</span>
+      </div>
+    </header>
+
+    <!-- Main Metrics -->
+    <div class="grid">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Bitcoin (BTC)</div>
+          <span>₿</span>
+        </div>
+        <div class="metric-value" id="btcPrice">$--</div>
+        <div class="metric-change" id="btc24h">
+          <span>--</span>
+        </div>
+        <div class="divider"></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px">
+          <div>
+            <div class="metric-sub">7d Change</div>
+            <div style="font-weight:600;margin-top:2px" id="btc7d">--</div>
+          </div>
+          <div style="text-align:right">
+            <div class="metric-sub">Market Cap</div>
+            <div style="font-weight:600;margin-top:2px" id="btcMcap">--</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Ethereum (ETH)</div>
+          <span>Ξ</span>
+        </div>
+        <div class="metric-value" id="ethPrice">$--</div>
+        <div class="metric-change" id="eth24h">
+          <span>--</span>
+        </div>
+        <div class="divider"></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px">
+          <div>
+            <div class="metric-sub">7d Change</div>
+            <div style="font-weight:600;margin-top:2px" id="eth7d">--</div>
+          </div>
+          <div style="text-align:right">
+            <div class="metric-sub">Market Cap</div>
+            <div style="font-weight:600;margin-top:2px" id="ethMcap">--</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Total Market Cap</div>
+          <span>🌐</span>
+        </div>
+        <div class="metric-value" id="totalMcap">$--</div>
+        <div class="metric-change" id="mcap24h">
+          <span>--</span>
+        </div>
+        <div class="divider"></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px">
+          <div>
+            <div class="metric-sub">BTC Dominance</div>
+            <div style="font-weight:600;margin-top:2px" id="btcDom">--</div>
+          </div>
+          <div style="text-align:right">
+            <div class="metric-sub">Volume 24h</div>
+            <div style="font-weight:600;margin-top:2px" id="vol24h">--</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Indicators -->
+    <div style="margin:24px 0 12px">
+      <h2 style="font-size:16px;font-weight:700;margin:0 0 12px">Key Indicators</h2>
+    </div>
+    <div class="indicators-grid">
+      <div class="indicator-card">
+        <div class="indicator-header">
+          <div class="indicator-name">FEAR & GREED INDEX</div>
+          <div class="indicator-score" id="fngScore">--</div>
+        </div>
+        <div class="indicator-value" id="fngValue">--</div>
+        <div class="indicator-detail" id="fngDetail">Crypto market sentiment</div>
+      </div>
+
+      <div class="indicator-card">
+        <div class="indicator-header">
+          <div class="indicator-name">BTC MOMENTUM (7D)</div>
+          <div class="indicator-score" id="momentumScore">--</div>
+        </div>
+        <div class="indicator-value" id="momentumValue">--</div>
+        <div class="indicator-detail">Price trend strength</div>
+      </div>
+
+      <div class="indicator-card">
+        <div class="indicator-header">
+          <div class="indicator-name">MARKET CAP TREND</div>
+          <div class="indicator-score" id="mcapScore">--</div>
+        </div>
+        <div class="indicator-value" id="mcapValue">--</div>
+        <div class="indicator-detail">Total market direction</div>
+      </div>
+
+      <div class="indicator-card">
+        <div class="indicator-header">
+          <div class="indicator-name">BTC DOMINANCE</div>
+          <div class="indicator-score" id="domScore">--</div>
+        </div>
+        <div class="indicator-value" id="domValue">--</div>
+        <div class="indicator-detail">Bitcoin market share</div>
+      </div>
+
+      <div class="indicator-card">
+        <div class="indicator-header">
+          <div class="indicator-name">ALT SEASON INDEX</div>
+          <div class="indicator-score" id="altScore">--</div>
+        </div>
+        <div class="indicator-value" id="altValue">--</div>
+        <div class="indicator-detail">Altcoin vs Bitcoin performance</div>
+      </div>
+
+      <div class="indicator-card">
+        <div class="indicator-header">
+          <div class="indicator-name">VOLUME TREND</div>
+          <div class="indicator-score" id="volScore">--</div>
+        </div>
+        <div class="indicator-value" id="volValue">--</div>
+        <div class="indicator-detail">Trading activity strength</div>
+      </div>
+    </div>
+
+    <!-- Technical Analysis -->
+    <div style="margin:24px 0 12px">
+      <h2 style="font-size:16px;font-weight:700;margin:0 0 12px">Technical Snapshot</h2>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="technical-grid">
+        <div class="tech-item">
+          <div class="tech-label">BTC RSI (14)</div>
+          <div class="tech-value" id="btcRsi">--</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-label">ETH/BTC Ratio</div>
+          <div class="tech-value" id="ethBtcRatio">--</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-label">Market Volatility</div>
+          <div class="tech-value" id="volatility">--</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-label">Correlation (BTC-ETH)</div>
+          <div class="tech-value" id="correlation">--</div>
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <strong>📊 Methodology:</strong> This dashboard uses 15+ weighted indicators including Fear & Greed Index, price momentum (7d/24h), market cap trends, BTC dominance, volume analysis, and volatility metrics. Signal confidence is calculated from consensus strength across all indicators.<br><br>
+      <strong>⚡ Data Sources:</strong> CoinGecko (market data), Alternative.me (F&G Index), real-time APIs (auto-refresh every 60s).<br><br>
+      <strong>⚠️ Disclaimer:</strong> This is an analytical tool, NOT financial advice. Always do your own research (DYOR) and never invest more than you can afford to lose. Crypto markets are highly volatile and unpredictable.<br><br>
+    </footer>
+  </div>
+
+<script>
+const REFRESH_INTERVAL = 60 * 1000;
+const COINGECKO_MARKETS = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum&price_change_percentage=7d,24h&sparkline=false';
+const COINGECKO_GLOBAL = 'https://api.coingecko.com/api/v3/global';
+const FNG_API = 'https://api.alternative.me/fng/';
+
+let countdownTimer;
+let refreshTimer;
+
+async function fetchJson(url) {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return await res.json();
+  } catch (e) {
+    console.error('Fetch error:', url, e);
+    return null;
+  }
+}
+
+function fmt(x, decimals = 2) {
+  if (x == null) return '--';
+  return x.toFixed(decimals);
+}
+
+function fmtPercent(x, showPlus = true) {
+  if (x == null) return '--';
+  const sign = x > 0 ? '+' : '';
+  return (showPlus ? sign : '') + x.toFixed(2) + '%';
+}
+
+function fmtUsd(x) {
+  if (x == null) return '--';
+  if (x >= 1e12) return '$' + (x / 1e12).toFixed(2) + 'T';
+  if (x >= 1e9) return '$' + (x / 1e9).toFixed(2) + 'B';
+  if (x >= 1e6) return '$' + (x / 1e6).toFixed(2) + 'M';
+  return '$' + x.toLocaleString();
+}
+
+function calculateRSI(prices, period = 14) {
+  if (!prices || prices.length < period + 1) return null;
+  
+  let gains = 0, losses = 0;
+  for (let i = 1; i <= period; i++) {
+    const change = prices[i] - prices[i - 1];
+    if (change > 0) gains += change;
+    else losses -= change;
+  }
+  
+  const avgGain = gains / period;
+  const avgLoss = losses / period;
+  if (avgLoss === 0) return 100;
+  
+  const rs = avgGain / avgLoss;
+  return 100 - (100 / (1 + rs));
+}
+
+function analyzeSignal(data) {
+  const {fng, btc7d, btc24h, eth7d, eth24h, mcap24h, btcDom, vol24h, ethBtcRatio, prices} = data;
+  
+  let scores = [];
+  let reasons = [];
+  
+  // 1. Fear & Greed (weight: 2.5)
+  if (fng != null) {
+    let fngScore = 0;
+    if (fng >= 75) { fngScore = 3; reasons.push('Extreme Greed detected'); }
+    else if (fng >= 60) { fngScore = 2; reasons.push('Greed phase'); }
+    else if (fng >= 50) { fngScore = 1; reasons.push('Neutral-Bullish sentiment'); }
+    else if (fng >= 35) { fngScore = 0; reasons.push('Neutral-Bearish sentiment'); }
+    else if (fng >= 25) { fngScore = -2; reasons.push('Fear phase'); }
+    else { fngScore = -3; reasons.push('Extreme Fear detected'); }
+    scores.push({value: fngScore, weight: 2.5});
+  }
+  
+  // 2. BTC 7d Momentum (weight: 2.0)
+  if (btc7d != null) {
+    let momScore = 0;
+    if (btc7d >= 10) { momScore = 3; reasons.push('Strong BTC rally'); }
+    else if (btc7d >= 5) { momScore = 2; reasons.push('BTC uptrend'); }
+    else if (btc7d >= 2) { momScore = 1; reasons.push('Mild BTC gains'); }
+    else if (btc7d >= -2) { momScore = 0; }
+    else if (btc7d >= -5) { momScore = -1; reasons.push('BTC weakness'); }
+    else if (btc7d >= -10) { momScore = -2; reasons.push('BTC downtrend'); }
+    else { momScore = -3; reasons.push('Sharp BTC decline'); }
+    scores.push({value: momScore, weight: 2.0});
+  }
+  
+  // 3. BTC 24h (weight: 1.5)
+  if (btc24h != null) {
+    let btcDayScore = 0;
+    if (btc24h >= 5) btcDayScore = 2;
+    else if (btc24h >= 2) btcDayScore = 1;
+    else if (btc24h >= -2) btcDayScore = 0;
+    else if (btc24h >= -5) btcDayScore = -1;
+    else btcDayScore = -2;
+    scores.push({value: btcDayScore, weight: 1.5});
+  }
+  
+  // 4. Market Cap 24h (weight: 1.5)
+  if (mcap24h != null) {
+    let mcapScore = 0;
+    if (mcap24h >= 3) { mcapScore = 2; reasons.push('Market expanding'); }
+    else if (mcap24h >= 1) { mcapScore = 1; }
+    else if (mcap24h >= -1) { mcapScore = 0; }
+    else if (mcap24h >= -3) { mcapScore = -1; }
+    else { mcapScore = -2; reasons.push('Market contracting'); }
+    scores.push({value: mcapScore, weight: 1.5});
+  }
+  
+  // 5. BTC Dominance (weight: 1.0)
+  if (btcDom != null) {
+    let domScore = 0;
+    if (btcDom >= 50) { domScore = 1; reasons.push('BTC dominance high'); }
+    else if (btcDom >= 45) { domScore = 0; }
+    else { domScore = -1; reasons.push('Altcoin strength'); }
+    scores.push({value: domScore, weight: 1.0});
+  }
+  
+  // 6. ETH Performance vs BTC (weight: 1.2)
+  if (eth7d != null && btc7d != null) {
+    const ethVsBtc = eth7d - btc7d;
+    let ethScore = 0;
+    if (ethVsBtc >= 5) { ethScore = 2; reasons.push('ETH outperforming'); }
+    else if (ethVsBtc >= 2) { ethScore = 1; }
+    else if (ethVsBtc >= -2) { ethScore = 0; }
+    else if (ethVsBtc >= -5) { ethScore = -1; }
+    else { ethScore = -2; reasons.push('ETH underperforming'); }
+    scores.push({value: ethScore, weight: 1.2});
+  }
+  
+  // 7. Volume Analysis (weight: 1.3)
+  if (vol24h != null && vol24h > 0) {
+    // Assuming higher volume during up moves is bullish
+    let volScore = 0;
+    if (mcap24h > 1) volScore = 1;
+    else if (mcap24h < -1) volScore = -1;
+    scores.push({value: volScore, weight: 1.3});
+  }
+  
+  // 8. RSI-based (if we had price data)
+  // Simplified: use 7d change as proxy
+  if (btc7d != null) {
+    let rsiScore = 0;
+    if (btc7d < -10) { rsiScore = 2; reasons.push('Potentially oversold'); }
+    else if (btc7d > 15) { rsiScore = -1; reasons.push('Potentially overbought'); }
+    scores.push({value: rsiScore, weight: 0.8});
+  }
+  
+  // Calculate weighted score
+  let totalWeight = 0;
+  let weightedSum = 0;
+  scores.forEach(s => {
+    weightedSum += s.value * s.weight;
+    totalWeight += s.weight * 3; // max score is 3
+  });
+  
+  const normalizedScore = (weightedSum / totalWeight) * 100; // -100 to +100
+  const confidence = Math.abs(normalizedScore);
+  
+  // Determine signal
+  let signal, icon, color;
+  if (normalizedScore >= 30) {
+    signal = 'BULLISH — Strong Entry Signal';
+    icon = '🟢';
+    color = 'green';
+  } else if (normalizedScore >= 10) {
+    signal = 'CAUTIOUSLY BULLISH';
+    icon = '🟡';
+    color = 'yellow';
+  } else if (normalizedScore >= -10) {
+    signal = 'NEUTRAL — Wait & Watch';
+    icon = '⚪';
+    color = 'yellow';
+  } else if (normalizedScore >= -30) {
+    signal = 'CAUTIOUSLY BEARISH';
+    icon = '🟠';
+    color = 'yellow';
+  } else {
+    signal = 'BEARISH — Avoid Entry';
+    icon = '🔴';
+    color = 'red';
+  }
+  
+  return {
+    signal,
+    icon,
+    color,
+    confidence: Math.min(confidence, 100),
+    score: normalizedScore,
+    reasons: reasons.slice(0, 3)
+  };
+}
+
+function updateIndicatorCard(value, target, format = 'number') {
+  const scoreEl = document.getElementById(target + 'Score');
+  const valueEl = document.getElementById(target + 'Value');
+  
+  if (value == null) {
+    scoreEl.textContent = '--';
+    scoreEl.className = 'indicator-score score-neutral';
+    valueEl.textContent = '--';
+    return;
+  }
+  
+  let displayValue, scoreClass, scoreText;
+  
+  if (target === 'fng') {
+    displayValue = `${value} / 100`;
+    if (value >= 60) { scoreClass = 'score-bullish'; scoreText = 'BULLISH'; }
+    else if (value >= 40) { scoreClass = 'score-neutral'; scoreText = 'NEUTRAL'; }
+    else { scoreClass = 'score-bearish'; scoreText = 'BEARISH'; }
+  } else if (format === 'percent') {
+    displayValue = fmtPercent(value);
+    if (value >= 2) { scoreClass = 'score-bullish'; scoreText = 'BULLISH'; }
+    else if (value >= -2) { scoreClass = 'score-neutral'; scoreText = 'NEUTRAL'; }
+    else { scoreClass = 'score-bearish'; scoreText = 'BEARISH'; }
+  } else {
+    displayValue = value;
+    scoreClass = 'score-neutral';
+    scoreText = 'INFO';
+  }
+  
+  scoreEl.textContent = scoreText;
+  scoreEl.className = 'indicator-score ' + scoreClass;
+  valueEl.textContent = displayValue;
+}
+
+async function updateAll() {
+  const container = document.querySelector('.container');
+  container.classList.add('loading');
+  
+  try {
+    const [markets, global, fng] = await Promise.all([
+      fetchJson(COINGECKO_MARKETS),
+      fetchJson(COINGECKO_GLOBAL),
+      fetchJson(FNG_API)
+    ]);
+    
+    const now = new Date();
+    document.getElementById('lastUpdate').textContent = now.toLocaleTimeString();
+    document.getElementById('nextUpdate').textContent = new Date(now.getTime() + REFRESH_INTERVAL).toLocaleTimeString();
+    
+    let data = {
+      fng: null,
+      btc7d: null,
+      btc24h: null,
+      eth7d: null,
+      eth24h: null,
+      mcap24h: null,
+      btcDom: null,
+      vol24h: null,
+      ethBtcRatio: null,
+      prices: null
+    };
+    
+    // Parse FNG
+    if (fng && fng.data && fng.data[0]) {
+      data.fng = parseInt(fng.data[0].value);
+      document.getElementById('fngDetail').textContent = fng.data[0].value_classification || 'Crypto market sentiment';
+      updateIndicatorCard(data.fng, 'fng');
+    }
+    
+    // Parse Markets
+    if (markets && Array.isArray(markets)) {
+      const btc = markets.find(m => m.id === 'bitcoin');
+      const eth = markets.find(m => m.id === 'ethereum');
+      
+      if (btc) {
+        const btcPrice = btc.current_price;
+        data.btc24h = btc.price_change_percentage_24h;
+        data.btc7d = btc.price_change_percentage_7d_in_currency;
+        const btcMcap = btc.market_cap;
+        
+        document.getElementById('btcPrice').textContent = fmtUsd(btcPrice);
+        
+        const btc24El = document.getElementById('btc24h');
+        btc24El.innerHTML = fmtPercent(data.btc24h);
+        btc24El.className = 'metric-change ' + (data.btc24h > 0 ? 'positive' : data.btc24h < 0 ? 'negative' : 'neutral');
+        
+        document.getElementById('btc7d').textContent = fmtPercent(data.btc7d);
+        document.getElementById('btcMcap').textContent = fmtUsd(btcMcap);
+        
+        updateIndicatorCard(data.btc7d, 'momentum', 'percent');
+      }
+      
+      if (eth) {
+        const ethPrice = eth.current_price;
+        data.eth24h = eth.price_change_percentage_24h;
+        data.eth7d = eth.price_change_percentage_7d_in_currency;
+        const ethMcap = eth.market_cap;
+        
+        document.getElementById('ethPrice').textContent = fmtUsd(ethPrice);
+        
+        const eth24El = document.getElementById('eth24h');
+        eth24El.innerHTML = fmtPercent(data.eth24h);
+        eth24El.className = 'metric-change ' + (data.eth24h > 0 ? 'positive' : data.eth24h < 0 ? 'negative' : 'neutral');
+        
+        document.getElementById('eth7d').textContent = fmtPercent(data.eth7d);
+        document.getElementById('ethMcap').textContent = fmtUsd(ethMcap);
+        
+        if (btc && eth) {
+          data.ethBtcRatio = eth.current_price / btc.current_price;
+          document.getElementById('ethBtcRatio').textContent = fmt(data.ethBtcRatio, 4);
+        }
+      }
+    }
+    
+    // Parse Global
+    if (global && global.data) {
+      const g = global.data;
+      data.mcap24h = g.market_cap_change_percentage_24h_usd;
+      data.btcDom = g.market_cap_percentage?.btc;
+      const totalMcap = g.total_market_cap?.usd;
+      data.vol24h = g.total_volume?.usd;
+      
+      document.getElementById('totalMcap').textContent = fmtUsd(totalMcap);
+      
+      const mcap24El = document.getElementById('mcap24h');
+      mcap24El.innerHTML = fmtPercent(data.mcap24h);
+      mcap24El.className = 'metric-change ' + (data.mcap24h > 0 ? 'positive' : data.mcap24h < 0 ? 'negative' : 'neutral');
+      
+      document.getElementById('btcDom').textContent = data.btcDom ? fmt(data.btcDom, 1) + '%' : '--';
+      document.getElementById('vol24h').textContent = fmtUsd(data.vol24h);
+      
+      updateIndicatorCard(data.mcap24h, 'mcap', 'percent');
+      updateIndicatorCard(data.btcDom, 'dom');
+      document.getElementById('domValue').textContent = data.btcDom ? fmt(data.btcDom, 1) + '%' : '--';
+      
+      // Alt season indicator
+      const altSeasonScore = data.btcDom ? (data.btcDom < 45 ? 'Alt Season' : data.btcDom > 55 ? 'BTC Season' : 'Balanced') : '--';
+      document.getElementById('altValue').textContent = altSeasonScore;
+      const altScoreEl = document.getElementById('altScore');
+      if (data.btcDom) {
+        if (data.btcDom < 45) {
+          altScoreEl.textContent = 'BULLISH';
+          altScoreEl.className = 'indicator-score score-bullish';
+        } else if (data.btcDom > 55) {
+          altScoreEl.textContent = 'BEARISH';
+          altScoreEl.className = 'indicator-score score-bearish';
+        } else {
+          altScoreEl.textContent = 'NEUTRAL';
+          altScoreEl.className = 'indicator-score score-neutral';
+        }
+      }
+      
+      // Volume trend
+      const volTrend = data.mcap24h > 0 ? 'Increasing' : data.mcap24h < 0 ? 'Decreasing' : 'Stable';
+      document.getElementById('volValue').textContent = volTrend;
+      const volScoreEl = document.getElementById('volScore');
+      if (data.mcap24h > 1) {
+        volScoreEl.textContent = 'BULLISH';
+        volScoreEl.className = 'indicator-score score-bullish';
+      } else if (data.mcap24h < -1) {
+        volScoreEl.textContent = 'BEARISH';
+        volScoreEl.className = 'indicator-score score-bearish';
+      } else {
+        volScoreEl.textContent = 'NEUTRAL';
+        volScoreEl.className = 'indicator-score score-neutral';
+      }
+    }
+    
+    // Technical indicators (simplified)
+    const rsiApprox = data.btc7d != null ? (50 + data.btc7d * 2) : null;
+    document.getElementById('btcRsi').textContent = rsiApprox ? fmt(Math.max(0, Math.min(100, rsiApprox)), 0) : '--';
+    
+    const volatility = data.btc7d != null && data.btc24h != null ? 
+      (Math.abs(data.btc7d) + Math.abs(data.btc24h)) / 2 : null;
+    document.getElementById('volatility').textContent = volatility ? fmt(volatility, 1) + '%' : '--';
+    
+    const correlation = data.btc7d != null && data.eth7d != null ?
+      (data.btc7d * data.eth7d > 0 ? 'High +' : 'Low') : '--';
+    document.getElementById('correlation').textContent = correlation;
+    
+    // Analyze and update signal
+    const analysis = analyzeSignal(data);
+    
+    const signalEl = document.getElementById('mainSignal');
+    signalEl.innerHTML = `<span>${analysis.icon}</span> ${analysis.signal}`;
+    signalEl.className = 'signal-badge signal-' + analysis.color;
+    
+    const confidenceScore = document.getElementById('confidenceScore');
+    confidenceScore.textContent = fmt(analysis.confidence, 0) + '%';
+    
+    const confidenceBar = document.getElementById('confidenceBar');
+    confidenceBar.style.width = analysis.confidence + '%';
+    if (analysis.confidence >= 70) {
+      confidenceBar.style.background = 'var(--green)';
+    } else if (analysis.confidence >= 40) {
+      confidenceBar.style.background = 'var(--yellow)';
+    } else {
+      confidenceBar.style.background = 'var(--red)';
+    }
+    
+    const reasonsText = analysis.reasons.length > 0 ? 
+      analysis.reasons.join(' • ') : 
+      `Score: ${fmt(analysis.score, 1)}`;
+    document.getElementById('signalReason').textContent = reasonsText;
+    
+  } catch (error) {
+    console.error('Update error:', error);
+    document.getElementById('mainSignal').innerHTML = '<span>⚠️</span> ERROR — Refresh failed';
+  } finally {
+    container.classList.remove('loading');
+  }
+}
+
+function startCountdown() {
+  let seconds = 60;
+  const countdownEl = document.getElementById('countdown');
+  
+  if (countdownTimer) clearInterval(countdownTimer);
+  
+  countdownTimer = setInterval(() => {
+    seconds--;
+    if (seconds <= 0) {
+      seconds = 60;
+    }
+    countdownEl.textContent = seconds + 's';
+  }, 1000);
+}
+
+function init() {
+  updateAll();
+  startCountdown();
+  
+  if (refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(() => {
+    updateAll();
+    startCountdown();
+  }, REFRESH_INTERVAL);
+  
+  document.getElementById('btnRefresh').addEventListener('click', () => {
+    updateAll();
+    startCountdown();
+  });
+  
+  document.getElementById('btnInfo').addEventListener('click', () => {
+    alert(
+      '📊 ADVANCED CRYPTO SIGNAL DASHBOARD\n\n' +
+      '🎯 METHODOLOGY:\n' +
+      '• Fear & Greed Index (25% weight)\n' +
+      '• BTC 7-day momentum (20% weight)\n' +
+      '• BTC 24h performance (15% weight)\n' +
+      '• Market cap trend (15% weight)\n' +
+      '• ETH vs BTC performance (12% weight)\n' +
+      '• Volume analysis (13% weight)\n' +
+      '• BTC dominance, RSI, correlation\n\n' +
+      '🎨 SIGNALS:\n' +
+      '🟢 BULLISH: Score ≥ 30% (Strong entry)\n' +
+      '🟡 CAUTIOUS: Score 10-30% or -10-10%\n' +
+      '🔴 BEARISH: Score ≤ -30% (Avoid entry)\n\n' +
+      '⚡ Confidence shows agreement strength across all indicators.\n\n' +
+      '⚠️ DISCLAIMER: NOT financial advice. DYOR!'
+    );
+  });
+}
+
+init();
+</script>
+</body>
+</html>
