@@ -6,76 +6,320 @@
   <title>CCS Martingale</title>
   <link rel="icon" href="https://i.imgur.com/trollface.png" />
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body {
-      font-family: Arial, sans-serif;
-      padding: 10px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      padding: 16px;
       max-width: 700px;
       margin: auto;
+      background-color: #121212;
+      color: #e0e0e0;
+      line-height: 1.6;
     }
     h2 {
       margin-bottom: 4px;
+      color: #ffffff;
     }
     .credit {
-      font-size: 10px;
+      font-size: 11px;
       color: #888;
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
     label {
       display: block;
-      margin-top: 10px;
-      font-weight: bold;
+      margin-top: 14px;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 14px;
+      color: #b0b0b0;
     }
     input {
       width: 100%;
-      padding: 4px;
-      font-size: 14px;
+      padding: 12px;
+      font-size: 16px;
+      background-color: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 6px;
+      color: #e0e0e0;
+    }
+    input:focus {
+      outline: none;
+      border-color: #4a9eff;
+    }
+    input:disabled {
+      background-color: #2a2a2a;
+      color: #666;
+      cursor: not-allowed;
     }
     button {
-      margin-top: 12px;
-      padding: 6px 12px;
-      font-size: 14px;
+      margin-top: 20px;
+      padding: 14px 24px;
+      font-size: 16px;
+      font-weight: 600;
+      background-color: #4a9eff;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #3a8eef;
+    }
+    button:active {
+      background-color: #2a7edf;
     }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 16px;
+      margin-top: 20px;
+      background-color: #1e1e1e;
+      border-radius: 6px;
+      overflow: hidden;
     }
     th, td {
-      border: 1px solid #aaa;
-      padding: 6px;
+      border: 1px solid #333;
+      padding: 10px;
       text-align: left;
       font-size: 14px;
     }
     th {
-      background-color: #f2f2f2;
+      background-color: #2a2a2a;
+      color: #4a9eff;
+      font-weight: 600;
+    }
+    td {
+      color: #d0d0d0;
     }
     #next-step-info {
-      margin-top: 10px;
+      margin-top: 16px;
+      padding: 12px;
+      background-color: #1e1e1e;
+      border-left: 4px solid #4a9eff;
+      border-radius: 4px;
       font-size: 14px;
+    }
+    .earnings-projection {
+      margin-top: 20px;
+      padding: 16px;
+      background: linear-gradient(135deg, #1e3a5f 0%, #2a4a6f 100%);
+      border-radius: 8px;
+      border: 1px solid #4a9eff;
+    }
+    .earnings-projection h3 {
+      margin: 0 0 12px 0;
+      color: #4a9eff;
+      font-size: 16px;
+    }
+    .earnings-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .earnings-card {
+      background-color: #1e1e1e;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #333;
+    }
+    .earnings-label {
+      font-size: 12px;
+      color: #888;
+      margin-bottom: 4px;
+    }
+    .earnings-value {
+      font-size: 18px;
+      font-weight: bold;
+      color: #4a9eff;
+    }
+    .earnings-note {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #888;
+      font-style: italic;
+    }
+    .info-text {
+      font-size: 12px;
+      color: #888;
+      margin-top: 4px;
+      font-style: italic;
+    }
+    @media (prefers-color-scheme: light) {
+      body {
+        background-color: #ffffff;
+        color: #1a1a1a;
+      }
+      h2 {
+        color: #000000;
+      }
+      input {
+        background-color: #f5f5f5;
+        border-color: #ddd;
+        color: #1a1a1a;
+      }
+      input:disabled {
+        background-color: #e5e5e5;
+        color: #999;
+      }
+      table {
+        background-color: #ffffff;
+      }
+      th {
+        background-color: #f5f5f5;
+        color: #2a7edf;
+      }
+      td {
+        color: #2a2a2a;
+      }
+      th, td {
+        border-color: #ddd;
+      }
+      #next-step-info {
+        background-color: #f5f5f5;
+      }
     }
   </style>
 </head>
 <body>
   <h2>CCS Martingale</h2>
   <div class="credit">by @mencretsu</div>
-
+  
   <label>Asset:</label>
-  <input id="asset" type="text" oninput="formatInput(this)" />
-
-  <label>Entry value:</label>
-  <input id="entry" type="text" oninput="formatInput(this)" />
-
-  <label>Return factor:</label>
-  <input id="payout" type="number" step="0.01" />
-
-  <label>Multiplier:</label>
-  <input id="multiplier" type="number" step="0.01" />
-
+  <input id="asset" type="text" oninput="formatInput(this)" placeholder="Rp 100.000" />
+  
+  <label>Base Bet (Entry Value):</label>
+  <input id="entry" type="text" oninput="formatInput(this)" placeholder="Rp 10.000" />
+  
+  <label>Payout (Return Factor):</label>
+  <input id="payout" type="number" step="0.01" placeholder="2" oninput="autoCalculateMultiplier()" />
+  <div class="info-text">Contoh: 2 untuk payout 2x</div>
+  
+  <label>Loss Multiplier:</label>
+  <input id="multiplier" type="text" disabled />
+  <div class="info-text">Otomatis dihitung dari payout</div>
+  
+  <label>Target Profit per Win:</label>
+  <input id="target-profit" type="text" oninput="formatInput(this)" placeholder="Rp 5.000" />
+  <div class="info-text">Profit yang ingin didapat setiap kali menang</div>
+  
   <button onclick="hitung()">Hitung</button>
-
+  
   <div id="result"></div>
 
-  <script src="scripts/martingale.js">
+  <script>
+    function formatInput(el) {
+      let val = el.value.replace(/[^0-9]/g, '');
+      if (val) {
+        el.value = 'Rp ' + parseInt(val).toLocaleString('id-ID');
+      }
+    }
+
+    function parseRupiah(str) {
+      return parseInt(str.replace(/[^0-9]/g, '')) || 0;
+    }
+
+    function autoCalculateMultiplier() {
+      const payout = parseFloat(document.getElementById('payout').value) || 0;
+      const multiplier = payout > 0 ? (payout / (payout - 1)).toFixed(2) : '0.00';
+      document.getElementById('multiplier').value = multiplier;
+    }
+
+    function hitung() {
+      const asset = parseRupiah(document.getElementById('asset').value);
+      const entry = parseRupiah(document.getElementById('entry').value);
+      const payout = parseFloat(document.getElementById('payout').value);
+      const multiplier = parseFloat(document.getElementById('multiplier').value);
+      const targetProfit = parseRupiah(document.getElementById('target-profit').value) || entry;
+
+      if (!asset || !entry || !payout || !multiplier) {
+        document.getElementById('result').innerHTML = 
+          '<div id="next-step-info" style="border-color: #ff4444;">Harap isi semua field!</div>';
+        return;
+      }
+
+      let html = '<table><thead><tr><th>Step</th><th>Bet</th><th>Total Loss</th><th>Profit if Win</th></tr></thead><tbody>';
+      
+      let bet = entry;
+      let totalLoss = 0;
+      let step = 1;
+
+      while (totalLoss + bet <= asset) {
+        totalLoss += bet;
+        const profitIfWin = (bet * payout) - totalLoss;
+        
+        html += `<tr>
+          <td>${step}</td>
+          <td>Rp ${bet.toLocaleString('id-ID')}</td>
+          <td>Rp ${totalLoss.toLocaleString('id-ID')}</td>
+          <td>Rp ${Math.floor(profitIfWin).toLocaleString('id-ID')}</td>
+        </tr>`;
+        
+        bet = Math.ceil(bet * multiplier);
+        step++;
+        
+        if (step > 50) break;
+      }
+
+      html += '</tbody></table>';
+      
+      const nextBet = Math.ceil(bet);
+      const remaining = asset - totalLoss;
+      
+      html += `<div id="next-step-info">
+        <strong>Info Step Berikutnya:</strong><br/>
+        Step ${step} memerlukan bet Rp ${nextBet.toLocaleString('id-ID')}<br/>
+        Sisa asset Anda: Rp ${remaining.toLocaleString('id-ID')}<br/>
+        ${remaining < nextBet ? '⚠️ Asset tidak cukup untuk step berikutnya' : '✓ Masih bisa lanjut ke step berikutnya'}
+      </div>`;
+
+      // Earnings Projection
+      const profitPerWin = targetProfit;
+      const betsPerHour = 60; // 1 bet per menit
+      const hoursPerDay = 24;
+      const winsPerHour = Math.floor(betsPerHour * 0.7); // Asumsi win rate 70%
+      
+      const hourly = profitPerWin * winsPerHour;
+      const daily = hourly * hoursPerDay;
+      const weekly = daily * 7;
+      const monthly = daily * 30;
+
+      html += `<div class="earnings-projection">
+        <h3>💰 Proyeksi Earning (Asumsi Win Rate 70%)</h3>
+        <div class="earnings-note">
+          Per bet ~1 menit | ${betsPerHour} bet/jam | Profit per win: Rp ${profitPerWin.toLocaleString('id-ID')}
+        </div>
+        <div class="earnings-grid">
+          <div class="earnings-card">
+            <div class="earnings-label">Per Jam</div>
+            <div class="earnings-value">Rp ${hourly.toLocaleString('id-ID')}</div>
+          </div>
+          <div class="earnings-card">
+            <div class="earnings-label">Per Hari</div>
+            <div class="earnings-value">Rp ${daily.toLocaleString('id-ID')}</div>
+          </div>
+          <div class="earnings-card">
+            <div class="earnings-label">Per Minggu</div>
+            <div class="earnings-value">Rp ${weekly.toLocaleString('id-ID')}</div>
+          </div>
+          <div class="earnings-card">
+            <div class="earnings-label">Per Bulan</div>
+            <div class="earnings-value">Rp ${monthly.toLocaleString('id-ID')}</div>
+          </div>
+        </div>
+        <div class="earnings-note">
+          ⚠️ Ini adalah proyeksi teoritis. Actual results akan berbeda tergantung win rate, waktu trading, dan kondisi pasar.
+        </div>
+      </div>`;
+
+      document.getElementById('result').innerHTML = html;
+    }
+
+    // Auto-calculate multiplier on load if payout exists
+    window.addEventListener('load', autoCalculateMultiplier);
   </script>
 </body>
 </html>
