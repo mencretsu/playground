@@ -171,7 +171,7 @@
       
       <div class="main-signal">
         <div class="signal-row">
-          <div>
+          <div style="flex:1">
             <div style="font-size:12px;color:var(--muted);margin-bottom:8px">MARKET SIGNAL</div>
             <div id="mainSignal" class="signal-badge signal-yellow">
               <span>⏳</span> ANALYZING...
@@ -183,6 +183,23 @@
             <div class="confidence-label">Confidence</div>
             <div class="progress-bar">
               <div class="progress-fill" id="confidenceBar" style="width:0%;background:var(--blue)"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">
+            <div style="text-align:center">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:6px">RECOMMENDED ACTION</div>
+              <div id="actionSignal" style="font-size:15px;font-weight:700;color:var(--green)">--</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:6px">RISK LEVEL</div>
+              <div id="riskLevel" style="font-size:15px;font-weight:700">--</div>
+            </div>
+            <div style="text-align:center">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:6px">TIME FRAME</div>
+              <div id="timeFrame" style="font-size:15px;font-weight:700">--</div>
             </div>
           </div>
         </div>
@@ -259,6 +276,16 @@
             <div style="font-weight:600;margin-top:2px" id="vol24h">--</div>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Top Altcoins -->
+    <div style="margin:24px 0 12px">
+      <h2 style="font-size:16px;font-weight:700;margin:0 0 12px">🚀 Top Altcoins</h2>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div id="altcoinsGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
+        <!-- Altcoins will be populated here -->
       </div>
     </div>
 
@@ -356,7 +383,7 @@
 
 <script>
 const REFRESH_INTERVAL = 60 * 1000;
-const COINGECKO_MARKETS = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum&price_change_percentage=7d,24h&sparkline=false';
+const COINGECKO_MARKETS = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,ethereum,binancecoin,cardano,solana,ripple,polkadot,dogecoin&price_change_percentage=7d,24h&sparkline=false&order=market_cap_desc&per_page=8';
 const COINGECKO_GLOBAL = 'https://api.coingecko.com/api/v3/global';
 const FNG_API = 'https://api.alternative.me/fng/';
 
@@ -514,28 +541,43 @@ function analyzeSignal(data) {
   const normalizedScore = (weightedSum / totalWeight) * 100; // -100 to +100
   const confidence = Math.abs(normalizedScore);
   
-  // Determine signal
-  let signal, icon, color;
+  // Determine signal and actions
+  let signal, icon, color, action, risk, timeframe;
   if (normalizedScore >= 30) {
     signal = 'BULLISH — Strong Entry Signal';
     icon = '🟢';
     color = 'green';
+    action = '🔼 LONG (Buy)';
+    risk = '⚠️ Medium';
+    timeframe = '3-7 days';
   } else if (normalizedScore >= 10) {
     signal = 'CAUTIOUSLY BULLISH';
     icon = '🟡';
     color = 'yellow';
+    action = '🔼 Small LONG';
+    risk = '⚠️⚠️ Medium-High';
+    timeframe = '1-3 days';
   } else if (normalizedScore >= -10) {
     signal = 'NEUTRAL — Wait & Watch';
     icon = '⚪';
     color = 'yellow';
+    action = '⏸️ HOLD / Wait';
+    risk = '⚠️⚠️⚠️ High';
+    timeframe = 'Wait for signal';
   } else if (normalizedScore >= -30) {
     signal = 'CAUTIOUSLY BEARISH';
     icon = '🟠';
     color = 'yellow';
+    action = '🔽 Small SHORT';
+risk = '⚠️⚠️ Medium-High';
+    timeframe = '1-3 days';
   } else {
-    signal = 'BEARISH — Avoid Entry';
+    signal = 'BEARISH — Strong Decline Expected';
     icon = '🔴';
     color = 'red';
+    action = '🔽 SHORT (Sell)';
+    risk = '⚠️ Medium';
+    timeframe = '3-7 days';
   }
   
   return {
@@ -544,7 +586,10 @@ function analyzeSignal(data) {
     color,
     confidence: Math.min(confidence, 100),
     score: normalizedScore,
-    reasons: reasons.slice(0, 3)
+    reasons: reasons.slice(0, 3),
+    action,
+    risk,
+    timeframe
   };
 }
 
@@ -660,6 +705,25 @@ async function updateAll() {
           document.getElementById('ethBtcRatio').textContent = fmt(data.ethBtcRatio, 4);
         }
       }
+      
+      // Populate altcoins (exclude BTC and ETH)
+      const altcoins = markets.filter(m => m.id !== 'bitcoin' && m.id !== 'ethereum');
+      const altGrid = document.getElementById('altcoinsGrid');
+      altGrid.innerHTML = '';
+      
+      altcoins.forEach(coin => {
+        const change24h = coin.price_change_percentage_24h;
+        const changeClass = change24h > 0 ? 'positive' : change24h < 0 ? 'negative' : 'neutral';
+        const symbol = coin.symbol.toUpperCase();
+        
+        altGrid.innerHTML += `
+          <div style="padding:10px;border:1px solid var(--border);border-radius:8px;text-align:center">
+            <div style="font-size:11px;color:var(--muted);margin-bottom:4px">${symbol}</div>
+            <div style="font-size:14px;font-weight:700;margin:4px 0">${fmtUsd(coin.current_price)}</div>
+            <div class="${changeClass}" style="font-size:12px;font-weight:600">${fmtPercent(change24h)}</div>
+          </div>
+        `;
+      });
     }
     
     // Parse Global
@@ -753,6 +817,16 @@ async function updateAll() {
       `Score: ${fmt(analysis.score, 1)}`;
     document.getElementById('signalReason').textContent = reasonsText;
     
+    // Update action indicators
+    document.getElementById('actionSignal').textContent = analysis.action;
+    document.getElementById('actionSignal').style.color = 
+      analysis.action.includes('LONG') ? 'var(--green)' : 
+      analysis.action.includes('SHORT') ? 'var(--red)' : 
+      'var(--muted)';
+    
+    document.getElementById('riskLevel').textContent = analysis.risk;
+    document.getElementById('timeFrame').textContent = analysis.timeframe;
+    
   } catch (error) {
     console.error('Update error:', error);
     document.getElementById('mainSignal').innerHTML = '<span>⚠️</span> ERROR — Refresh failed';
@@ -803,10 +877,13 @@ function init() {
       '• Volume analysis (13% weight)\n' +
       '• BTC dominance, RSI, correlation\n\n' +
       '🎨 SIGNALS:\n' +
-      '🟢 BULLISH: Score ≥ 30% (Strong entry)\n' +
-      '🟡 CAUTIOUS: Score 10-30% or -10-10%\n' +
-      '🔴 BEARISH: Score ≤ -30% (Avoid entry)\n\n' +
+      '🟢 BULLISH: Score ≥ 30% → LONG (Buy)\n' +
+      '🟡 CAUTIOUS BULL: 10-30% → Small LONG\n' +
+      '⚪ NEUTRAL: -10 to 10% → HOLD/Wait\n' +
+      '🟠 CAUTIOUS BEAR: -30 to -10% → Small SHORT\n' +
+      '🔴 BEARISH: Score ≤ -30% → SHORT (Sell)\n\n' +
       '⚡ Confidence shows agreement strength across all indicators.\n\n' +
+      '🚀 ALTCOINS: Tracking BNB, ADA, SOL, XRP, DOT, DOGE\n\n' +
       '⚠️ DISCLAIMER: NOT financial advice. DYOR!'
     );
   });
