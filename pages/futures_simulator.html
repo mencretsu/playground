@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Futures Simulator Pro</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { 
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; 
+    background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 100%);
+    color: #eee; 
+    padding: 15px;
+    min-height: 100vh;
+  }
+  .container { max-width: 500px; margin: 0 auto; }
+  h1 { text-align: center; margin: 20px 0; font-size: 24px; color: #ffd700; }
+  .card { 
+    background: #1e1e30; 
+    padding: 20px; 
+    margin: 15px 0; 
+    border-radius: 15px; 
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+  }
+  .input-group { margin: 15px 0; }
+  .input-group label { 
+    display: block; 
+    margin-bottom: 8px; 
+    font-size: 14px; 
+    color: #aaa;
+    font-weight: 500;
+  }
+  input, select { 
+    width: 100%; 
+    padding: 14px; 
+    border-radius: 10px; 
+    border: 2px solid #2a2a3e; 
+    background: #16162a;
+    color: #fff;
+    font-size: 16px;
+    transition: all 0.3s;
+  }
+  input:focus, select:focus { 
+    outline: none; 
+    border-color: #00d4ff;
+    box-shadow: 0 0 10px rgba(0,212,255,0.3);
+  }
+  .leverage-buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .lev-btn {
+    padding: 10px;
+    background: #2a2a3e;
+    border: 2px solid #3a3a4e;
+    border-radius: 8px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s;
+  }
+  .lev-btn:active { transform: scale(0.95); }
+  .lev-btn.active { background: #00d4ff; border-color: #00d4ff; color: #000; }
+  .lev-btn.safe { border-color: #10b981; }
+  .lev-btn.risky { border-color: #f59e0b; }
+  .lev-btn.danger { border-color: #ef4444; }
+  button { 
+    width: 100%;
+    padding: 16px; 
+    background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+    border: none; 
+    border-radius: 12px; 
+    color: #000; 
+    font-size: 18px;
+    font-weight: 700;
+    cursor: pointer;
+    margin: 20px 0 10px 0;
+    box-shadow: 0 4px 15px rgba(0,212,255,0.4);
+    transition: all 0.3s;
+  }
+  button:active { transform: scale(0.98); }
+  .auto-calc {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 10px;
+  }
+  .auto-btn {
+    padding: 10px;
+    background: #2a2a3e;
+    border: 2px solid #00d4ff;
+    border-radius: 8px;
+    color: #00d4ff;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .result { 
+    background: #16162a;
+    padding: 20px;
+    border-radius: 12px;
+    margin-top: 15px;
+  }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 12px 0;
+    padding: 10px;
+    background: #1e1e30;
+    border-radius: 8px;
+  }
+  .result-label { color: #aaa; font-size: 14px; }
+  .result-value { font-weight: 700; font-size: 16px; }
+  .profit { color: #10b981; }
+  .loss { color: #ef4444; }
+  .neutral { color: #00d4ff; }
+  .warning {
+    background: rgba(239, 68, 68, 0.1);
+    border-left: 4px solid #ef4444;
+    padding: 12px;
+    margin: 15px 0;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #ef4444;
+  }
+  .tip {
+    background: rgba(16, 185, 129, 0.1);
+    border-left: 4px solid #10b981;
+    padding: 12px;
+    margin: 15px 0;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #10b981;
+  }
+  .info-box {
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid #00d4ff;
+    padding: 15px;
+    border-radius: 10px;
+    margin: 15px 0;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    margin-left: 8px;
+  }
+  .badge-safe { background: #10b981; color: #000; }
+  .badge-medium { background: #f59e0b; color: #000; }
+  .badge-risky { background: #ef4444; color: #fff; }
+  .rr-display {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    color: #00d4ff;
+    margin: 15px 0;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>⚡ Futures Trading Simulator</h1>
+  
+  <div class="card">
+    <div class="input-group">
+      <label>💰 Modal Awal ($)</label>
+      <input type="number" id="capital" value="100" min="1">
+    </div>
+
+    <div class="input-group">
+      <label>📊 Leverage <span id="lev-badge"></span></label>
+      <div class="leverage-buttons">
+        <button class="lev-btn safe" onclick="setLeverage(2)">2x</button>
+        <button class="lev-btn safe" onclick="setLeverage(5)">5x</button>
+        <button class="lev-btn safe active" onclick="setLeverage(10)">10x</button>
+        <button class="lev-btn risky" onclick="setLeverage(20)">20x</button>
+        <button class="lev-btn risky" onclick="setLeverage(50)">50x</button>
+        <button class="lev-btn danger" onclick="setLeverage(75)">75x</button>
+        <button class="lev-btn danger" onclick="setLeverage(100)">100x</button>
+        <button class="lev-btn danger" onclick="setLeverage(125)">125x</button>
+      </div>
+      <input type="number" id="leverage" value="10" min="1" max="125" style="margin-top: 10px;">
+    </div>
+
+    <div class="input-group">
+      <label>📍 Posisi</label>
+      <select id="position" onchange="updateLabels()">
+        <option value="long">🟢 LONG (Buy) - Profit jika naik</option>
+        <option value="short">🔴 SHORT (Sell) - Profit jika turun</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <label>🎯 Entry Price ($)</label>
+      <input type="number" id="entry" value="60000" step="0.01">
+    </div>
+
+    <div class="input-group">
+      <label id="tp-label">✅ Take Profit ($)</label>
+      <input type="number" id="tp" value="60600" step="0.01">
+      <div class="auto-calc">
+        <button class="auto-btn" onclick="autoTP(1)">Auto R/R 1:1</button>
+        <button class="auto-btn" onclick="autoTP(2)">Auto R/R 1:2</button>
+      </div>
+    </div>
+
+    <div class="input-group">
+      <label id="sl-label">❌ Stop Loss ($)</label>
+      <input type="number" id="sl" value="59400" step="0.01">
+      <div class="auto-calc">
+        <button class="auto-btn" onclick="autoSL(1)">Auto -1%</button>
+        <button class="auto-btn" onclick="autoSL(2)">Auto -2%</button>
+      </div>
+    </div>
+
+    <button onclick="simulate()">🚀 HITUNG SIMULASI</button>
+
+    <div id="result"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom: 15px; color: #00d4ff;">📚 Panduan Pemula</h3>
+    <div class="info-box">
+      <strong>Leverage:</strong><br>
+      • 2-10x: Aman buat pemula ✅<br>
+      • 20-50x: Berisiko tinggi ⚠️<br>
+      • 75-125x: Sangat berbahaya 🚨<br><br>
+      <strong>Risk/Reward Ratio:</strong><br>
+      • 1:1 = Stop Loss & Take Profit sama<br>
+      • 1:2 = Target profit 2x lipat dari risiko<br>
+      • Minimal pakai 1:1.5 biar worth it!<br><br>
+      <strong>Tips:</strong><br>
+      • Jangan risk lebih dari 2-3% modal per trade<br>
+      • Pakai Stop Loss SELALU!<br>
+      • Leverage gede = cepat profit tapi cepat loss juga
+    </div>
+  </div>
+</div>
+
+<script>
+let currentLeverage = 10;
+
+function setLeverage(lev) {
+  currentLeverage = lev;
+  document.getElementById('leverage').value = lev;
+  document.querySelectorAll('.lev-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  updateLeverageBadge();
+}
+
+function updateLeverageBadge() {
+  const lev = parseFloat(document.getElementById('leverage').value);
+  const badge = document.getElementById('lev-badge');
+  if (lev <= 10) {
+    badge.innerHTML = '<span class="badge badge-safe">AMAN</span>';
+  } else if (lev <= 50) {
+    badge.innerHTML = '<span class="badge badge-medium">BERISIKO</span>';
+  } else {
+    badge.innerHTML = '<span class="badge badge-risky">BAHAYA</span>';
+  }
+}
+
+function updateLabels() {
+  const position = document.getElementById('position').value;
+  const tpLabel = document.getElementById('tp-label');
+  const slLabel = document.getElementById('sl-label');
+  
+  if (position === 'long') {
+    tpLabel.textContent = '✅ Take Profit ($) - Harga lebih tinggi';
+    slLabel.textContent = '❌ Stop Loss ($) - Harga lebih rendah';
+  } else {
+    tpLabel.textContent = '✅ Take Profit ($) - Harga lebih rendah';
+    slLabel.textContent = '❌ Stop Loss ($) - Harga lebih tinggi';
+  }
+}
+
+function autoSL(percent) {
+  const entry = parseFloat(document.getElementById('entry').value);
+  const position = document.getElementById('position').value;
+  let sl;
+  
+  if (position === 'long') {
+    sl = entry * (1 - percent / 100);
+  } else {
+    sl = entry * (1 + percent / 100);
+  }
+  
+  document.getElementById('sl').value = sl.toFixed(2);
+}
+
+function autoTP(ratio) {
+  const entry = parseFloat(document.getElementById('entry').value);
+  const sl = parseFloat(document.getElementById('sl').value);
+  const position = document.getElementById('position').value;
+  
+  const risk = Math.abs(entry - sl);
+  let tp;
+  
+  if (position === 'long') {
+    tp = entry + (risk * ratio);
+  } else {
+    tp = entry - (risk * ratio);
+  }
+  
+  document.getElementById('tp').value = tp.toFixed(2);
+}
+
+function simulate() {
+  const capital = parseFloat(document.getElementById('capital').value);
+  const leverage = parseFloat(document.getElementById('leverage').value);
+  const entry = parseFloat(document.getElementById('entry').value);
+  const tp = parseFloat(document.getElementById('tp').value);
+  const sl = parseFloat(document.getElementById('sl').value);
+  const position = document.getElementById('position').value;
+
+  // Validasi
+  if (position === 'long' && (tp <= entry || sl >= entry)) {
+    document.getElementById('result').innerHTML = '<div class="warning">⚠️ LONG: TP harus > Entry, SL harus < Entry</div>';
+    return;
+  }
+  if (position === 'short' && (tp >= entry || sl <= entry)) {
+    document.getElementById('result').innerHTML = '<div class="warning">⚠️ SHORT: TP harus < Entry, SL harus > Entry</div>';
+    return;
+  }
+
+  const positionSize = capital * leverage;
+  
+  let profitAmount, lossAmount;
+  if (position === 'long') {
+    profitAmount = ((tp - entry) / entry) * positionSize;
+    lossAmount = ((sl - entry) / entry) * positionSize;
+  } else {
+    profitAmount = ((entry - tp) / entry) * positionSize;
+    lossAmount = ((entry - sl) / entry) * positionSize;
+  }
+
+  const profitPct = (profitAmount / capital) * 100;
+  const lossPct = (lossAmount / capital) * 100;
+  const riskReward = Math.abs(profitAmount / lossAmount);
+  
+  const liquidationMove = (100 / leverage) * 0.9;
+  let liquidationPrice;
+  if (position === 'long') {
+    liquidationPrice = entry * (1 - liquidationMove / 100);
+  } else {
+    liquidationPrice = entry * (1 + liquidationMove / 100);
+  }
+
+  let warningMsg = '';
+  if (leverage > 50) {
+    warningMsg = '<div class="warning">🚨 BAHAYA! Leverage terlalu tinggi. Modal bisa habis sangat cepat!</div>';
+  } else if (leverage > 20) {
+    warningMsg = '<div class="warning">⚠️ Hati-hati! Leverage di atas 20x sangat berisiko untuk pemula.</div>';
+  }
+
+  let tipMsg = '';
+  if (riskReward >= 2) {
+    tipMsg = '<div class="tip">✨ Bagus! Risk/Reward ratio kamu menguntungkan (1:' + riskReward.toFixed(1) + ')</div>';
+  } else if (riskReward < 1) {
+    tipMsg = '<div class="warning">⚠️ Risk/Reward kurang bagus. Risiko lebih besar dari profit potensial!</div>';
+  }
+
+  document.getElementById('result').innerHTML = `
+    <div class="result">
+      <h3 style="text-align: center; margin-bottom: 20px; color: #00d4ff;">📊 Hasil Simulasi</h3>
+      
+      ${warningMsg}
+      
+      <div class="result-row">
+        <span class="result-label">Ukuran Posisi</span>
+        <span class="result-value neutral">$${positionSize.toFixed(2)}</span>
+      </div>
+      
+      <div class="result-row">
+        <span class="result-label">Jika Hit TP ✅</span>
+        <span class="result-value profit">+$${profitAmount.toFixed(2)} (+${profitPct.toFixed(1)}%)</span>
+      </div>
+      
+      <div class="result-row">
+        <span class="result-label">Jika Hit SL ❌</span>
+        <span class="result-value loss">-$${Math.abs(lossAmount).toFixed(2)} (${lossPct.toFixed(1)}%)</span>
+      </div>
+      
+      <div class="rr-display">
+        Risk/Reward: 1:${riskReward.toFixed(2)}
+      </div>
+      
+      ${tipMsg}
+      
+      <div class="result-row">
+        <span class="result-label">Harga Liquidation 💀</span>
+        <span class="result-value loss">$${liquidationPrice.toFixed(2)}</span>
+      </div>
+      
+      <div style="font-size: 12px; color: #888; margin-top: 15px; text-align: center;">
+        Kalau harga sentuh liquidation price, modal habis total!<br>
+        Selalu pakai Stop Loss yang wajar.
+      </div>
+    </div>
+  `;
+}
+
+// Init
+updateLeverageBadge();
+updateLabels();
+</script>
+</body>
+</html>
