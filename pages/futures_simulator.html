@@ -186,7 +186,7 @@
         <button class="lev-btn danger" onclick="setLeverage(100)">100x</button>
         <button class="lev-btn danger" onclick="setLeverage(125)">125x</button>
       </div>
-      <input type="number" id="leverage" value="10" min="1" max="125" style="margin-top: 10px;">
+      <input type="number" id="leverage" value="10" min="1" max="125" style="margin-top: 10px;" onchange="setLeverage(this.value)">
     </div>
 
     <div class="input-group">
@@ -206,18 +206,16 @@
       <label id="tp-label">✅ Take Profit ($)</label>
       <input type="number" id="tp" value="60600" step="0.01">
       <div class="auto-calc">
-        <button class="auto-btn" onclick="autoTP(1)">Auto R/R 1:1</button>
-        <button class="auto-btn" onclick="autoTP(2)">Auto R/R 1:2</button>
+        <button class="auto-btn" onclick="autoTPSL()">🎯 Auto TP/SL (Recommended)</button>
+        <button class="auto-btn" onclick="setRiskReward(2)">1:2 RR</button>
       </div>
+      <div id="tp-hint" style="font-size: 11px; color: #10b981; margin-top: 5px; text-align: center;"></div>
     </div>
 
     <div class="input-group">
       <label id="sl-label">❌ Stop Loss ($)</label>
       <input type="number" id="sl" value="59400" step="0.01">
-      <div class="auto-calc">
-        <button class="auto-btn" onclick="autoSL(1)">Auto -1%</button>
-        <button class="auto-btn" onclick="autoSL(2)">Auto -2%</button>
-      </div>
+      <div id="sl-hint" style="font-size: 11px; color: #ef4444; margin-top: 5px; text-align: center;"></div>
     </div>
 
     <button onclick="simulate()">🚀 HITUNG SIMULASI</button>
@@ -316,10 +314,18 @@
 let currentLeverage = 10;
 
 function setLeverage(lev) {
-  currentLeverage = lev;
-  document.getElementById('leverage').value = lev;
+  currentLeverage = parseFloat(lev);
+  document.getElementById('leverage').value = currentLeverage;
   document.querySelectorAll('.lev-btn').forEach(btn => btn.classList.remove('active'));
-  event.target.classList.add('active');
+  
+  // Update active button based on leverage
+  const buttons = document.querySelectorAll('.lev-btn');
+  buttons.forEach(btn => {
+    if (parseFloat(btn.textContent) === currentLeverage) {
+      btn.classList.add('active');
+    }
+  });
+  
   updateLeverageBadge();
 }
 
@@ -349,21 +355,59 @@ function updateLabels() {
   }
 }
 
-function autoSL(percent) {
-  const entry = parseFloat(document.getElementById('entry').value);
-  const position = document.getElementById('position').value;
-  let sl;
+function getRecommendedPercentages() {
+  const leverage = parseFloat(document.getElementById('leverage').value);
   
-  if (position === 'long') {
-    sl = entry * (1 - percent / 100);
+  if (leverage <= 5) {
+    return { tp: 3.0, sl: 1.5 }; // Santai
+  } else if (leverage <= 20) {
+    return { tp: 1.5, sl: 0.75 }; // Sedang
+  } else if (leverage <= 50) {
+    return { tp: 0.8, sl: 0.4 }; // Risky
   } else {
-    sl = entry * (1 + percent / 100);
+    return { tp: 0.3, sl: 0.15 }; // Ekstrem
   }
-  
-  document.getElementById('sl').value = sl.toFixed(2);
 }
 
-function autoTP(ratio) {
+function autoTPSL() {
+  const entry = parseFloat(document.getElementById('entry').value);
+  const position = document.getElementById('position').value;
+  const { tp: tpPercent, sl: slPercent } = getRecommendedPercentages();
+  
+  let tp, sl;
+  
+  if (position === 'long') {
+    tp = entry * (1 + tpPercent / 100);
+    sl = entry * (1 - slPercent / 100);
+  } else {
+    tp = entry * (1 - tpPercent / 100);
+    sl = entry * (1 + slPercent / 100);
+  }
+  
+  document.getElementById('tp').value = tp.toFixed(2);
+  document.getElementById('sl').value = sl.toFixed(2);
+  
+  // Update hints
+  document.getElementById('tp-hint').textContent = `Auto TP: ${tpPercent}% dari entry`;
+  document.getElementById('sl-hint').textContent = `Auto SL: ${slPercent}% dari entry`;
+  
+  // Show recommendation info
+  const leverage = parseFloat(document.getElementById('leverage').value);
+  let riskLevel = '';
+  if (leverage <= 5) riskLevel = 'SANTAI';
+  else if (leverage <= 20) riskLevel = 'SEDANG';
+  else if (leverage <= 50) riskLevel = 'BERISIKO';
+  else riskLevel = 'EKSTREM';
+  
+  document.getElementById('result').innerHTML = `
+    <div class="tip">
+      ✅ Auto TP/SL diatur untuk leverage ${leverage}x (${riskLevel})<br>
+      • TP: ${tpPercent}% | SL: ${slPercent}% | Risk/Reward: 1:${(tpPercent/slPercent).toFixed(1)}
+    </div>
+  `;
+}
+
+function setRiskReward(ratio) {
   const entry = parseFloat(document.getElementById('entry').value);
   const sl = parseFloat(document.getElementById('sl').value);
   const position = document.getElementById('position').value;
@@ -378,6 +422,7 @@ function autoTP(ratio) {
   }
   
   document.getElementById('tp').value = tp.toFixed(2);
+  document.getElementById('tp-hint').textContent = `Risk/Reward 1:${ratio} diterapkan`;
 }
 
 function simulate() {
