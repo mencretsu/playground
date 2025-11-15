@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neutral Grid Futures Bot Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a3a5f 0%, #2d5f8b 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        header {
+            background: #2d5f8b;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+        
+        .subtitle {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .neutral-badge {
+            background: #4CAF50;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 5px;
+            display: inline-block;
+        }
+        
+        .content {
+            padding: 25px;
+        }
+        
+        .input-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d5f8b;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: #2d5f8b;
+            box-shadow: 0 0 0 3px rgba(45, 95, 139, 0.2);
+        }
+        
+        .btn {
+            background: #2d5f8b;
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s;
+        }
+        
+        .btn:hover {
+            background: #1a3a5f;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .result-section {
+            display: none;
+            background: #f0f7ff;
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 5px solid #2d5f8b;
+            margin-top: 20px;
+        }
+        
+        .result-section h2 {
+            color: #2d5f8b;
+            margin-bottom: 20px;
+            font-size: 22px;
+            text-align: center;
+        }
+        
+        .parameter-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .parameter-card {
+            background: white;
+            padding: 18px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e1e8f0;
+        }
+        
+        .param-label {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .param-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #2d5f8b;
+        }
+        
+        .execution-instructions {
+            background: #e8f4ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #2d5f8b;
+        }
+        
+        .execution-instructions h3 {
+            color: #2d5f8b;
+            margin-bottom: 10px;
+        }
+        
+        .instructions-list {
+            list-style-type: none;
+        }
+        
+        .instructions-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #d1e3f5;
+        }
+        
+        .instructions-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 14px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        @media (max-width: 768px) {
+            .parameter-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .strategy-info {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #4CAF50;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Neutral Grid Futures Bot Generator</h1>
+            <p class="subtitle">Optimal parameters for neutral position trading only</p>
+            <div class="neutral-badge">NEUTRAL POSITION STRATEGY</div>
+        </header>
+        
+        <div class="content">
+            <div class="strategy-info">
+                <strong>Neutral Position Strategy:</strong> Designed for sideways markets with balanced risk above and below current price. Perfect for range-bound trading.
+            </div>
+            
+            <div class="input-section">
+                <div class="form-group">
+                    <label for="currentPrice">Current Price</label>
+                    <input type="number" id="currentPrice" step="0.0001" placeholder="Enter current price (e.g., 0.2042)" value="0.2042">
+                </div>
+                
+                <div class="form-group">
+                    <label for="leverage">Leverage</label>
+                    <select id="leverage">
+                        <option value="5">5x</option>
+                        <option value="10" selected>10x</option>
+                        <option value="15">15x</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="volatility">Market Volatility</label>
+                    <select id="volatility">
+                        <option value="low">Low Volatility</option>
+                        <option value="medium" selected>Medium Volatility</option>
+                        <option value="high">High Volatility</option>
+                    </select>
+                </div>
+                
+                <button class="btn" id="generateBtn">Generate Neutral Parameters</button>
+            </div>
+            
+            <div class="result-section" id="resultSection">
+                <h2>🎯 Neutral Grid Bot Parameters</h2>
+                
+                <div class="parameter-grid">
+                    <div class="parameter-card">
+                        <div class="param-label">Upper Price</div>
+                        <div class="param-value" id="upperPrice">-</div>
+                    </div>
+                    
+                    <div class="parameter-card">
+                        <div class="param-label">Lower Price</div>
+                        <div class="param-value" id="lowerPrice">-</div>
+                    </div>
+                    
+                    <div class="parameter-card">
+                        <div class="param-label">Number of Grids</div>
+                        <div class="param-value" id="gridCount">-</div>
+                    </div>
+                    
+                    <div class="parameter-card">
+                        <div class="param-label">Grid Distance</div>
+                        <div class="param-value" id="gridDistance">-</div>
+                    </div>
+                    
+                    <div class="parameter-card">
+                        <div class="param-label">Take Profit</div>
+                        <div class="param-value" id="takeProfit">-</div>
+                    </div>
+                    
+                    <div class="parameter-card">
+                        <div class="param-label">Stop Loss</div>
+                        <div class="param-value" id="stopLoss">-</div>
+                    </div>
+                    
+                    <div class="parameter-card">
+                        <div class="param-label">Investment/Grid</div>
+                        <div class="param-value" id="investmentPerGrid">-</div>
+                    </div>
+                    
+                    <div class="parameter-card">
+                        <div class="param-label">Expected Profit/Grid</div>
+                        <div class="param-value" id="profitPerGrid">-</div>
+                    </div>
+                </div>
+                
+                <div class="execution-instructions">
+                    <h3>📋 Binance Setup Instructions</h3>
+                    <ul class="instructions-list">
+                        <li>1. Go to Binance Futures → Grid Trading</li>
+                        <li>2. Select "Futures Grid" and your trading pair</li>
+                        <li>3. Set parameters EXACTLY as shown above</li>
+                        <li>4. Leverage: <span id="leverageValue">10x</span></li>
+                        <li>5. Order Type: Arithmetic</li>
+                        <li>6. TP/SL Type: Last Price</li>
+                        <li>7. Start with small investment to test</li>
+                    </ul>
+                </div>
+                
+                <div class="warning">
+                    <strong>⚠️ Risk Management:</strong> 
+                    Neutral strategy works best in sideways markets. Monitor market conditions and be ready to stop bot if strong trend develops. Use only risk capital you can afford to lose.
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Neutral Grid Bot Generator &copy; 2023 | For Binance Futures | Neutral Position Only</p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('generateBtn').addEventListener('click', function() {
+            const currentPrice = parseFloat(document.getElementById('currentPrice').value);
+            const leverage = parseInt(document.getElementById('leverage').value);
+            const volatility = document.getElementById('volatility').value;
+            
+            if (!currentPrice || currentPrice <= 0) {
+                alert('Please enter a valid current price');
+                return;
+            }
+            
+            // Calculate parameters for NEUTRAL position
+            let upperPrice, lowerPrice, gridCount, takeProfit, stopLoss;
+            
+            // Adjust range based on volatility
+            let rangeMultiplier;
+            switch(volatility) {
+                case 'low':
+                    rangeMultiplier = 0.04; // ±4%
+                    gridCount = 8;
+                    takeProfit = '4% (Total Profit)';
+                    stopLoss = '6% (Total Loss)';
+                    break;
+                    
+                case 'medium':
+                    rangeMultiplier = 0.06; // ±6%
+                    gridCount = 10;
+                    takeProfit = '5% (Total Profit)';
+                    stopLoss = '8% (Total Loss)';
+                    break;
+                    
+                case 'high':
+                    rangeMultiplier = 0.08; // ±8%
+                    gridCount = 12;
+                    takeProfit = '6% (Total Profit)';
+                    stopLoss = '10% (Total Loss)';
+                    break;
+            }
+            
+            // Calculate prices (symmetrical for neutral position)
+            upperPrice = currentPrice * (1 + rangeMultiplier);
+            lowerPrice = currentPrice * (1 - rangeMultiplier);
+            
+            // Calculate grid distance and other metrics
+            const gridDistance = ((upperPrice - lowerPrice) / gridCount).toFixed(4);
+            const investmentPerGrid = '2-3% equity';
+            const profitPerGrid = '0.2-0.4%';
+            
+            // Update UI with calculated values
+            document.getElementById('upperPrice').textContent = upperPrice.toFixed(4);
+            document.getElementById('lowerPrice').textContent = lowerPrice.toFixed(4);
+            document.getElementById('gridCount').textContent = gridCount;
+            document.getElementById('gridDistance').textContent = gridDistance;
+            document.getElementById('takeProfit').textContent = takeProfit;
+            document.getElementById('stopLoss').textContent = stopLoss;
+            document.getElementById('investmentPerGrid').textContent = investmentPerGrid;
+            document.getElementById('profitPerGrid').textContent = profitPerGrid;
+            document.getElementById('leverageValue').textContent = leverage + 'x';
+            
+            // Show result section
+            document.getElementById('resultSection').style.display = 'block';
+            
+            // Scroll to results
+            document.getElementById('resultSection').scrollIntoView({ behavior: 'smooth' });
+        });
+        
+        // Auto-generate on page load with default values
+        window.addEventListener('load', function() {
+            document.getElementById('generateBtn').click();
+        });
+    </script>
+</body>
+</html>
