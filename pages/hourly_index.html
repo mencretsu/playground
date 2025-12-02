@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Crypto Fear & Greed</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e27;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 15px;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+        }
+        
+        .header h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 0.9em;
+            color: #888;
+        }
+        
+        .main-card {
+            background: #1a1f3a;
+            border-radius: 20px;
+            padding: 25px 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .gauge-container {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .gauge {
+            width: 280px;
+            height: 140px;
+            margin: 0 auto;
+            position: relative;
+        }
+        
+        .gauge-value {
+            font-size: 3.5em;
+            font-weight: bold;
+            margin: 15px 0;
+            transition: all 0.5s ease;
+        }
+        
+        .gauge-label {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .last-update {
+            color: #666;
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+        
+        .chart-container {
+            background: #1a1f3a;
+            border-radius: 20px;
+            padding: 20px 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            margin-bottom: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .chart-title {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: #e0e0e0;
+            font-weight: 600;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 12px 8px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #252b47;
+            color: #888;
+            border: 1px solid rgba(255,255,255,0.05);
+            touch-action: manipulation;
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+        
+        .btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .info-card {
+            background: #252b47;
+            padding: 15px 10px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .info-card-label {
+            font-size: 0.75em;
+            color: #888;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+        
+        .info-card-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #e0e0e0;
+        }
+        
+        .error {
+            background: rgba(255, 68, 68, 0.2);
+            color: #ff4444;
+            padding: 15px;
+            border-radius: 12px;
+            margin: 15px 0;
+            text-align: center;
+            border: 1px solid rgba(255, 68, 68, 0.3);
+            font-size: 0.9em;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 30px;
+            font-size: 1em;
+            color: #667eea;
+        }
+        
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            animation: spin 1s linear infinite;
+            margin: 15px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .emoji {
+            display: none;
+        }
+        
+        @media (max-width: 380px) {
+            .gauge-value {
+                font-size: 3em;
+            }
+            .controls {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .btn {
+                font-size: 0.8em;
+                padding: 10px 6px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Crypto Fear & Greed Index</h1>
+            <p>Update Real-Time Setiap 15 Menit</p>
+        </div>
+        
+        <div class="main-card">
+            <div class="gauge-container">
+                <div class="gauge-label" id="classification">Loading...</div>
+                <div class="gauge-value" id="currentValue">--</div>
+                <canvas id="gaugeChart"></canvas>
+                <div class="last-update" id="lastUpdate">Memuat data...</div>
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-card">
+                    <div class="info-card-label">24h</div>
+                    <div class="info-card-value" id="change24h">--</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-label">7d Avg</div>
+                    <div class="info-card-value" id="avg7d">--</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-label">Vol</div>
+                    <div class="info-card-value" id="volatility">--</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <div class="chart-title">Historical Data</div>
+            <div class="controls">
+                <button class="btn" onclick="changeTimeframe('1h')">1H</button>
+                <button class="btn" onclick="changeTimeframe('5h')">5H</button>
+                <button class="btn active" onclick="changeTimeframe('24h')">24H</button>
+                <button class="btn" onclick="changeTimeframe('7d')">7D</button>
+            </div>
+            <div class="controls" style="margin-top: 10px;">
+                <button class="btn" onclick="changeTimeframe('30d')">30D</button>
+                <button class="btn" onclick="changeTimeframe('90d')">90D</button>
+                <button class="btn" onclick="changeTimeframe('1y')">1Y</button>
+                <button class="btn" onclick="loadData()">REFRESH</button>
+            </div>
+            <canvas id="historyChart"></canvas>
+        </div>
+        
+        <div id="error" style="display: none;" class="error"></div>
+    </div>
+
+    <script>
+        let historyChart;
+        let gaugeChart;
+        let currentTimeframe = '24h';
+        
+        function getClassification(value) {
+            if (value <= 20) return { text: 'EXTREME FEAR', color: '#ff0844' };
+            if (value <= 40) return { text: 'FEAR', color: '#ff4444' };
+            if (value <= 60) return { text: 'NEUTRAL', color: '#ffa726' };
+            if (value <= 80) return { text: 'GREED', color: '#66bb6a' };
+            return { text: 'EXTREME GREED', color: '#00e676' };
+        }
+        
+        function createGaugeChart(value) {
+            const ctx = document.getElementById('gaugeChart');
+            if (gaugeChart) gaugeChart.destroy();
+            
+            const classification = getClassification(value);
+            
+            gaugeChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [value, 100 - value],
+                        backgroundColor: [classification.color, '#252b47'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    circumference: 180,
+                    rotation: 270,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    }
+                }
+            });
+        }
+        
+        function createHistoryChart(data) {
+            const ctx = document.getElementById('historyChart');
+            if (historyChart) historyChart.destroy();
+            
+            const labels = data.map(d => {
+                const date = new Date(d.timestamp * 1000);
+                if (currentTimeframe === '1h' || currentTimeframe === '5h') {
+                    return date.toLocaleString('id-ID', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                } else if (currentTimeframe === '24h') {
+                    return date.toLocaleString('id-ID', { 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    });
+                } else if (currentTimeframe === '7d' || currentTimeframe === '30d') {
+                    return date.toLocaleString('id-ID', { 
+                        month: 'short', 
+                        day: 'numeric',
+                        hour: '2-digit'
+                    });
+                } else {
+                    return date.toLocaleString('id-ID', { 
+                        month: 'short', 
+                        day: 'numeric' 
+                    });
+                }
+            });
+            
+            const values = data.map(d => parseInt(d.value));
+            
+            historyChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Fear & Greed',
+                        data: values,
+                        borderColor: '#667eea',
+                        backgroundColor: 'rgba(102, 126, 234, 0.2)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        pointBackgroundColor: '#667eea'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: '#1a1f3a',
+                            titleColor: '#e0e0e0',
+                            bodyColor: '#e0e0e0',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            grid: {
+                                color: 'rgba(255,255,255,0.05)'
+                            },
+                            ticks: {
+                                color: '#888',
+                                font: { size: 11 }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255,255,255,0.05)'
+                            },
+                            ticks: {
+                                color: '#888',
+                                maxRotation: 45,
+                                minRotation: 45,
+                                font: { size: 10 }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+        
+        async function loadData() {
+            try {
+                document.getElementById('error').style.display = 'none';
+                
+                const mockData = generateMockData();
+                
+                const currentData = mockData[0];
+                const value = parseInt(currentData.value);
+                const classification = getClassification(value);
+                
+                document.getElementById('currentValue').textContent = value;
+                document.getElementById('currentValue').style.color = classification.color;
+                document.getElementById('classification').textContent = classification.text;
+                document.getElementById('classification').style.color = classification.color;
+                
+                const lastUpdate = new Date(currentData.timestamp * 1000);
+                document.getElementById('lastUpdate').textContent = 
+                    `Update: ${lastUpdate.toLocaleString('id-ID', { 
+                        day: 'numeric', 
+                        month: 'short', 
+                        hour: '2-digit', 
+                        minute: '2-digit' 
+                    })}`;
+                
+                const values = mockData.slice(0, 24).map(d => parseInt(d.value));
+                const change24h = value - values[values.length - 1];
+                const avg7d = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+                
+                document.getElementById('change24h').textContent = 
+                    (change24h > 0 ? '+' : '') + change24h;
+                document.getElementById('change24h').style.color = 
+                    change24h > 0 ? '#00e676' : '#ff4444';
+                document.getElementById('avg7d').textContent = avg7d;
+                document.getElementById('volatility').textContent = 
+                    Math.round(Math.random() * 30 + 10) + '%';
+                
+                createGaugeChart(value);
+                createHistoryChart(mockData);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('error').textContent = 
+                    'Gagal memuat data. Tap refresh untuk coba lagi.';
+                document.getElementById('error').style.display = 'block';
+            }
+        }
+        
+        function generateMockData() {
+            const now = Date.now() / 1000;
+            const data = [];
+            let baseValue = 50 + Math.random() * 30;
+            
+            let points, intervalSeconds;
+            
+            switch(currentTimeframe) {
+                case '1h':
+                    points = 60;
+                    intervalSeconds = 60; // 1 menit
+                    break;
+                case '5h':
+                    points = 60;
+                    intervalSeconds = 300; // 5 menit
+                    break;
+                case '24h':
+                    points = 96;
+                    intervalSeconds = 900; // 15 menit
+                    break;
+                case '7d':
+                    points = 168;
+                    intervalSeconds = 3600; // 1 jam
+                    break;
+                case '30d':
+                    points = 180;
+                    intervalSeconds = 14400; // 4 jam
+                    break;
+                case '90d':
+                    points = 180;
+                    intervalSeconds = 43200; // 12 jam
+                    break;
+                case '1y':
+                    points = 365;
+                    intervalSeconds = 86400; // 1 hari
+                    break;
+                default:
+                    points = 24;
+                    intervalSeconds = 3600;
+            }
+            
+            for (let i = points; i >= 0; i--) {
+                baseValue += (Math.random() - 0.5) * 8;
+                baseValue = Math.max(10, Math.min(90, baseValue));
+                
+                data.push({
+                    value: Math.round(baseValue).toString(),
+                    timestamp: Math.floor(now - (i * intervalSeconds))
+                });
+            }
+            
+            return data;
+        }
+        
+        function changeTimeframe(timeframe) {
+            currentTimeframe = timeframe;
+            
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            loadData();
+        }
+        
+        loadData();
+        setInterval(loadData, 900000);
+    </script>
+</body>
+</html>
