@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini Multi-Model Tester</title>
+    <title>Gemini Multi API Key Tester</title>
     <style>
         * {
             margin: 0;
@@ -19,7 +19,7 @@
         }
         
         .container {
-            max-width: 900px;
+            max-width: 1000px;
             margin: 0 auto;
             background: white;
             border-radius: 16px;
@@ -49,111 +49,71 @@
             font-size: 14px;
         }
         
-        input, textarea {
+        textarea {
             width: 100%;
             padding: 14px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
-            font-size: 15px;
+            font-size: 14px;
             transition: all 0.3s;
             margin-bottom: 20px;
-            font-family: inherit;
-        }
-        
-        textarea {
-            min-height: 100px;
+            font-family: 'Courier New', monospace;
             resize: vertical;
         }
         
-        input:focus, textarea:focus {
+        textarea:focus {
             outline: none;
             border-color: #667eea;
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
         
-        .model-grid {
+        .model-selector {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 10px;
             margin-bottom: 20px;
         }
         
-        .model-card {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            padding: 16px;
-            border-radius: 12px;
+        .model-checkbox {
+            background: #f5f7fa;
+            padding: 12px;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s;
-            border: 3px solid transparent;
-            position: relative;
+            border: 2px solid transparent;
         }
         
-        .model-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        .model-checkbox:hover {
+            background: #e8ecf1;
         }
         
-        .model-card.selected {
+        .model-checkbox input[type="checkbox"] {
+            margin-right: 8px;
+        }
+        
+        .model-checkbox.checked {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border-color: #667eea;
         }
         
-        .model-card.testing {
-            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
-            animation: pulse 1.5s infinite;
-        }
-        
-        .model-card.success {
-            background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
-            color: white;
-        }
-        
-        .model-card.failed {
-            background: linear-gradient(135deg, #d63031 0%, #ff7675 100%);
-            color: white;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        
-        .model-name {
-            font-weight: 700;
-            font-size: 15px;
-            margin-bottom: 4px;
-        }
-        
-        .model-desc {
-            font-size: 11px;
-            opacity: 0.8;
-        }
-        
-        .model-status {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            font-size: 18px;
-        }
-        
-        .btn-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
         button {
-            padding: 16px;
+            width: 100%;
+            padding: 18px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
             border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
+            font-size: 18px;
+            font-weight: 700;
             cursor: pointer;
             transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
         }
         
         button:active {
@@ -163,71 +123,136 @@
         button:disabled {
             opacity: 0.6;
             cursor: not-allowed;
+            transform: none;
         }
         
         .btn-danger {
             background: linear-gradient(135deg, #d63031 0%, #ff7675 100%);
         }
         
-        .result {
-            margin-top: 20px;
+        .progress {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: none;
+        }
+        
+        .progress.active {
+            display: block;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .progress-text {
+            text-align: center;
+            color: #666;
+            font-size: 13px;
+        }
+        
+        .results {
+            margin-top: 30px;
+            display: none;
+        }
+        
+        .results.active {
+            display: block;
+        }
+        
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             padding: 20px;
             border-radius: 12px;
-            font-size: 14px;
-            line-height: 1.8;
-            display: none;
-            animation: fadeIn 0.3s;
+            text-align: center;
         }
         
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .summary-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
         }
         
-        .result.success {
-            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-            border: 2px solid #28a745;
-            color: #155724;
-            display: block;
+        .summary-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
         }
         
-        .result.error {
-            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
-            border: 2px solid #dc3545;
-            color: #721c24;
-            display: block;
-        }
-        
-        .result.info {
-            background: linear-gradient(135deg, #d1ecf1 0%, #bee5eb 100%);
-            border: 2px solid #17a2b8;
-            color: #0c5460;
-            display: block;
-        }
-        
-        .icon {
-            font-size: 24px;
-            margin-right: 10px;
-        }
-        
-        .test-results {
-            margin-top: 20px;
-        }
-        
-        .test-item {
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
             background: white;
-            padding: 12px;
-            margin: 8px 0;
             border-radius: 8px;
-            border-left: 4px solid #667eea;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
         
-        .test-item.success {
-            border-left-color: #28a745;
+        .result-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
         }
         
-        .test-item.failed {
-            border-left-color: #dc3545;
+        .result-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .result-table tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .api-key-short {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #666;
         }
         
         .info {
@@ -241,177 +266,227 @@
             line-height: 1.6;
         }
         
-        code {
-            background: #f4f4f4;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-family: monospace;
-            font-size: 12px;
-        }
-        
-        .summary {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-top: 20px;
-            padding: 16px;
-            background: rgba(102, 126, 234, 0.1);
-            border-radius: 8px;
-        }
-        
-        .summary-item {
-            text-align: center;
-        }
-        
-        .summary-value {
-            font-size: 32px;
-            font-weight: 700;
+        .expandable {
+            cursor: pointer;
             color: #667eea;
+            text-decoration: underline;
         }
         
-        .summary-label {
-            font-size: 12px;
-            color: #666;
-            margin-top: 4px;
+        .error-detail {
+            display: none;
+            margin-top: 8px;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+        
+        .error-detail.show {
+            display: block;
+        }
+        
+        .working-combos {
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border-radius: 12px;
+            border: 2px solid #28a745;
+        }
+        
+        .working-combos h3 {
+            color: #155724;
+            margin-bottom: 12px;
+        }
+        
+        .combo-item {
+            background: white;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 6px;
+            font-size: 13px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🧪 Gemini Multi-Model Tester</h1>
-        <p class="subtitle">Test semua model Gemini sekaligus buat cari yang bisa dipake</p>
+        <h1>🚀 Gemini Multi API Key Tester</h1>
+        <p class="subtitle">Test beberapa API key sekaligus dengan berbagai model</p>
         
-        <label for="apiKey">🔑 API Key:</label>
-        <input 
-            type="text" 
-            id="apiKey" 
-            placeholder="AIzaSy..." 
-            autocomplete="off"
-        >
-        
-        <label for="testMessage">💬 Test Message:</label>
+        <label for="apiKeys">🔑 API Keys (satu per baris):</label>
         <textarea 
-            id="testMessage" 
-            placeholder="Pesan yang akan dikirim ke semua model..."
-        >Halo! Tolong balas dengan singkat.</textarea>
+            id="apiKeys" 
+            rows="5"
+            placeholder="AIzaSy...
+AIzaSy...
+AIzaSy...
+(Masukin banyak API key, satu per baris)"
+        ></textarea>
         
         <label>📦 Pilih Model untuk Test:</label>
-        <div class="model-grid" id="modelGrid">
-            <div class="model-card" data-model="gemini-2.5-flash">
-                <div class="model-status">⚪</div>
-                <div class="model-name">2.5 Flash</div>
-                <div class="model-desc">Best price-perf (Stable)</div>
-            </div>
-            <div class="model-card" data-model="gemini-2.5-flash-lite">
-                <div class="model-status">⚪</div>
-                <div class="model-name">2.5 Flash-Lite</div>
-                <div class="model-desc">Ultra fast & cheap</div>
-            </div>
-            <div class="model-card" data-model="gemini-2.0-flash">
-                <div class="model-status">⚪</div>
-                <div class="model-name">2.0 Flash</div>
-                <div class="model-desc">Workhorse (Stable)</div>
-            </div>
-            <div class="model-card" data-model="gemini-1.5-flash">
-                <div class="model-status">⚪</div>
-                <div class="model-name">1.5 Flash</div>
-                <div class="model-desc">Legacy (Still works)</div>
-            </div>
+        <div class="model-selector" id="modelSelector">
+            <label class="model-checkbox">
+                <input type="checkbox" value="gemini-2.5-flash" checked>
+                <strong>2.5 Flash</strong><br>
+                <small>Best price-perf</small>
+            </label>
+            <label class="model-checkbox">
+                <input type="checkbox" value="gemini-2.5-flash-lite" checked>
+                <strong>2.5 Flash-Lite</strong><br>
+                <small>Ultra fast</small>
+            </label>
+            <label class="model-checkbox">
+                <input type="checkbox" value="gemini-2.0-flash" checked>
+                <strong>2.0 Flash</strong><br>
+                <small>Workhorse</small>
+            </label>
+            <label class="model-checkbox">
+                <input type="checkbox" value="gemini-1.5-flash" checked>
+                <strong>1.5 Flash</strong><br>
+                <small>Legacy</small>
+            </label>
         </div>
         
-        <div class="btn-group">
-            <button onclick="testAllModels()">🚀 Test Semua Model</button>
-            <button onclick="testSelectedModel()">🎯 Test Model Terpilih</button>
+        <button onclick="startTesting()" id="testBtn">🧪 Test Semua Kombinasi</button>
+        <button onclick="resetAll()" class="btn-danger">🔄 Reset</button>
+        
+        <div class="progress" id="progress">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill">0%</div>
+            </div>
+            <div class="progress-text" id="progressText">Memulai test...</div>
         </div>
         
-        <button onclick="resetTests()" class="btn-danger" style="width: 100%;">🔄 Reset</button>
-        
-        <div id="result" class="result"></div>
+        <div class="results" id="results">
+            <div class="summary">
+                <div class="summary-card">
+                    <div class="summary-value" id="totalTests">0</div>
+                    <div class="summary-label">Total Tests</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value" style="color: #28a745;" id="successTests">0</div>
+                    <div class="summary-label">Success</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value" style="color: #dc3545;" id="failedTests">0</div>
+                    <div class="summary-label">Failed</div>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-value" id="workingKeys">0</div>
+                    <div class="summary-label">Working Keys</div>
+                </div>
+            </div>
+            
+            <div id="workingCombos"></div>
+            
+            <table class="result-table">
+                <thead>
+                    <tr>
+                        <th>API Key</th>
+                        <th>Model</th>
+                        <th>Status</th>
+                        <th>Time</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody id="resultTableBody"></tbody>
+            </table>
+        </div>
         
         <div class="info">
             💡 <strong>Cara Pakai:</strong><br>
-            1️⃣ Masukin API key kamu<br>
-            2️⃣ <strong>Klik card model</strong> untuk pilih (atau test semua sekaligus)<br>
-            3️⃣ Klik "Test Semua Model" atau "Test Model Terpilih"<br>
-            4️⃣ Liat hasilnya - <strong>hijau = sukses, merah = gagal, kuning = testing</strong><br><br>
+            1️⃣ Masukin API keys (bisa banyak, satu per baris)<br>
+            2️⃣ Pilih model mana aja yang mau ditest (checklist)<br>
+            3️⃣ Klik "Test Semua Kombinasi"<br>
+            4️⃣ Tunggu sampai selesai - bakal test semua kombinasi API key × Model<br>
+            5️⃣ Liat hasil lengkap di tabel<br><br>
             
-            <strong>Status Card:</strong><br>
-            ⚪ Belum ditest | ⏳ Sedang test | ✅ Berhasil | ❌ Gagal
+            <strong>💪 Fitur:</strong><br>
+            • Test multiple API keys sekaligus<br>
+            • Test multiple models sekaligus<br>
+            • Progress bar real-time<br>
+            • Hasil lengkap dengan error details<br>
+            • Otomatis kasih tau kombinasi yang work
         </div>
     </div>
 
     <script>
-        let selectedModel = null;
-        const testResults = {};
+        const testResults = [];
+        let currentTest = 0;
+        let totalTestsCount = 0;
         
-        // Handle model selection
-        document.querySelectorAll('.model-card').forEach(card => {
-            card.addEventListener('click', function() {
-                document.querySelectorAll('.model-card').forEach(c => c.classList.remove('selected'));
-                this.classList.add('selected');
-                selectedModel = this.getAttribute('data-model');
+        // Handle checkbox styling
+        document.querySelectorAll('.model-checkbox').forEach(label => {
+            const checkbox = label.querySelector('input[type="checkbox"]');
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    label.classList.add('checked');
+                } else {
+                    label.classList.remove('checked');
+                }
             });
+            
+            // Initial state
+            if (checkbox.checked) {
+                label.classList.add('checked');
+            }
         });
         
-        async function testSelectedModel() {
-            if (!selectedModel) {
-                showResult('error', '❌ <strong>Error:</strong> Pilih model dulu dengan klik card-nya!');
+        async function startTesting() {
+            const apiKeysText = document.getElementById('apiKeys').value.trim();
+            const apiKeys = apiKeysText.split('\n').map(k => k.trim()).filter(k => k);
+            
+            if (apiKeys.length === 0) {
+                alert('Masukin minimal 1 API key!');
                 return;
             }
             
-            const apiKey = document.getElementById('apiKey').value.trim();
-            if (!apiKey) {
-                showResult('error', '❌ <strong>Error:</strong> API key tidak boleh kosong!');
+            const selectedModels = Array.from(document.querySelectorAll('.model-checkbox input:checked'))
+                .map(cb => cb.value);
+            
+            if (selectedModels.length === 0) {
+                alert('Pilih minimal 1 model!');
                 return;
             }
             
-            await testModel(selectedModel, apiKey);
+            // Reset
+            testResults.length = 0;
+            currentTest = 0;
+            totalTestsCount = apiKeys.length * selectedModels.length;
+            
+            // UI Setup
+            document.getElementById('testBtn').disabled = true;
+            document.getElementById('progress').classList.add('active');
+            document.getElementById('results').classList.remove('active');
+            
+            // Test all combinations
+            for (const apiKey of apiKeys) {
+                for (const model of selectedModels) {
+                    await testCombination(apiKey, model);
+                    currentTest++;
+                    updateProgress();
+                }
+            }
+            
+            // Show results
+            displayResults();
+            document.getElementById('testBtn').disabled = false;
         }
         
-        async function testAllModels() {
-            const apiKey = document.getElementById('apiKey').value.trim();
-            if (!apiKey) {
-                showResult('error', '❌ <strong>Error:</strong> API key tidak boleh kosong!');
-                return;
-            }
-            
-            showResult('info', '⏳ <strong>Testing semua model...</strong><br>Tunggu sebentar ya...');
-            
-            const models = [
-                'gemini-2.5-flash',
-                'gemini-2.5-flash-lite',
-                'gemini-2.0-flash',
-                'gemini-1.5-flash'
-            ];
-            
-            for (const model of models) {
-                await testModel(model, apiKey);
-                await new Promise(resolve => setTimeout(resolve, 500)); // delay antar test
-            }
-            
-            displaySummary();
-        }
-        
-        async function testModel(modelName, apiKey) {
-            const card = document.querySelector(`[data-model="${modelName}"]`);
-            const message = document.getElementById('testMessage').value.trim();
-            
-            // Set testing state
-            card.classList.remove('success', 'failed');
-            card.classList.add('testing');
-            card.querySelector('.model-status').textContent = '⏳';
+        async function testCombination(apiKey, model) {
+            const progressText = document.getElementById('progressText');
+            progressText.textContent = `Testing ${model} with key ${apiKey.substring(0, 15)}...`;
             
             const startTime = Date.now();
             
             try {
-                const url = `https://generativelanguage.googleapis.com/v1/models/${modelName}:generateContent?key=${apiKey}`;
+                const url = `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`;
                 
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         contents: [{
-                            parts: [{ text: message }]
+                            parts: [{ text: 'Hi' }]
                         }]
                     })
                 });
@@ -419,127 +494,126 @@
                 const data = await response.json();
                 const duration = ((Date.now() - startTime) / 1000).toFixed(2);
                 
-                if (response.ok && data.candidates) {
-                    // Success
-                    card.classList.remove('testing');
-                    card.classList.add('success');
-                    card.querySelector('.model-status').textContent = '✅';
-                    
-                    testResults[modelName] = {
-                        success: true,
-                        duration: duration,
-                        response: data.candidates[0]?.content?.parts[0]?.text || 'OK',
-                        error: null
-                    };
-                } else {
-                    // Failed
-                    card.classList.remove('testing');
-                    card.classList.add('failed');
-                    card.querySelector('.model-status').textContent = '❌';
-                    
-                    testResults[modelName] = {
-                        success: false,
-                        duration: duration,
-                        response: null,
-                        error: data.error?.message || 'Unknown error',
-                        errorCode: data.error?.code || response.status
-                    };
-                }
+                testResults.push({
+                    apiKey: apiKey,
+                    model: model,
+                    success: response.ok && data.candidates,
+                    duration: duration,
+                    error: data.error?.message || null,
+                    errorCode: data.error?.code || response.status
+                });
             } catch (error) {
-                // Error
-                card.classList.remove('testing');
-                card.classList.add('failed');
-                card.querySelector('.model-status').textContent = '❌';
-                
-                testResults[modelName] = {
+                testResults.push({
+                    apiKey: apiKey,
+                    model: model,
                     success: false,
                     duration: null,
-                    response: null,
-                    error: error.message
-                };
+                    error: error.message,
+                    errorCode: null
+                });
             }
+            
+            // Small delay to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 200));
         }
         
-        function displaySummary() {
-            const totalTests = Object.keys(testResults).length;
-            const successCount = Object.values(testResults).filter(r => r.success).length;
-            const failedCount = totalTests - successCount;
+        function updateProgress() {
+            const percent = Math.round((currentTest / totalTestsCount) * 100);
+            const progressFill = document.getElementById('progressFill');
+            progressFill.style.width = percent + '%';
+            progressFill.textContent = percent + '%';
+        }
+        
+        function displayResults() {
+            document.getElementById('progress').classList.remove('active');
+            document.getElementById('results').classList.add('active');
             
-            let html = `
-                <span class="icon">📊</span>
-                <strong>Hasil Test Semua Model</strong>
-                
-                <div class="summary">
-                    <div class="summary-item">
-                        <div class="summary-value">${totalTests}</div>
-                        <div class="summary-label">Total Test</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="summary-value" style="color: #28a745;">${successCount}</div>
-                        <div class="summary-label">Berhasil</div>
-                    </div>
-                    <div class="summary-item">
-                        <div class="summary-value" style="color: #dc3545;">${failedCount}</div>
-                        <div class="summary-label">Gagal</div>
-                    </div>
-                </div>
-                
-                <div class="test-results">
-            `;
+            // Calculate stats
+            const successCount = testResults.filter(r => r.success).length;
+            const failedCount = testResults.length - successCount;
+            const uniqueWorkingKeys = new Set(testResults.filter(r => r.success).map(r => r.apiKey)).size;
             
-            for (const [model, result] of Object.entries(testResults)) {
-                const statusClass = result.success ? 'success' : 'failed';
-                const icon = result.success ? '✅' : '❌';
-                
-                html += `
-                    <div class="test-item ${statusClass}">
-                        ${icon} <strong>${model}</strong><br>
-                        ${result.success ? 
-                            `✓ Success in ${result.duration}s<br><small>Response: ${result.response.substring(0, 80)}...</small>` :
-                            `✗ Failed: ${result.error}<br><small>${result.errorCode ? 'Error ' + result.errorCode : ''}</small>`
-                        }
-                    </div>
+            document.getElementById('totalTests').textContent = testResults.length;
+            document.getElementById('successTests').textContent = successCount;
+            document.getElementById('failedTests').textContent = failedCount;
+            document.getElementById('workingKeys').textContent = uniqueWorkingKeys;
+            
+            // Show working combinations
+            const workingCombos = testResults.filter(r => r.success);
+            if (workingCombos.length > 0) {
+                let html = `
+                    <div class="working-combos">
+                        <h3>✅ Kombinasi yang Berhasil (${workingCombos.length})</h3>
                 `;
-            }
-            
-            html += '</div>';
-            
-            if (successCount > 0) {
-                html += '<br><strong>💡 Rekomendasi:</strong><br>';
-                const workingModels = Object.entries(testResults)
-                    .filter(([, r]) => r.success)
-                    .map(([model]) => `<code>${model}</code>`)
-                    .join(', ');
-                html += `Model yang bisa kamu pake: ${workingModels}`;
+                
+                workingCombos.forEach(combo => {
+                    html += `
+                        <div class="combo-item">
+                            <strong>${combo.model}</strong> + 
+                            <code>${combo.apiKey.substring(0, 20)}...${combo.apiKey.slice(-5)}</code>
+                            (${combo.duration}s)
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                document.getElementById('workingCombos').innerHTML = html;
             } else {
-                html += `
-                    <br><strong>⚠️ Semua model gagal!</strong><br>
-                    Kemungkinan:<br>
-                    • API key invalid/expired<br>
-                    • Quota habis<br>
-                    • Belum ada quota free tier<br>
-                    • Perlu bikin API key baru di <a href="https://aistudio.google.com/app/apikey" target="_blank">Google AI Studio</a>
+                document.getElementById('workingCombos').innerHTML = `
+                    <div style="background: #f8d7da; padding: 20px; border-radius: 12px; border: 2px solid #dc3545; color: #721c24;">
+                        <h3>❌ Tidak Ada Kombinasi yang Berhasil</h3>
+                        <p>Semua API key gagal untuk semua model. Kemungkinan:</p>
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li>API key invalid/expired</li>
+                            <li>Quota habis/belum ada quota</li>
+                            <li>Perlu aktivasi atau billing</li>
+                        </ul>
+                    </div>
                 `;
             }
             
-            showResult(successCount > 0 ? 'success' : 'error', html);
-        }
-        
-        function showResult(type, html) {
-            const resultDiv = document.getElementById('result');
-            resultDiv.className = `result ${type}`;
-            resultDiv.innerHTML = html;
-        }
-        
-        function resetTests() {
-            document.querySelectorAll('.model-card').forEach(card => {
-                card.classList.remove('testing', 'success', 'failed', 'selected');
-                card.querySelector('.model-status').textContent = '⚪';
-            });
+            // Populate table
+            const tbody = document.getElementById('resultTableBody');
+            tbody.innerHTML = '';
             
-            document.getElementById('result').style.display = 'none';
-            selectedModel = null;
-            Object.keys(testResults).forEach(key => delete testResults[key]);
+            testResults.forEach((result, index) => {
+                const row = tbody.insertRow();
+                const shortKey = result.apiKey.substring(0, 15) + '...' + result.apiKey.slice(-5);
+                
+                row.innerHTML = `
+                    <td><span class="api-key-short">${shortKey}</span></td>
+                    <td><strong>${result.model}</strong></td>
+                    <td>
+                        <span class="status-badge ${result.success ? 'status-success' : 'status-failed'}">
+                            ${result.success ? '✅ Success' : '❌ Failed'}
+                        </span>
+                    </td>
+                    <td>${result.duration ? result.duration + 's' : '-'}</td>
+                    <td>
+                        ${result.success ? 
+                            '<span style="color: #28a745;">✓ Working</span>' : 
+                            `<span class="expandable" onclick="toggleError(${index})">Show error</span>
+                             <div class="error-detail" id="error-${index}">
+                                <strong>Error ${result.errorCode}:</strong><br>
+                                ${result.error}
+                             </div>`
+                        }
+                    </td>
+                `;
+            });
+        }
+        
+        function toggleError(index) {
+            const errorDiv = document.getElementById('error-' + index);
+            errorDiv.classList.toggle('show');
+        }
+        
+        function resetAll() {
+            document.getElementById('apiKeys').value = '';
+            document.getElementById('progress').classList.remove('active');
+            document.getElementById('results').classList.remove('active');
+            testResults.length = 0;
+            currentTest = 0;
         }
     </script>
 </body>
