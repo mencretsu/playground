@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gemini API Checker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .input-section {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+        }
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 13px;
+            resize: vertical;
+            transition: border 0.3s;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .model-select {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .model-option {
+            flex: 1;
+            min-width: 150px;
+        }
+        .model-option input[type="radio"] {
+            display: none;
+        }
+        .model-option label {
+            display: block;
+            padding: 12px 20px;
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .model-option input[type="radio"]:checked + label {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .model-option label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .progress {
+            margin: 20px 0;
+            text-align: center;
+            color: #666;
+            font-weight: 600;
+        }
+        .results {
+            margin-top: 30px;
+        }
+        .result-box {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        .result-box h3 {
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .badge.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .api-list {
+            background: white;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .copy-btn {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .copy-btn:hover {
+            background: #218838;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-card h4 {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Gemini API Checker & Sorter</h1>
+        <p class="subtitle">Cek dan sortir API key yang masih berfungsi</p>
+
+        <div class="input-section">
+            <label>Model Gemini:</label>
+            <div class="model-select">
+                <div class="model-option">
+                    <input type="radio" id="flash2" name="model" value="gemini-2.0-flash" checked>
+                    <label for="flash2">Flash 2.0</label>
+                </div>
+                <div class="model-option">
+                    <input type="radio" id="flash25" name="model" value="gemini-2.5-flash">
+                    <label for="flash25">Flash 2.5</label>
+                </div>
+                <div class="model-option">
+                    <input type="radio" id="flash25lite" name="model" value="gemini-2.5-flash-lite">
+                    <label for="flash25lite">Flash 2.5 Lite</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="input-section">
+            <label>Masukkan API Keys (satu per baris):</label>
+            <textarea id="apiInput" rows="10" placeholder="AIzaSyAxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+AIzaSyC..."></textarea>
+        </div>
+
+        <button class="btn" id="checkBtn" onclick="checkAPIs()">Mulai Cek API</button>
+
+        <div id="progress" class="progress" style="display:none;"></div>
+
+        <div id="results" class="results" style="display:none;">
+            <div class="stats" id="stats"></div>
+            
+            <div class="result-box">
+                <h3>
+                    ✅ API yang Berfungsi
+                    <span class="badge success" id="workingCount">0</span>
+                </h3>
+                <div class="api-list" id="workingList">Belum ada hasil</div>
+                <button class="copy-btn" onclick="copyWorking()">📋 Copy Semua</button>
+            </div>
+
+            <div class="result-box">
+                <h3>
+                    ❌ API yang Error
+                    <span class="badge error" id="errorCount">0</span>
+                </h3>
+                <div class="api-list" id="errorList">Belum ada hasil</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let workingAPIs = [];
+        let errorAPIs = [];
+
+        async function checkAPIs() {
+            const input = document.getElementById('apiInput').value.trim();
+            const model = document.querySelector('input[name="model"]:checked').value;
+            
+            if (!input) {
+                alert('Masukkan API keys terlebih dahulu!');
+                return;
+            }
+
+            const apis = input.split('\n').map(k => k.trim()).filter(k => k);
+            
+            if (apis.length === 0) {
+                alert('Tidak ada API key yang valid!');
+                return;
+            }
+
+            workingAPIs = [];
+            errorAPIs = [];
+            
+            document.getElementById('checkBtn').disabled = true;
+            document.getElementById('progress').style.display = 'block';
+            document.getElementById('results').style.display = 'block';
+            
+            for (let i = 0; i < apis.length; i++) {
+                const api = apis[i];
+                document.getElementById('progress').textContent = `Mengecek ${i + 1} dari ${apis.length}...`;
+                
+                try {
+                    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${api}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [{ text: 'test' }]
+                            }]
+                        })
+                    });
+
+                    const data = await res.json();
+                    
+                    if (res.ok) {
+                        workingAPIs.push(api);
+                    } else {
+                        const errMsg = data.error?.message || 'Unknown error';
+                        const status = data.error?.status || '';
+                        
+                        // Tetap ambil API yang kena limit/quota, buang yang suspend
+                        if (errMsg.includes('RESOURCE_EXHAUSTED') || 
+                            errMsg.includes('quota') || 
+                            errMsg.includes('limit') ||
+                            status === 'RESOURCE_EXHAUSTED') {
+                            workingAPIs.push(api);
+                        } else if (errMsg.includes('suspend') || 
+                                   errMsg.includes('disabled') ||
+                                   status === 'PERMISSION_DENIED') {
+                            errorAPIs.push({key: api, error: `❌ SUSPEND: ${errMsg}`});
+                        } else {
+                            errorAPIs.push({key: api, error: errMsg});
+                        }
+                    }
+                } catch (e) {
+                    errorAPIs.push({key: api, error: e.message});
+                }
+                
+                updateDisplay();
+            }
+            
+            document.getElementById('progress').textContent = '✅ Selesai!';
+            document.getElementById('checkBtn').disabled = false;
+        }
+
+        function updateDisplay() {
+            document.getElementById('workingCount').textContent = workingAPIs.length;
+            document.getElementById('errorCount').textContent = errorAPIs.length;
+            
+            document.getElementById('workingList').textContent = 
+                workingAPIs.length > 0 ? workingAPIs.join('\n') : 'Belum ada API yang berfungsi';
+            
+            document.getElementById('errorList').textContent = 
+                errorAPIs.length > 0 
+                    ? errorAPIs.map(e => `${e.key}\n  Error: ${e.error}`).join('\n\n')
+                    : 'Tidak ada error';
+
+            const total = workingAPIs.length + errorAPIs.length;
+            const successRate = total > 0 ? ((workingAPIs.length / total) * 100).toFixed(1) : 0;
+
+            document.getElementById('stats').innerHTML = `
+                <div class="stat-card">
+                    <h4>Total Dicek</h4>
+                    <div class="number">${total}</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Berhasil</h4>
+                    <div class="number">${workingAPIs.length}</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Error</h4>
+                    <div class="number">${errorAPIs.length}</div>
+                </div>
+                <div class="stat-card">
+                    <h4>Success Rate</h4>
+                    <div class="number">${successRate}%</div>
+                </div>
+            `;
+        }
+
+        function copyWorking() {
+            if (workingAPIs.length === 0) {
+                alert('Tidak ada API yang berfungsi untuk di-copy!');
+                return;
+            }
+            
+            const text = workingAPIs.join('\n');
+            navigator.clipboard.writeText(text).then(() => {
+                alert(`✅ ${workingAPIs.length} API key berhasil di-copy!`);
+            }).catch(() => {
+                alert('Gagal copy, silakan copy manual');
+            });
+        }
+    </script>
+</body>
+</html>
