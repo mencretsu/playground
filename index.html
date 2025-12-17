@@ -1,90 +1,909 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-  <title>main</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" type="image/png" href="https://github.com/mencretsu.png">
-  <style>
-    /* Dark mode basic */
-    body {
-      background-color: #121212;
-      color: #e0e0e0;
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-    }
-
-    a {
-      color: #80cbc4;
-      text-decoration: none;
-    }
-
-    a:hover {
-      color: #4db6ac;
-      text-decoration: underline;
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    ul {
-      list-style: none;
-      padding-left: 0;
-    }
-
-    li {
-      margin: 8px 0;
-    }
-
-    div {
-      text-align: right;
-      margin-bottom: 20px;
-    }
-
-    img {
-      border-radius: 4px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stochastic Oscillator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0e27;
+            padding: 10px;
+            min-height: 100vh;
+            color: #e2e8f0;
+        }
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: #1a1f3a;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        h1 {
+            text-align: center;
+            color: #60a5fa;
+            margin-bottom: 5px;
+            font-size: 1.5em;
+        }
+        .subtitle {
+            text-align: center;
+            color: #94a3b8;
+            margin-bottom: 15px;
+            font-size: 0.8em;
+        }
+        .realtime-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #0f172a;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+        .live-dot {
+            width: 10px;
+            height: 10px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: blink 1.5s infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .realtime-status span {
+            color: #10b981;
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        .last-update {
+            color: #64748b;
+            font-size: 0.75em;
+        }
+        .auto-refresh-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: #1e293b;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+        .toggle-label {
+            color: #e2e8f0;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #334155;
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #10b981;
+        }
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+        .refresh-interval {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #1e293b;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+        .refresh-interval label {
+            color: #94a3b8;
+            font-size: 0.85em;
+            flex: 1;
+        }
+        .refresh-interval select {
+            padding: 6px 10px;
+            border: 1px solid #334155;
+            border-radius: 4px;
+            background: #0f172a;
+            color: #f1f5f9;
+            font-size: 0.85em;
+        }
+        .status-line {
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 3px solid #60a5fa;
+        }
+        .status-line h3 {
+            color: #e2e8f0;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        .params {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        .param {
+            background: #1e293b;
+            padding: 8px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+        }
+        .param-label {
+            font-weight: 600;
+            color: #60a5fa;
+            font-size: 0.75em;
+        }
+        .param-value {
+            color: #f1f5f9;
+            font-size: 0.95em;
+            margin-top: 2px;
+        }
+        .chart-container {
+            position: relative;
+            height: 280px;
+            margin-bottom: 15px;
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 8px;
+        }
+        .signal-box {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 12px;
+        }
+        @media (max-width: 768px) {
+            .signal-box {
+                grid-template-columns: 1fr;
+            }
+            .params {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        .trade-signal {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 12px;
+            border: 2px solid #334155;
+        }
+        .trade-signal h2 {
+            color: #60a5fa;
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+        .trade-action {
+            font-size: 1.8em;
+            font-weight: bold;
+            margin: 12px 0;
+            padding: 12px;
+            border-radius: 8px;
+            text-transform: uppercase;
+        }
+        .buy-signal {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            animation: pulse 2s infinite;
+        }
+        .sell-signal {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            animation: pulse 2s infinite;
+        }
+        .hold-signal {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+        }
+        .trade-reason {
+            color: #cbd5e1;
+            font-size: 0.85em;
+            margin-top: 8px;
+            line-height: 1.4;
+        }
+        .guide-box {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border-left: 3px solid #60a5fa;
+        }
+        .guide-box h3 {
+            color: #60a5fa;
+            margin-bottom: 10px;
+            font-size: 1em;
+        }
+        .guide-item {
+            background: #1e293b;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border-left: 3px solid #334155;
+        }
+        .guide-item.buy {
+            border-left-color: #10b981;
+        }
+        .guide-item.sell {
+            border-left-color: #ef4444;
+        }
+        .guide-item strong {
+            color: #f1f5f9;
+            font-size: 0.9em;
+            display: block;
+            margin-bottom: 5px;
+        }
+        .guide-item p {
+            color: #94a3b8;
+            margin-top: 5px;
+            line-height: 1.4;
+            font-size: 0.8em;
+        }
+        .signal {
+            padding: 12px;
+            border-radius: 8px;
+            text-align: center;
+            transition: transform 0.2s;
+            background: #1e293b;
+            border: 1px solid #334155;
+        }
+        .signal:active {
+            transform: scale(0.98);
+        }
+        .signal h3 {
+            margin-bottom: 6px;
+            font-size: 0.85em;
+            color: #94a3b8;
+        }
+        .signal .value {
+            font-size: 1.6em;
+            font-weight: bold;
+            margin: 6px 0;
+            color: #f1f5f9;
+        }
+        .signal .status {
+            font-size: 0.75em;
+            padding: 5px;
+            border-radius: 4px;
+            margin-top: 6px;
+            background: #0f172a;
+            color: #cbd5e1;
+        }
+        .k-signal {
+            border-left: 3px solid #60a5fa;
+        }
+        .d-signal {
+            border-left: 3px solid #f472b6;
+        }
+        .zone-signal {
+            border-left: 3px solid #34d399;
+        }
+        .oversold {
+            background: #065f46 !important;
+            color: #d1fae5 !important;
+        }
+        .overbought {
+            background: #7f1d1d !important;
+            color: #fecaca !important;
+        }
+        .neutral {
+            background: #374151 !important;
+            color: #e5e7eb !important;
+        }
+        .controls {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+        .controls h3 {
+            color: #e2e8f0;
+            margin-bottom: 12px;
+            font-size: 1em;
+        }
+        .input-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        @media (max-width: 480px) {
+            .input-group {
+                grid-template-columns: 1fr;
+            }
+        }
+        .input-field {
+            display: flex;
+            flex-direction: column;
+        }
+        .input-field label {
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 5px;
+            font-size: 0.8em;
+        }
+        .input-field input,
+        .input-field select {
+            padding: 10px;
+            border: 1px solid #334155;
+            border-radius: 6px;
+            font-size: 0.9em;
+            background: #1e293b;
+            color: #f1f5f9;
+            transition: border-color 0.3s;
+        }
+        .input-field input:focus,
+        .input-field select:focus {
+            outline: none;
+            border-color: #60a5fa;
+        }
+        button {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 0.95em;
+            cursor: pointer;
+            transition: transform 0.2s;
+            font-weight: 600;
+            width: 100%;
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        #loading, #error-msg {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 0.85em;
+            padding: 8px;
+            border-radius: 6px;
+        }
+        #loading {
+            display: none;
+            color: #60a5fa;
+            background: #1e3a5f;
+        }
+        #error-msg {
+            display: none;
+            color: #fca5a5;
+            background: #7f1d1d;
+        }
+    </style>
 </head>
 <body>
-  <div>
-    <a href="https://github.com/mencretsu" target="_blank" title="GitHub">
-      <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" width="32" height="32">
-    </a>
-  </div>
+    <div class="container">
+        <h1>📊 Stochastic Oscillator</h1>
+        <p class="subtitle">Real-time Crypto Trading Signal</p>
 
-  <h1>Playground</h1>
-  <ul>
-    <li><a href="pages/">-</a></li>
-    <li><a href="pages/futures_simulator.html">futures simulator</a></li>
-        <li><a href="pages/webkloner.html">web cloner</a></li>
-            <li><a href="pages/stochastic.html">Stochastic</a></li>
+        <div class="realtime-status">
+            <div class="live-dot"></div>
+            <span>LIVE</span>
+            <span class="last-update" id="last-update">Loading...</span>
+        </div>
 
-            <li><a href="pages/hourly_index.html">fear greed - hourly index</a></li>
-    <li><a href="pages/geminicheckerv2.html">Gemini API Checker V2</a></li>
-    <li><a href="pages/gemini_api_sorter.html">Gemini API Sorter</a></li>
-    <li><a href="pages/advance_signal.html">advanced crypto signal</a></li>
-    <li><a href="pages/gemini_api_checker2.html">gemini project api checker</a></li>
-    <li><a href="pages/smali_string.html">smali to string extractor</a></li>
-    <li><a href="pages/grid_param.html">grid param</a></li>
-    <li><a href="pages/gemini_api_checker.html">gemini api checker</a></li>
-    <li><a href="pages/hextodecimal.html">hex to decimal</a></li>
-    <li><a href="pages/texttohash.html">text to hash</a></li>
-    <li><a href="pages/ud_gold.html">ud gold calculator</a></li>
-    <li><a href="pages/nyan_cat.html">damn cat</a></li>
-    <li><a href="pages/rp_auto_recap.html">rp auto recap</a></li>
-    <li><a href="pages/martingale.html">martingale simulator</a></li>
-    <li><a href="pages/seed-alias.html">seed to alias</a></li>
-    <li><a href="pages/kalkulator_apy.html">kalkulator apy/apr</a></li>
-    <li><a href="pages/wallet_generator.html">erc20 wallet generator</a></li>
-    <li><a href="pages/chart_report.html">chart report</a></li>
-    <li><a href="pages/kwh_meter.html">kwh meter</a></li>
-    <li><a href="pages/crossrate_checker.html">cross rate auto checker</a></li>
-    <li><a href="pages/smali_dex_gen.html">smali dex gen</a></li>
-    <li><a href="pages/dextojava.html">Dex to Java</a></li>
-    <li><a href="pages/smali_translator.html">smali translator</a></li>
-  </ul>
+        <div class="status-line">
+            <h3>Input Values - Status Line</h3>
+            <div class="params">
+                <div class="param">
+                    <div class="param-label">K Length</div>
+                    <div class="param-value" id="display-k-length">5</div>
+                </div>
+                <div class="param">
+                    <div class="param-label">K Smoothing</div>
+                    <div class="param-value" id="display-k-smooth">3</div>
+                </div>
+                <div class="param">
+                    <div class="param-label">D Smoothing</div>
+                    <div class="param-value" id="display-d-smooth">3</div>
+                </div>
+                <div class="param">
+                    <div class="param-label">Timeframe</div>
+                    <div class="param-value" id="display-timeframe">1H</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <h3>⚙️ Pengaturan</h3>
+            
+            <div class="auto-refresh-toggle">
+                <span class="toggle-label">🔄 Auto Refresh</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="auto-refresh" checked>
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="refresh-interval">
+                <label>⏱️ Refresh Interval:</label>
+                <select id="refresh-interval">
+                    <option value="3">3 detik</option>
+                    <option value="5" selected>5 detik</option>
+                    <option value="10">10 detik</option>
+                    <option value="30">30 detik</option>
+                    <option value="60">1 menit</option>
+                </select>
+            </div>
+
+            <div class="input-group">
+                <div class="input-field">
+                    <label>Coin/Token:</label>
+                    <select id="symbol">
+                        <option value="BTCUSDT">BTC/USDT</option>
+                        <option value="ETHUSDT">ETH/USDT</option>
+                        <option value="BNBUSDT">BNB/USDT</option>
+                        <option value="SOLUSDT">SOL/USDT</option>
+                        <option value="XRPUSDT">XRP/USDT</option>
+                        <option value="ADAUSDT">ADA/USDT</option>
+                        <option value="DOGEUSDT">DOGE/USDT</option>
+                        <option value="AVAXUSDT">AVAX/USDT</option>
+                        <option value="MATICUSDT">MATIC/USDT</option>
+                        <option value="DOTUSDT">DOT/USDT</option>
+                        <option value="LINKUSDT">LINK/USDT</option>
+                        <option value="UNIUSDT">UNI/USDT</option>
+                    </select>
+                </div>
+                <div class="input-field">
+                    <label>Timeframe:</label>
+                    <select id="timeframe">
+                        <option value="1m">1 Menit</option>
+                        <option value="5m">5 Menit</option>
+                        <option value="15m">15 Menit</option>
+                        <option value="30m">30 Menit</option>
+                        <option value="1h" selected>1 Jam</option>
+                        <option value="4h">4 Jam</option>
+                        <option value="1d">1 Hari</option>
+                        <option value="1w">1 Minggu</option>
+                    </select>
+                </div>
+                <div class="input-field">
+                    <label>K Length:</label>
+                    <input type="number" id="k-length" value="5" min="1" max="50">
+                </div>
+                <div class="input-field">
+                    <label>K Smoothing:</label>
+                    <input type="number" id="k-smooth" value="3" min="1" max="20">
+                </div>
+                <div class="input-field">
+                    <label>D Smoothing:</label>
+                    <input type="number" id="d-smooth" value="3" min="1" max="20">
+                </div>
+            </div>
+            <button onclick="updateChart()">🔄 Load Data Binance</button>
+            <div id="loading">⏳ Loading data...</div>
+            <div id="error-msg"></div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="stochChart"></canvas>
+        </div>
+
+        <div class="trade-signal">
+            <h2>🎯 REKOMENDASI TRADING</h2>
+            <div class="trade-action" id="trade-action">ANALYZING...</div>
+            <div class="trade-reason" id="trade-reason">Menunggu data...</div>
+        </div>
+
+        <div class="guide-box">
+            <h3>📚 Cara Baca Stochastic (Gampang Banget!)</h3>
+            
+            <div class="guide-item buy">
+                <strong>🟢 SINYAL BUY (Beli)</strong>
+                <p>
+                    • %K di bawah 20 (zona oversold) = harga udah murah banget<br>
+                    • %K memotong %D dari bawah ke atas = momentum naik mulai<br>
+                    • Kombinasi keduanya = SINYAL BUY KUAT! 💪
+                </p>
+            </div>
+
+            <div class="guide-item sell">
+                <strong>🔴 SINYAL SELL (Jual)</strong>
+                <p>
+                    • %K di atas 80 (zona overbought) = harga udah mahal banget<br>
+                    • %K memotong %D dari atas ke bawah = momentum turun mulai<br>
+                    • Kombinasi keduanya = SINYAL SELL KUAT! 💪
+                </p>
+            </div>
+
+            <div class="guide-item">
+                <strong>⚖️ Zone Tengah (20-80)</strong>
+                <p>
+                    • Liat crossing aja (perpotongan %K dan %D)<br>
+                    • %K potong %D ke atas = bullish (beli)<br>
+                    • %K potong %D ke bawah = bearish (jual)<br>
+                    • Kalo gak ada crossing jelas = HOLD/tunggu aja!
+                </p>
+            </div>
+        </div>
+
+        <div class="signal-box">
+            <div class="signal k-signal">
+                <h3>%K Line</h3>
+                <div class="value" id="k-value">--</div>
+                <div class="status" id="k-status">Calculating...</div>
+            </div>
+            <div class="signal d-signal">
+                <h3>%D Line</h3>
+                <div class="value" id="d-value">--</div>
+                <div class="status" id="d-status">Calculating...</div>
+            </div>
+            <div class="signal zone-signal" id="zone-box">
+                <h3>Market Zone</h3>
+                <div class="value" id="zone-value">--</div>
+                <div class="status" id="zone-status">Analyzing...</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chart;
+        let kLength = 5;
+        let kSmooth = 3;
+        let dSmooth = 3;
+        let currentPrice = 0;
+        let autoRefreshInterval = null;
+        let isAutoRefresh = true;
+
+        async function fetchBinanceData(symbol, interval, limit = 100) {
+            try {
+                document.getElementById('loading').style.display = 'block';
+                document.getElementById('error-msg').style.display = 'none';
+                
+                const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch data from Binance');
+                }
+                
+                const data = await response.json();
+                document.getElementById('loading').style.display = 'none';
+                
+                // Update last update time
+                const now = new Date();
+                document.getElementById('last-update').textContent = 
+                    `Updated: ${now.toLocaleTimeString('id-ID')}`;
+                
+                return data.map(candle => ({
+                    time: new Date(candle[0]),
+                    open: parseFloat(candle[1]),
+                    high: parseFloat(candle[2]),
+                    low: parseFloat(candle[3]),
+                    close: parseFloat(candle[4]),
+                    volume: parseFloat(candle[5])
+                }));
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('error-msg').style.display = 'block';
+                document.getElementById('error-msg').textContent = '❌ Error: ' + error.message;
+                throw error;
+            }
+        }
+
+        function setupAutoRefresh() {
+            const checkbox = document.getElementById('auto-refresh');
+            const intervalSelect = document.getElementById('refresh-interval');
+
+            checkbox.addEventListener('change', function() {
+                isAutoRefresh = this.checked;
+                if (isAutoRefresh) {
+                    startAutoRefresh();
+                } else {
+                    stopAutoRefresh();
+                }
+            });
+
+            intervalSelect.addEventListener('change', function() {
+                if (isAutoRefresh) {
+                    stopAutoRefresh();
+                    startAutoRefresh();
+                }
+            });
+        }
+
+        function startAutoRefresh() {
+            stopAutoRefresh();
+            const interval = parseInt(document.getElementById('refresh-interval').value) * 1000;
+            autoRefreshInterval = setInterval(() => {
+                updateChart(true);
+            }, interval);
+        }
+
+        function stopAutoRefresh() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+        }
+
+        function calculateStochastic(data, kLen, kSm, dSm) {
+            const kValues = [];
+            
+            for (let i = kLen - 1; i < data.length; i++) {
+                const slice = data.slice(i - kLen + 1, i + 1);
+                const high = Math.max(...slice.map(d => d.high));
+                const low = Math.min(...slice.map(d => d.low));
+                const close = data[i].close;
+                const k = ((close - low) / (high - low)) * 100;
+                kValues.push(k);
+            }
+
+            const smoothK = sma(kValues, kSm);
+            const smoothD = sma(smoothK, dSm);
+
+            return { k: smoothK, d: smoothD };
+        }
+
+        function sma(data, period) {
+            const result = [];
+            for (let i = period - 1; i < data.length; i++) {
+                const sum = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+                result.push(sum / period);
+            }
+            return result;
+        }
+
+        async function updateChart(silent = false) {
+            kLength = parseInt(document.getElementById('k-length').value);
+            kSmooth = parseInt(document.getElementById('k-smooth').value);
+            dSmooth = parseInt(document.getElementById('d-smooth').value);
+            const symbol = document.getElementById('symbol').value;
+            const timeframe = document.getElementById('timeframe').value;
+
+            document.getElementById('display-k-length').textContent = kLength;
+            document.getElementById('display-k-smooth').textContent = kSmooth;
+            document.getElementById('display-d-smooth').textContent = dSmooth;
+            document.getElementById('display-timeframe').textContent = timeframe.toUpperCase();
+
+            try {
+                // Show loading only on manual refresh
+                if (!silent) {
+                    document.getElementById('loading').style.display = 'block';
+                }
+                
+                const priceData = await fetchBinanceData(symbol, timeframe, 100);
+                currentPrice = priceData[priceData.length - 1].close;
+                const stoch = calculateStochastic(priceData, kLength, kSmooth, dSmooth);
+
+            const labels = Array.from({ length: stoch.k.length }, (_, i) => {
+                const date = priceData[priceData.length - stoch.k.length + i].time;
+                return date.toLocaleString('id-ID', { 
+                    month: 'short', 
+                    day: 'numeric',
+                    hour: timeframe.includes('m') || timeframe.includes('h') ? '2-digit' : undefined,
+                    minute: timeframe.includes('m') ? '2-digit' : undefined
+                });
+            });
+
+            const kCurrent = stoch.k[stoch.k.length - 1].toFixed(2);
+            const dCurrent = stoch.d[stoch.d.length - 1].toFixed(2);
+            const kPrevious = stoch.k[stoch.k.length - 2].toFixed(2);
+            const dPrevious = stoch.d[stoch.d.length - 2].toFixed(2);
+
+            // Deteksi crossing
+            const bullishCross = kPrevious < dPrevious && kCurrent > dCurrent;
+            const bearishCross = kPrevious > dPrevious && kCurrent < dCurrent;
+
+            document.getElementById('k-value').textContent = kCurrent;
+            document.getElementById('d-value').textContent = dCurrent;
+
+            let zone = 'NEUTRAL';
+            let zoneClass = 'neutral';
+            let zoneEmoji = '⚖️';
+            let tradeAction = '';
+            let tradeReason = '';
+            let tradeClass = 'hold-signal';
+            
+            // LOGIKA TRADING SEDERHANA
+            if (kCurrent < 20 && bullishCross) {
+                // STRONG BUY
+                tradeAction = '🚀 STRONG BUY';
+                tradeReason = 'Oversold + %K potong %D ke atas = Momentum naik kuat! Good entry point!';
+                tradeClass = 'buy-signal';
+                zone = 'OVERSOLD';
+                zoneClass = 'oversold';
+                zoneEmoji = '🟢';
+            } else if (kCurrent < 20) {
+                // BUY
+                tradeAction = '📈 BUY';
+                tradeReason = 'Harga di zona oversold (murah). Tunggu konfirmasi crossing untuk entry lebih aman.';
+                tradeClass = 'buy-signal';
+                zone = 'OVERSOLD';
+                zoneClass = 'oversold';
+                zoneEmoji = '🟢';
+            } else if (kCurrent > 80 && bearishCross) {
+                // STRONG SELL
+                tradeAction = '💥 STRONG SELL';
+                tradeReason = 'Overbought + %K potong %D ke bawah = Momentum turun kuat! Good exit point!';
+                tradeClass = 'sell-signal';
+                zone = 'OVERBOUGHT';
+                zoneClass = 'overbought';
+                zoneEmoji = '🔴';
+            } else if (kCurrent > 80) {
+                // SELL
+                tradeAction = '📉 SELL';
+                tradeReason = 'Harga di zona overbought (mahal). Tunggu konfirmasi crossing untuk exit lebih aman.';
+                tradeClass = 'sell-signal';
+                zone = 'OVERBOUGHT';
+                zoneClass = 'overbought';
+                zoneEmoji = '🔴';
+            } else if (bullishCross) {
+                // BUY di zona tengah
+                tradeAction = '✅ BUY';
+                tradeReason = '%K memotong %D ke atas = Sinyal bullish. Momentum mulai naik.';
+                tradeClass = 'buy-signal';
+            } else if (bearishCross) {
+                // SELL di zona tengah
+                tradeAction = '❌ SELL';
+                tradeReason = '%K memotong %D ke bawah = Sinyal bearish. Momentum mulai turun.';
+                tradeClass = 'sell-signal';
+            } else {
+                // HOLD
+                tradeAction = '⏸️ HOLD';
+                tradeReason = 'Belum ada sinyal jelas. Tunggu dulu, jangan FOMO! Sabar adalah kunci.';
+                tradeClass = 'hold-signal';
+            }
+
+            // Update trade signal box
+            document.getElementById('trade-action').textContent = tradeAction;
+            document.getElementById('trade-action').className = `trade-action ${tradeClass}`;
+            document.getElementById('trade-reason').textContent = tradeReason;
+
+            // Update K status
+            if (kCurrent < 20) {
+                document.getElementById('k-status').textContent = '🟢 Oversold - Zona Beli';
+            } else if (kCurrent > 80) {
+                document.getElementById('k-status').textContent = '🔴 Overbought - Zona Jual';
+            } else {
+                document.getElementById('k-status').textContent = '⚪ Zona Netral';
+            }
+
+            // Update D status
+            if (kCurrent > dCurrent) {
+                document.getElementById('d-status').textContent = '📈 %K di atas %D - Bullish';
+            } else {
+                document.getElementById('d-status').textContent = '📉 %K di bawah %D - Bearish';
+            }
+
+            document.getElementById('zone-value').textContent = zoneEmoji + ' ' + zone;
+            document.getElementById('zone-status').textContent = `${symbol} - ${currentPrice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+            document.getElementById('zone-box').className = `signal zone-signal ${zoneClass}`;
+
+            if (chart) chart.destroy();
+
+            const ctx = document.getElementById('stochChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '%K',
+                            data: stoch.k,
+                            borderColor: '#60a5fa',
+                            backgroundColor: 'rgba(96, 165, 250, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: false,
+                            pointRadius: 0,
+                            pointHoverRadius: 4
+                        },
+                        {
+                            label: '%D',
+                            data: stoch.d,
+                            borderColor: '#f472b6',
+                            backgroundColor: 'rgba(244, 114, 182, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: false,
+                            pointRadius: 0,
+                            pointHoverRadius: 4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: { size: 11, weight: 'bold' },
+                                color: '#94a3b8',
+                                padding: 10,
+                                boxWidth: 30
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            min: 0,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    if (value === 20) return '20';
+                                    if (value === 80) return '80';
+                                    if (value === 0 || value === 50 || value === 100) return value;
+                                    return '';
+                                },
+                                color: '#64748b',
+                                font: { size: 10 }
+                            },
+                            grid: {
+                                color: function(context) {
+                                    if (context.tick.value === 20) return 'rgba(16, 185, 129, 0.3)';
+                                    if (context.tick.value === 80) return 'rgba(239, 68, 68, 0.3)';
+                                    return 'rgba(51, 65, 85, 0.3)';
+                                }
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#64748b',
+                                font: { size: 9 },
+                                maxRotation: 45,
+                                minRotation: 45
+                            },
+                            grid: {
+                                color: 'rgba(51, 65, 85, 0.2)'
+                            }
+                        }
+                    }
+                }
+            });
+            } catch (error) {
+                console.error('Error updating chart:', error);
+            }
+        }
+
+        // Initialize
+        setupAutoRefresh();
+        updateChart();
+        startAutoRefresh();
+    </script>
 </body>
 </html>
