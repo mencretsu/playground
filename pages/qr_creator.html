@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>QR Generator</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: system-ui, Arial, sans-serif;
+      background: #0f172a;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+    .box {
+      background: #020617;
+      padding: 20px;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 360px;
+      box-shadow: 0 0 20px rgba(0,0,0,.4);
+      text-align: center;
+    }
+    h2 { margin-bottom: 12px; }
+    input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      font-size: 16px;
+      margin-bottom: 12px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      background: #22c55e;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    #qrcode {
+      margin-top: 16px;
+      display: flex;
+      justify-content: center;
+    }
+    .hint {
+      font-size: 12px;
+      opacity: .6;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>QR Generator</h2>
+    <input id="text" placeholder="Masukin link / teks..." />
+    <button onclick="makeQR()">Generate QR</button>
+    <div id="qrcode"></div>
+    <div class="hint">Tap & tahan QR buat save</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script>
+    let qr;
+
+    function makeQR() {
+      const val = document.getElementById("text").value.trim();
+      if (!val) return alert("Isi dulu cok 😭");
+
+      document.getElementById("qrcode").innerHTML = "";
+      qr = new QRCode(document.getElementById("qrcode"), {
+        text: val,
+        width: 220,
+        height: 220,
+        colorDark: "#ffffff",
+        colorLight: "#020617",
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }
+  </script>
+</body>
+</html>
