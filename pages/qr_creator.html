@@ -43,6 +43,11 @@
       font-size: 16px;
       font-weight: bold;
       cursor: pointer;
+      margin-top: 8px;
+    }
+    #downloadBtn {
+      background: #38bdf8;
+      display: none;
     }
     #qrcode {
       margin-top: 16px;
@@ -61,20 +66,21 @@
     <h2>QR Generator</h2>
     <input id="text" placeholder="Masukin link / teks..." />
     <button onclick="makeQR()">Generate QR</button>
+    <button id="downloadBtn" onclick="downloadQR()">Download QR</button>
     <div id="qrcode"></div>
-    <div class="hint">Tap & tahan QR buat save</div>
+    <div class="hint">QR permanen • gak expired</div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <script>
-    let qr;
-
     function makeQR() {
       const val = document.getElementById("text").value.trim();
       if (!val) return alert("Isi dulu cok 😭");
 
-      document.getElementById("qrcode").innerHTML = "";
-      qr = new QRCode(document.getElementById("qrcode"), {
+      const qrBox = document.getElementById("qrcode");
+      qrBox.innerHTML = "";
+
+      new QRCode(qrBox, {
         text: val,
         width: 220,
         height: 220,
@@ -82,6 +88,27 @@
         colorLight: "#020617",
         correctLevel: QRCode.CorrectLevel.H
       });
+
+      document.getElementById("downloadBtn").style.display = "block";
+    }
+
+    function downloadQR() {
+      const qrBox = document.getElementById("qrcode");
+      const img = qrBox.querySelector("img");
+      const canvas = qrBox.querySelector("canvas");
+
+      let url = "";
+      if (img) url = img.src;
+      if (canvas) url = canvas.toDataURL("image/png");
+
+      if (!url) return alert("QR belum ada cok");
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "qr-masmencret.png";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
     }
   </script>
 </body>
