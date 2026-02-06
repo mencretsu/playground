@@ -1,0 +1,1410 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>QUANTUM TRADER PRO - Neural Trading System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-purple: #b537f2;
+            --neon-green: #39ff14;
+            --neon-red: #ff073a;
+            --neon-orange: #ff6b35;
+            --bg-dark: #0a0e27;
+            --bg-darker: #060916;
+            --card-bg: #131929;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, var(--bg-darker) 0%, var(--bg-dark) 100%);
+            color: #e0e7ff;
+            padding: 8px;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        /* HEADER */
+        .header {
+            background: linear-gradient(135deg, #1a1f3a 0%, #0f1420 100%);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(0, 243, 255, 0.3);
+            box-shadow: 0 0 20px rgba(0, 243, 255, 0.1);
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 1.5em;
+            background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 5px;
+        }
+        
+        .neural-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--neon-purple), var(--neon-blue));
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7em;
+            font-weight: bold;
+            animation: glow 2s infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(181, 55, 242, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(181, 55, 242, 0.8); }
+        }
+        
+        /* QUANTUM SCORE PANEL */
+        .quantum-score {
+            background: linear-gradient(135deg, rgba(0, 243, 255, 0.1) 0%, rgba(181, 55, 242, 0.1) 100%);
+            border: 2px solid var(--neon-purple);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .quantum-score::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(0, 243, 255, 0.05), transparent);
+            animation: scan 3s linear infinite;
+        }
+        
+        @keyframes scan {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        .score-display {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .score-main {
+            font-size: 3em;
+            font-weight: bold;
+            background: linear-gradient(90deg, var(--neon-green), var(--neon-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .score-label {
+            font-size: 0.8em;
+            color: #8b93ff;
+            text-transform: uppercase;
+        }
+        
+        .score-bars {
+            flex: 1;
+            margin-left: 20px;
+        }
+        
+        .score-bar {
+            background: rgba(255, 255, 255, 0.1);
+            height: 8px;
+            border-radius: 10px;
+            margin: 8px 0;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .score-bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+            position: relative;
+        }
+        
+        .score-bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        /* NEURAL NETWORK VISUALIZATION */
+        .neural-viz {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid rgba(57, 255, 20, 0.2);
+        }
+        
+        .neural-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        
+        .neural-node {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7em;
+            border: 2px solid;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .neural-node.active {
+            animation: pulse-node 1.5s infinite;
+        }
+        
+        @keyframes pulse-node {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+        }
+        
+        .node-icon {
+            font-size: 1.5em;
+            margin-bottom: 3px;
+        }
+        
+        .node-label {
+            font-size: 0.65em;
+            text-align: center;
+        }
+        
+        .node-value {
+            font-size: 0.75em;
+            font-weight: bold;
+            margin-top: 2px;
+        }
+        
+        /* SIGNAL STRENGTH METERS */
+        .signal-meters {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .meter {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .meter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .meter-label {
+            font-size: 0.75em;
+            color: #8b93ff;
+        }
+        
+        .meter-value {
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+        
+        .meter-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .meter-bar-inner {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        
+        /* MULTI AI CONSENSUS */
+        .ai-consensus {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+            border: 1px solid rgba(181, 55, 242, 0.3);
+        }
+        
+        .ai-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        
+        .consensus-badge {
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+        
+        .ai-grid {
+            display: grid;
+            gap: 8px;
+        }
+        
+        .ai-opinion {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 10px;
+            border-left: 3px solid;
+        }
+        
+        .ai-name {
+            font-size: 0.75em;
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .ai-verdict {
+            font-size: 0.8em;
+            line-height: 1.4;
+            color: #c7d2fe;
+        }
+        
+        .ai-confidence {
+            margin-top: 5px;
+            font-size: 0.7em;
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+        
+        .confidence-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+        
+        /* DECISION MATRIX */
+        .decision-matrix {
+            background: linear-gradient(135deg, rgba(57, 255, 20, 0.1) 0%, rgba(0, 243, 255, 0.1) 100%);
+            border: 2px solid var(--neon-green);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        
+        .final-action {
+            font-size: 2.2em;
+            font-weight: bold;
+            margin: 10px 0;
+            padding: 12px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            animation: decision-pulse 2s infinite;
+        }
+        
+        @keyframes decision-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        
+        .action-strong-buy {
+            background: linear-gradient(135deg, var(--neon-green) 0%, #00cc00 100%);
+            color: #000;
+            box-shadow: 0 0 30px rgba(57, 255, 20, 0.5);
+        }
+        
+        .action-buy {
+            background: linear-gradient(135deg, #00cc00 0%, #00aa00 100%);
+            color: #fff;
+        }
+        
+        .action-weak-buy {
+            background: linear-gradient(135deg, var(--neon-orange) 0%, #ff8800 100%);
+            color: #000;
+        }
+        
+        .action-hold {
+            background: linear-gradient(135deg, #888 0%, #666 100%);
+            color: #fff;
+        }
+        
+        .action-sell {
+            background: linear-gradient(135deg, var(--neon-red) 0%, #cc0000 100%);
+            color: #fff;
+            box-shadow: 0 0 30px rgba(255, 7, 58, 0.5);
+        }
+        
+        .action-details {
+            font-size: 0.8em;
+            color: #c7d2fe;
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+        
+        /* RISK CALCULATOR */
+        .risk-calc {
+            background: rgba(255, 7, 58, 0.1);
+            border: 1px solid var(--neon-red);
+            border-radius: 10px;
+            padding: 12px;
+            margin: 10px 0;
+        }
+        
+        .risk-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .risk-item {
+            text-align: center;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+        }
+        
+        .risk-label {
+            font-size: 0.7em;
+            color: #ff9999;
+        }
+        
+        .risk-value {
+            font-size: 1em;
+            font-weight: bold;
+            color: var(--neon-red);
+            margin-top: 3px;
+        }
+        
+        /* CHART CONTAINER */
+        .chart-section {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .chart-wrapper {
+            height: 220px;
+            position: relative;
+        }
+        
+        /* CONTROLS */
+        .controls {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 12px;
+            margin-top: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .control-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .control-group label {
+            display: block;
+            font-size: 0.75em;
+            color: #8b93ff;
+            margin-bottom: 5px;
+        }
+        
+        .control-group select,
+        .control-group input {
+            width: 100%;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: #e0e7ff;
+            font-size: 0.85em;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.9em;
+            cursor: pointer;
+            margin: 8px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--neon-blue) 0%, var(--neon-purple) 100%);
+            color: #000;
+        }
+        
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #e0e7ff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        /* TIMEFRAME CHIPS */
+        .tf-chips {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin: 10px 0;
+        }
+        
+        .tf-chip {
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            font-size: 0.75em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .tf-chip-label {
+            color: #8b93ff;
+        }
+        
+        .tf-chip-value {
+            font-weight: bold;
+        }
+        
+        /* STATUS INDICATORS */
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            animation: blink 2s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .status-green { background: var(--neon-green); }
+        .status-red { background: var(--neon-red); }
+        .status-orange { background: var(--neon-orange); }
+        
+        /* LOADING OVERLAY */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--neon-blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* UTILITIES */
+        .text-green { color: var(--neon-green); }
+        .text-red { color: var(--neon-red); }
+        .text-orange { color: var(--neon-orange); }
+        .text-blue { color: var(--neon-blue); }
+        .text-purple { color: var(--neon-purple); }
+        
+        .mt-10 { margin-top: 10px; }
+        .mb-10 { margin-bottom: 10px; }
+        
+        @media (max-width: 480px) {
+            .header h1 { font-size: 1.2em; }
+            .score-main { font-size: 2.5em; }
+            .final-action { font-size: 1.8em; }
+            .neural-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="container">
+        <!-- HEADER -->
+        <div class="header">
+            <h1>⚡ QUANTUM TRADER PRO</h1>
+            <span class="neural-badge">NEURAL NETWORK v3.0</span>
+            <div style="font-size: 0.75em; color: #8b93ff; margin-top: 8px;">
+                Advanced Multi-AI Trading Intelligence
+            </div>
+        </div>
+
+        <!-- QUANTUM SCORE -->
+        <div class="quantum-score">
+            <div class="score-display">
+                <div>
+                    <div class="score-label">Quantum Score</div>
+                    <div class="score-main" id="quantumScore">--</div>
+                </div>
+                <div class="score-bars">
+                    <div class="score-bar">
+                        <div class="score-bar-fill" id="accuracyBar" style="width: 0%; background: linear-gradient(90deg, var(--neon-green), var(--neon-blue));"></div>
+                    </div>
+                    <div class="score-bar">
+                        <div class="score-bar-fill" id="confidenceBar" style="width: 0%; background: linear-gradient(90deg, var(--neon-blue), var(--neon-purple));"></div>
+                    </div>
+                    <div class="score-bar">
+                        <div class="score-bar-fill" id="momentumBar" style="width: 0%; background: linear-gradient(90deg, var(--neon-purple), var(--neon-green));"></div>
+                    </div>
+                </div>
+            </div>
+            <div style="font-size: 0.7em; color: #8b93ff; margin-top: 8px; position: relative; z-index: 1;">
+                <span id="scoreDescription">Initializing neural networks...</span>
+            </div>
+        </div>
+
+        <!-- NEURAL NETWORK NODES -->
+        <div class="neural-viz">
+            <div style="font-size: 0.8em; font-weight: bold; margin-bottom: 10px; color: var(--neon-green);">
+                🧠 Neural Network Status
+            </div>
+            <div class="neural-grid">
+                <div class="neural-node" id="node-trend" style="border-color: var(--neon-blue);">
+                    <div class="node-icon">📈</div>
+                    <div class="node-label">Trend</div>
+                    <div class="node-value">--</div>
+                </div>
+                <div class="neural-node" id="node-momentum" style="border-color: var(--neon-purple);">
+                    <div class="node-icon">⚡</div>
+                    <div class="node-label">Momentum</div>
+                    <div class="node-value">--</div>
+                </div>
+                <div class="neural-node" id="node-volume" style="border-color: var(--neon-green);">
+                    <div class="node-icon">📊</div>
+                    <div class="node-label">Volume</div>
+                    <div class="node-value">--</div>
+                </div>
+                <div class="neural-node" id="node-volatility" style="border-color: var(--neon-orange);">
+                    <div class="node-icon">🌊</div>
+                    <div class="node-label">Volatility</div>
+                    <div class="node-value">--</div>
+                </div>
+                <div class="neural-node" id="node-structure" style="border-color: var(--neon-blue);">
+                    <div class="node-icon">🏛️</div>
+                    <div class="node-label">Structure</div>
+                    <div class="node-value">--</div>
+                </div>
+                <div class="neural-node" id="node-sentiment" style="border-color: var(--neon-purple);">
+                    <div class="node-icon">💭</div>
+                    <div class="node-label">Sentiment</div>
+                    <div class="node-value">--</div>
+                </div>
+                <div class="neural-node" id="node-correlation" style="border-color: var(--neon-green);">
+                    <div class="node-icon">🔗</div>
+                    <div class="node-label">Correlation</div>
+                    <div class="node-value">--</div>
+                </div>
+                <div class="neural-node" id="node-divergence" style="border-color: var(--neon-orange);">
+                    <div class="node-icon">🔀</div>
+                    <div class="node-label">Divergence</div>
+                    <div class="node-value">--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SIGNAL STRENGTH METERS -->
+        <div class="signal-meters">
+            <div class="meter">
+                <div class="meter-header">
+                    <span class="meter-label">BUY PRESSURE</span>
+                    <span class="meter-value text-green" id="buyPressure">--%</span>
+                </div>
+                <div class="meter-bar">
+                    <div class="meter-bar-inner" id="buyPressureBar" style="width: 0%; background: var(--neon-green);"></div>
+                </div>
+            </div>
+            <div class="meter">
+                <div class="meter-header">
+                    <span class="meter-label">SELL PRESSURE</span>
+                    <span class="meter-value text-red" id="sellPressure">--%</span>
+                </div>
+                <div class="meter-bar">
+                    <div class="meter-bar-inner" id="sellPressureBar" style="width: 0%; background: var(--neon-red);"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TIMEFRAME ANALYSIS -->
+        <div class="neural-viz">
+            <div style="font-size: 0.8em; font-weight: bold; margin-bottom: 8px; color: var(--neon-blue);">
+                ⏰ Multi-Timeframe Alignment
+            </div>
+            <div class="tf-chips" id="tfChips">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+
+        <!-- MULTI AI CONSENSUS -->
+        <div class="ai-consensus">
+            <div class="ai-header">
+                <div style="font-size: 0.85em; font-weight: bold; color: var(--neon-purple);">
+                    🤖 Multi-AI Consensus Panel
+                </div>
+                <div class="consensus-badge" id="consensusBadge">
+                    CALCULATING...
+                </div>
+            </div>
+            <div class="ai-grid" id="aiGrid">
+                <!-- Dynamic AI opinions will be inserted here -->
+            </div>
+        </div>
+
+        <!-- FINAL DECISION -->
+        <div class="decision-matrix">
+            <div style="font-size: 0.85em; font-weight: bold; margin-bottom: 10px; color: var(--neon-green);">
+                🎯 FINAL TRADING DECISION
+            </div>
+            <div class="final-action action-hold" id="finalAction">
+                INITIALIZING...
+            </div>
+            <div class="action-details" id="actionDetails">
+                Neural networks are analyzing market conditions...
+            </div>
+            <div style="margin-top: 15px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; font-size: 0.8em;">
+                <div>
+                    <div style="color: #8b93ff;">Win Probability</div>
+                    <div style="font-weight: bold; font-size: 1.2em;" id="winProb">--%</div>
+                </div>
+                <div>
+                    <div style="color: #8b93ff;">Expected Value</div>
+                    <div style="font-weight: bold; font-size: 1.2em;" id="expectedValue">--</div>
+                </div>
+                <div>
+                    <div style="color: #8b93ff;">Risk Score</div>
+                    <div style="font-weight: bold; font-size: 1.2em;" id="riskScore">--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RISK CALCULATOR -->
+        <div class="risk-calc">
+            <div style="font-size: 0.8em; font-weight: bold; margin-bottom: 8px; color: var(--neon-red);">
+                🛡️ Dynamic Risk Management
+            </div>
+            <div class="risk-grid">
+                <div class="risk-item">
+                    <div class="risk-label">Entry Price</div>
+                    <div class="risk-value" id="entryPrice">--</div>
+                </div>
+                <div class="risk-item">
+                    <div class="risk-label">Stop Loss</div>
+                    <div class="risk-value" id="stopLoss">--</div>
+                </div>
+                <div class="risk-item">
+                    <div class="risk-label">Take Profit</div>
+                    <div class="risk-value" id="takeProfit">--</div>
+                </div>
+                <div class="risk-item">
+                    <div class="risk-label">Position Size</div>
+                    <div class="risk-value" id="positionSize">--</div>
+                </div>
+                <div class="risk-item">
+                    <div class="risk-label">Risk/Reward</div>
+                    <div class="risk-value" id="riskReward">--</div>
+                </div>
+                <div class="risk-item">
+                    <div class="risk-label">Max Loss</div>
+                    <div class="risk-value" id="maxLoss">--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHART -->
+        <div class="chart-section">
+            <div style="font-size: 0.8em; font-weight: bold; margin-bottom: 8px; color: #8b93ff;">
+                📈 Price Action Analysis
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="priceChart"></canvas>
+            </div>
+        </div>
+
+        <!-- CONTROLS -->
+        <div class="controls">
+            <div style="font-size: 0.85em; font-weight: bold; margin-bottom: 10px; color: #8b93ff;">
+                ⚙️ System Configuration
+            </div>
+            <div class="control-row">
+                <div class="control-group">
+                    <label>Trading Pair</label>
+                    <select id="tradingPair">
+                        <option value="BTCUSDT">BTC/USDT</option>
+                        <option value="ETHUSDT">ETH/USDT</option>
+                        <option value="BNBUSDT">BNB/USDT</option>
+                        <option value="SOLUSDT">SOL/USDT</option>
+                        <option value="ADAUSDT">ADA/USDT</option>
+                        <option value="DOGEUSDT">DOGE/USDT</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Primary Timeframe</label>
+                    <select id="timeframe">
+                        <option value="5m">5 Minutes</option>
+                        <option value="15m">15 Minutes</option>
+                        <option value="1h" selected>1 Hour</option>
+                        <option value="4h">4 Hours</option>
+                        <option value="1d">1 Day</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Risk Level</label>
+                    <select id="riskLevel">
+                        <option value="conservative">Conservative (1%)</option>
+                        <option value="moderate" selected>Moderate (2%)</option>
+                        <option value="aggressive">Aggressive (3%)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button class="btn btn-primary" onclick="runQuantumAnalysis()">
+                ⚡ RUN QUANTUM ANALYSIS
+            </button>
+            <button class="btn btn-secondary" onclick="resetSystem()">
+                🔄 RESET SYSTEM
+            </button>
+            
+            <div style="margin-top: 10px; display: flex; gap: 10px; font-size: 0.8em;">
+                <label style="display: flex; align-items: center; gap: 5px;">
+                    <input type="checkbox" id="autoRefresh" checked>
+                    Auto-refresh (30s)
+                </label>
+                <label style="display: flex; align-items: center; gap: 5px;">
+                    <input type="checkbox" id="soundAlerts">
+                    Sound alerts
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === GLOBAL VARIABLES ===
+        let chart = null;
+        let autoRefreshInterval = null;
+        let currentMarketData = null;
+        
+        // === NEURAL NETWORK WEIGHTS (Simulated) ===
+        const neuralWeights = {
+            trend: 0.25,
+            momentum: 0.20,
+            volume: 0.15,
+            volatility: 0.10,
+            structure: 0.12,
+            sentiment: 0.08,
+            correlation: 0.06,
+            divergence: 0.04
+        };
+
+        // === MAIN ANALYSIS FUNCTION ===
+        async function runQuantumAnalysis() {
+            showLoading();
+            
+            try {
+                const pair = document.getElementById('tradingPair').value;
+                const timeframe = document.getElementById('timeframe').value;
+                
+                // Simulate market data fetching
+                await fetchMarketData(pair, timeframe);
+                
+                // Run neural network analysis
+                const neuralOutputs = analyzeNeuralNetwork();
+                
+                // Analyze multiple timeframes
+                const tfAnalysis = analyzeMultiTimeframe();
+                
+                // Get AI consensus
+                const aiConsensus = await getAIConsensus(neuralOutputs, tfAnalysis);
+                
+                // Calculate quantum score
+                const quantumScore = calculateQuantumScore(neuralOutputs, aiConsensus);
+                
+                // Calculate risk parameters
+                const riskParams = calculateDynamicRisk();
+                
+                // Make final decision
+                makeFinalDecision(quantumScore, aiConsensus, neuralOutputs);
+                
+                // Update all displays
+                updateAllDisplays(neuralOutputs, tfAnalysis, aiConsensus, riskParams, quantumScore);
+                
+                // Update chart
+                updatePriceChart();
+                
+            } catch (error) {
+                console.error('Analysis error:', error);
+                alert('Analysis failed. Please try again.');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // === MARKET DATA SIMULATION ===
+        async function fetchMarketData(pair, timeframe) {
+            // Simulate API delay
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Generate realistic market data
+            const basePrice = {
+                'BTCUSDT': 98000,
+                'ETHUSDT': 3500,
+                'BNBUSDT': 680,
+                'SOLUSDT': 210,
+                'ADAUSDT': 1.15,
+                'DOGEUSDT': 0.38
+            }[pair] || 50000;
+            
+            currentMarketData = {
+                pair: pair,
+                price: basePrice + (Math.random() - 0.5) * basePrice * 0.02,
+                volume: Math.random() * 1000000000,
+                volatility: 0.5 + Math.random() * 2,
+                trend: Math.random() * 100,
+                momentum: Math.random() * 100,
+                priceHistory: generatePriceHistory(basePrice, 50)
+            };
+        }
+
+        function generatePriceHistory(basePrice, count) {
+            const history = [];
+            let price = basePrice;
+            
+            for (let i = 0; i < count; i++) {
+                price += (Math.random() - 0.48) * basePrice * 0.01;
+                history.push({
+                    time: Date.now() - (count - i) * 60000,
+                    price: price,
+                    volume: Math.random() * 1000000
+                });
+            }
+            
+            return history;
+        }
+
+        // === NEURAL NETWORK ANALYSIS ===
+        function analyzeNeuralNetwork() {
+            const outputs = {};
+            
+            // Trend analysis
+            outputs.trend = 30 + Math.random() * 70;
+            
+            // Momentum
+            outputs.momentum = 25 + Math.random() * 75;
+            
+            // Volume
+            outputs.volume = 20 + Math.random() * 80;
+            
+            // Volatility
+            outputs.volatility = 10 + Math.random() * 90;
+            
+            // Market structure
+            outputs.structure = 35 + Math.random() * 65;
+            
+            // Sentiment
+            outputs.sentiment = 40 + Math.random() * 60;
+            
+            // Correlation
+            outputs.correlation = 30 + Math.random() * 70;
+            
+            // Divergence detection
+            outputs.divergence = Math.random() * 100;
+            
+            return outputs;
+        }
+
+        // === MULTI TIMEFRAME ANALYSIS ===
+        function analyzeMultiTimeframe() {
+            const timeframes = ['1m', '5m', '15m', '1h', '4h', '1d'];
+            const analysis = {};
+            
+            timeframes.forEach(tf => {
+                const bias = Math.random();
+                analysis[tf] = {
+                    direction: bias > 0.6 ? 'BULLISH' : bias < 0.4 ? 'BEARISH' : 'NEUTRAL',
+                    strength: Math.floor(Math.random() * 100),
+                    aligned: Math.random() > 0.3
+                };
+            });
+            
+            return analysis;
+        }
+
+        // === AI CONSENSUS GENERATION ===
+        async function getAIConsensus(neuralOutputs, tfAnalysis) {
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            const avgScore = Object.values(neuralOutputs).reduce((a, b) => a + b, 0) / Object.keys(neuralOutputs).length;
+            
+            const aiOpinions = [];
+            
+            // ChatGPT Analysis
+            aiOpinions.push({
+                name: 'ChatGPT',
+                icon: '🤖',
+                color: '#10b981',
+                verdict: generateChatGPTVerdict(avgScore, neuralOutputs),
+                confidence: Math.min(95, avgScore + Math.random() * 10),
+                decision: avgScore > 70 ? 'BUY' : avgScore > 50 ? 'WEAK BUY' : 'HOLD'
+            });
+            
+            // Claude Analysis
+            aiOpinions.push({
+                name: 'Claude AI',
+                icon: '🧠',
+                color: '#a855f7',
+                verdict: generateClaudeVerdict(avgScore, tfAnalysis),
+                confidence: Math.min(92, avgScore + Math.random() * 8),
+                decision: avgScore > 65 ? 'BUY' : avgScore > 45 ? 'WEAK BUY' : 'HOLD'
+            });
+            
+            // DeepSeek Analysis
+            aiOpinions.push({
+                name: 'DeepSeek',
+                icon: '🔮',
+                color: '#ec4899',
+                verdict: generateDeepSeekVerdict(avgScore, neuralOutputs),
+                confidence: Math.min(90, avgScore + Math.random() * 12),
+                decision: avgScore > 72 ? 'BUY' : avgScore > 55 ? 'WEAK BUY' : 'HOLD'
+            });
+            
+            // Grok Analysis
+            aiOpinions.push({
+                name: 'Grok xAI',
+                icon: '🚀',
+                color: '#6366f1',
+                verdict: generateGrokVerdict(avgScore, neuralOutputs),
+                confidence: Math.min(88, avgScore + Math.random() * 15 - 5),
+                decision: avgScore > 68 ? 'BUY' : avgScore > 50 ? 'WEAK BUY' : 'HOLD'
+            });
+            
+            return aiOpinions;
+        }
+
+        function generateChatGPTVerdict(score, outputs) {
+            if (score > 70) {
+                return `Strong bullish momentum detected. Multiple timeframes aligned. Neural network confidence ${score.toFixed(0)}%. Trend structure supports continuation.`;
+            } else if (score > 50) {
+                return `Moderate setup with ${score.toFixed(0)}% confidence. Consider scaled entry. Watch for volume confirmation before full position.`;
+            } else {
+                return `Insufficient setup quality (${score.toFixed(0)}%). Market structure unclear. Recommend waiting for better alignment.`;
+            }
+        }
+
+        function generateClaudeVerdict(score, tfAnalysis) {
+            const aligned = Object.values(tfAnalysis).filter(tf => tf.aligned).length;
+            
+            if (score > 65) {
+                return `Deep analysis shows ${aligned}/6 timeframes aligned. Market structure coherent with ${score.toFixed(0)}% probability. Risk-adjusted entry recommended with proper position sizing.`;
+            } else if (score > 45) {
+                return `Mixed signals across timeframes (${aligned}/6 aligned). Setup has merit but requires tight risk management. Consider reduced position size.`;
+            } else {
+                return `Analysis reveals insufficient confluence (${aligned}/6 TF aligned). Current risk/reward unfavorable. Patience recommended - better setups incoming.`;
+            }
+        }
+
+        function generateDeepSeekVerdict(score, outputs) {
+            const ev = ((score / 100) * 2) - ((1 - score / 100) * 1);
+            
+            if (score > 72) {
+                return `Quantitative edge confirmed. EV: +${(ev * 100).toFixed(1)}%. Win probability ${score.toFixed(0)}%. Statistical advantage present with 1:2 R/R ratio.`;
+            } else if (score > 55) {
+                return `Marginally positive EV: ${ev > 0 ? '+' : ''}${(ev * 100).toFixed(1)}%. Probability ${score.toFixed(0)}%. Acceptable setup but not optimal. Scale position accordingly.`;
+            } else {
+                return `Negative expected value: ${(ev * 100).toFixed(1)}%. Win rate ${score.toFixed(0)}% insufficient for positive edge. Mathematical recommendation: NO TRADE.`;
+            }
+        }
+
+        function generateGrokVerdict(score, outputs) {
+            const realProb = Math.max(20, score - 8);
+            
+            if (score > 68) {
+                return `Real probability ~${realProb.toFixed(0)}% (adjusted for overconfidence bias). Setup legit but don't bet the farm. Market loves humbling confident traders. Scale in smart.`;
+            } else if (score > 50) {
+                return `Meh setup at ~${realProb.toFixed(0)}% real odds. You could trade this but there'll be better opportunities. FOMO is not a strategy. Risk management > being right.`;
+            } else {
+                return `Probability ~${realProb.toFixed(0)}% after removing hopium. This is how liquidity gets harvested. Cash is a position. Don't force trades that aren't there.`;
+            }
+        }
+
+        // === QUANTUM SCORE CALCULATION ===
+        function calculateQuantumScore(neuralOutputs, aiConsensus) {
+            let score = 0;
+            
+            // Weight neural outputs
+            Object.keys(neuralOutputs).forEach(key => {
+                score += neuralOutputs[key] * neuralWeights[key];
+            });
+            
+            // Factor in AI consensus
+            const avgAIConfidence = aiConsensus.reduce((sum, ai) => sum + ai.confidence, 0) / aiConsensus.length;
+            score = (score * 0.7) + (avgAIConfidence * 0.3);
+            
+            return Math.min(99, Math.max(10, score));
+        }
+
+        // === RISK CALCULATION ===
+        function calculateDynamicRisk() {
+            const riskLevel = document.getElementById('riskLevel').value;
+            const price = currentMarketData.price;
+            const atr = price * (0.015 + Math.random() * 0.02);
+            
+            const riskPercent = {
+                'conservative': 1.0,
+                'moderate': 2.0,
+                'aggressive': 3.0
+            }[riskLevel];
+            
+            const stopLoss = price - (atr * 1.5);
+            const takeProfit = price + (atr * 3);
+            const riskAmount = price - stopLoss;
+            const rewardAmount = takeProfit - price;
+            
+            const accountSize = 10000;
+            const riskDollars = accountSize * (riskPercent / 100);
+            const positionSize = riskDollars / riskAmount;
+            
+            return {
+                entryPrice: price,
+                stopLoss: stopLoss,
+                takeProfit: takeProfit,
+                positionSize: positionSize,
+                riskReward: (rewardAmount / riskAmount).toFixed(2),
+                maxLoss: riskDollars,
+                atr: atr
+            };
+        }
+
+        // === FINAL DECISION ===
+        function makeFinalDecision(quantumScore, aiConsensus, neuralOutputs) {
+            let decision = 'HOLD';
+            let details = '';
+            let winProb = 50;
+            
+            // Count AI buy signals
+            const buySignals = aiConsensus.filter(ai => ai.decision === 'BUY').length;
+            const weakBuySignals = aiConsensus.filter(ai => ai.decision === 'WEAK BUY').length;
+            
+            if (quantumScore >= 75 && buySignals >= 3) {
+                decision = 'STRONG BUY';
+                details = `Exceptional setup with ${quantumScore.toFixed(0)}/100 quantum score. All neural nodes confirming. ${buySignals}/4 AIs bullish. High probability trade.`;
+                winProb = Math.min(85, quantumScore);
+            } else if (quantumScore >= 60 && (buySignals >= 2 || weakBuySignals >= 3)) {
+                decision = 'BUY';
+                details = `Strong setup with ${quantumScore.toFixed(0)}/100 score. ${buySignals + weakBuySignals}/4 AI consensus. Good risk/reward. Scale entry recommended.`;
+                winProb = Math.min(75, quantumScore);
+            } else if (quantumScore >= 45 && (buySignals >= 1 || weakBuySignals >= 2)) {
+                decision = 'WEAK BUY';
+                details = `Marginal setup at ${quantumScore.toFixed(0)}/100. Partial AI agreement. High risk - reduce position size to 25-50%. Tight stops required.`;
+                winProb = Math.min(65, quantumScore);
+            } else {
+                decision = 'HOLD';
+                details = `Insufficient quality at ${quantumScore.toFixed(0)}/100. Weak AI consensus. Wait for better alignment. Patience is a trading edge.`;
+                winProb = Math.min(50, quantumScore);
+            }
+            
+            // Update UI
+            const actionEl = document.getElementById('finalAction');
+            actionEl.textContent = decision;
+            actionEl.className = 'final-action action-' + decision.toLowerCase().replace(' ', '-');
+            
+            document.getElementById('actionDetails').textContent = details;
+            document.getElementById('winProb').textContent = winProb.toFixed(0) + '%';
+            
+            // Calculate expected value
+            const ev = ((winProb / 100) * 2) - ((1 - winProb / 100) * 1);
+            document.getElementById('expectedValue').textContent = ev > 0 ? '+' + (ev * 100).toFixed(0) + '%' : (ev * 100).toFixed(0) + '%';
+            
+            // Risk score
+            const riskScore = quantumScore > 70 ? 'LOW' : quantumScore > 50 ? 'MED' : 'HIGH';
+            document.getElementById('riskScore').textContent = riskScore;
+        }
+
+        // === UPDATE ALL DISPLAYS ===
+        function updateAllDisplays(neuralOutputs, tfAnalysis, aiConsensus, riskParams, quantumScore) {
+            // Update quantum score
+            document.getElementById('quantumScore').textContent = quantumScore.toFixed(0);
+            document.getElementById('scoreDescription').textContent = `Neural convergence at ${quantumScore.toFixed(1)}% • ${Object.keys(neuralOutputs).length} nodes active`;
+            
+            // Update bars
+            document.getElementById('accuracyBar').style.width = quantumScore + '%';
+            const avgConfidence = aiConsensus.reduce((s, ai) => s + ai.confidence, 0) / aiConsensus.length;
+            document.getElementById('confidenceBar').style.width = avgConfidence + '%';
+            document.getElementById('momentumBar').style.width = neuralOutputs.momentum + '%';
+            
+            // Update neural nodes
+            Object.keys(neuralOutputs).forEach(key => {
+                const node = document.getElementById('node-' + key);
+                if (node) {
+                    const value = neuralOutputs[key];
+                    node.querySelector('.node-value').textContent = value.toFixed(0);
+                    
+                    if (value > 70) {
+                        node.classList.add('active');
+                        node.style.background = 'rgba(57, 255, 20, 0.2)';
+                    } else if (value > 40) {
+                        node.style.background = 'rgba(255, 107, 53, 0.2)';
+                    } else {
+                        node.classList.remove('active');
+                        node.style.background = 'rgba(255, 7, 58, 0.2)';
+                    }
+                }
+            });
+            
+            // Update pressure meters
+            const buyPressure = (neuralOutputs.trend + neuralOutputs.momentum + neuralOutputs.volume) / 3;
+            const sellPressure = 100 - buyPressure;
+            
+            document.getElementById('buyPressure').textContent = buyPressure.toFixed(0) + '%';
+            document.getElementById('buyPressureBar').style.width = buyPressure + '%';
+            document.getElementById('sellPressure').textContent = sellPressure.toFixed(0) + '%';
+            document.getElementById('sellPressureBar').style.width = sellPressure + '%';
+            
+            // Update timeframe chips
+            const tfChipsContainer = document.getElementById('tfChips');
+            tfChipsContainer.innerHTML = '';
+            
+            Object.keys(tfAnalysis).forEach(tf => {
+                const data = tfAnalysis[tf];
+                const chip = document.createElement('div');
+                chip.className = 'tf-chip';
+                chip.innerHTML = `
+                    <span class="status-dot ${data.direction === 'BULLISH' ? 'status-green' : data.direction === 'BEARISH' ? 'status-red' : 'status-orange'}"></span>
+                    <span class="tf-chip-label">${tf.toUpperCase()}</span>
+                    <span class="tf-chip-value ${data.direction === 'BULLISH' ? 'text-green' : data.direction === 'BEARISH' ? 'text-red' : 'text-orange'}">${data.direction}</span>
+                `;
+                tfChipsContainer.appendChild(chip);
+            });
+            
+            // Update AI consensus
+            const aiGridContainer = document.getElementById('aiGrid');
+            aiGridContainer.innerHTML = '';
+            
+            const buyCount = aiConsensus.filter(ai => ai.decision === 'BUY').length;
+            const consensusBadge = document.getElementById('consensusBadge');
+            
+            if (buyCount >= 3) {
+                consensusBadge.textContent = 'STRONG CONSENSUS';
+                consensusBadge.style.background = 'var(--neon-green)';
+                consensusBadge.style.color = '#000';
+            } else if (buyCount >= 2) {
+                consensusBadge.textContent = 'MODERATE CONSENSUS';
+                consensusBadge.style.background = 'var(--neon-orange)';
+                consensusBadge.style.color = '#000';
+            } else {
+                consensusBadge.textContent = 'NO CONSENSUS';
+                consensusBadge.style.background = 'rgba(255, 255, 255, 0.2)';
+                consensusBadge.style.color = '#fff';
+            }
+            
+            aiConsensus.forEach(ai => {
+                const aiDiv = document.createElement('div');
+                aiDiv.className = 'ai-opinion';
+                aiDiv.style.borderLeftColor = ai.color;
+                
+                const confidenceDots = Math.floor(ai.confidence / 20);
+                const dotsHTML = Array(5).fill(0).map((_, i) => 
+                    `<span class="confidence-dot" style="background: ${i < confidenceDots ? ai.color : 'rgba(255,255,255,0.2)'}"></span>`
+                ).join('');
+                
+                aiDiv.innerHTML = `
+                    <div class="ai-name">
+                        <span>${ai.icon}</span>
+                        <span style="color: ${ai.color}">${ai.name}</span>
+                        <span style="margin-left: auto; font-size: 0.9em; color: ${ai.color}">${ai.decision}</span>
+                    </div>
+                    <div class="ai-verdict">${ai.verdict}</div>
+                    <div class="ai-confidence">
+                        ${dotsHTML}
+                        <span style="margin-left: 5px; font-size: 0.9em;">${ai.confidence.toFixed(0)}%</span>
+                    </div>
+                `;
+                
+                aiGridContainer.appendChild(aiDiv);
+            });
+            
+            // Update risk parameters
+            document.getElementById('entryPrice').textContent = '$' + riskParams.entryPrice.toFixed(2);
+            document.getElementById('stopLoss').textContent = '$' + riskParams.stopLoss.toFixed(2);
+            document.getElementById('takeProfit').textContent = '$' + riskParams.takeProfit.toFixed(2);
+            document.getElementById('positionSize').textContent = riskParams.positionSize.toFixed(4);
+            document.getElementById('riskReward').textContent = '1:' + riskParams.riskReward;
+            document.getElementById('maxLoss').textContent = '$' + riskParams.maxLoss.toFixed(2);
+        }
+
+        // === CHART UPDATE ===
+        function updatePriceChart() {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            
+            if (chart) {
+                chart.destroy();
+            }
+            
+            const history = currentMarketData.priceHistory;
+            const labels = history.map((_, i) => i);
+            const prices = history.map(h => h.price);
+            
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Price',
+                        data: prices,
+                        borderColor: 'rgba(0, 243, 255, 1)',
+                        backgroundColor: 'rgba(0, 243, 255, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            display: false
+                        },
+                        y: {
+                            grid: { 
+                                color: 'rgba(255, 255, 255, 0.05)',
+                                drawBorder: false
+                            },
+                            ticks: { 
+                                color: '#8b93ff',
+                                font: { size: 10 }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        // === UTILITY FUNCTIONS ===
+        function showLoading() {
+            document.getElementById('loadingOverlay').style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
+
+        function resetSystem() {
+            if (autoRefreshInterval) {
+                clearInterval(autoRefreshInterval);
+                autoRefreshInterval = null;
+            }
+            
+            document.getElementById('quantumScore').textContent = '--';
+            document.getElementById('finalAction').textContent = 'RESET';
+            document.getElementById('finalAction').className = 'final-action action-hold';
+            document.getElementById('actionDetails').textContent = 'System reset. Ready for new analysis.';
+            
+            if (chart) {
+                chart.destroy();
+                chart = null;
+            }
+        }
+
+        // === AUTO REFRESH ===
+        function setupAutoRefresh() {
+            const checkbox = document.getElementById('autoRefresh');
+            
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    autoRefreshInterval = setInterval(runQuantumAnalysis, 30000);
+                } else {
+                    if (autoRefreshInterval) {
+                        clearInterval(autoRefreshInterval);
+                        autoRefreshInterval = null;
+                    }
+                }
+            });
+        }
+
+        // === INITIALIZATION ===
+        document.addEventListener('DOMContentLoaded', function() {
+            setupAutoRefresh();
+            runQuantumAnalysis();
+            
+            // Event listeners
+            document.getElementById('tradingPair').addEventListener('change', runQuantumAnalysis);
+            document.getElementById('timeframe').addEventListener('change', runQuantumAnalysis);
+            document.getElementById('riskLevel').addEventListener('change', runQuantumAnalysis);
+        });
+    </script>
+</body>
+</html>
