@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Multi AI Trade Analyst</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 16px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .header h1 {
+            position: relative;
+            z-index: 1;
+            font-size: 24px;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+
+        .header .subtitle {
+            position: relative;
+            z-index: 1;
+            font-size: 14px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+
+        .list-container {
+            padding: 20px 16px;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+        }
+
+        .list-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .list-container::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .list-container::-webkit-scrollbar-thumb {
+            background: rgba(102,126,234,0.5);
+            border-radius: 3px;
+        }
+
+        .list-item {
+            background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            margin-bottom: 16px;
+            padding: 20px;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .list-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(102,126,234,0.2) 0%, rgba(118,75,162,0.2) 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .list-item:hover::before {
+            opacity: 1;
+        }
+
+        .list-item:active {
+            transform: scale(0.97);
+            box-shadow: 0 4px 16px rgba(102,126,234,0.4);
+        }
+
+        .list-item-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(102,126,234,0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .list-item h3 {
+            color: #fff;
+            margin-bottom: 6px;
+            font-size: 20px;
+            font-weight: 600;
+            position: relative;
+            z-index: 1;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .list-item p {
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .list-item .status-badge {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: rgba(76,175,80,0.2);
+            border: 1px solid rgba(76,175,80,0.5);
+            color: #4caf50;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 1;
+        }
+
+        .preview-overlay {
+            position: fixed;
+            bottom: -50vh;
+            left: 0;
+            right: 0;
+            height: 50vh;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            box-shadow: 0 -4px 24px rgba(0,0,0,0.5);
+            transition: bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            overflow: hidden;
+        }
+
+        .preview-overlay.active {
+            bottom: 0;
+        }
+
+        .preview-drag-handle {
+            width: 40px;
+            height: 4px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 2px;
+            margin: 12px auto 8px;
+            cursor: grab;
+        }
+
+        .preview-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            flex-shrink: 0;
+        }
+
+        .preview-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background: rgba(255,255,255,0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+
+        .btn:active {
+            background: rgba(255,255,255,0.3);
+            transform: scale(0.95);
+        }
+
+        .close-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-size: 20px;
+            padding: 0;
+            justify-content: center;
+        }
+
+        .preview-iframe-container {
+            flex: 1;
+            overflow: hidden;
+            background: #0a0a0a;
+            position: relative;
+        }
+
+        .preview-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10,10,10,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .loading-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(102,126,234,0.3);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Glow effect */
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(102,126,234,0.3); }
+            50% { box-shadow: 0 0 30px rgba(102,126,234,0.6); }
+        }
+
+        .list-item:hover {
+            animation: glow 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤖 Multi AI Trade Analyst</h1>
+        <div class="subtitle">Pilih AI untuk analisis trading</div>
+    </div>
+
+    <div class="list-container">
+        <div class="list-item" onclick="showPreview('pages/claudetrade.html', 'Claude Trade Analysis')">
+            <div class="list-item-icon">🧠</div>
+            <span class="status-badge">● Online</span>
+            <h3>Claude</h3>
+            <p>Anthropic AI - Analisis mendalam & reasoning</p>
+        </div>
+
+        <div class="list-item" onclick="showPreview('pages/geminitrade.html', 'Gemini Trade Analysis')">
+            <div class="list-item-icon">💎</div>
+            <span class="status-badge">● Online</span>
+            <h3>Gemini</h3>
+            <p>Google AI - Multi-modal analysis & data processing</p>
+        </div>
+
+        <div class="list-item" onclick="showPreview('pages/chatgpttrade.html', 'ChatGPT Trade Analysis')">
+            <div class="list-item-icon">⚡</div>
+            <span class="status-badge">● Online</span>
+            <h3>ChatGPT</h3>
+            <p>OpenAI - Conversational intelligence & insights</p>
+        </div>
+
+        <div class="list-item" onclick="showPreview('pages/groktrade.html', 'Grok Trade Analysis')">
+            <div class="list-item-icon">🚀</div>
+            <span class="status-badge">● Online</span>
+            <h3>Grok</h3>
+            <p>xAI - Real-time data & market sentiment</p>
+        </div>
+
+        <div class="list-item" onclick="showPreview('pages/multitrade.html', 'Multi AI Analysis')">
+            <div class="list-item-icon">🎯</div>
+            <span class="status-badge">● Online</span>
+            <h3>Multi AI</h3>
+            <p>Combined analysis dari semua AI</p>
+        </div>
+    </div>
+
+    <div class="preview-overlay" id="previewOverlay">
+        <div class="preview-drag-handle"></div>
+        <div class="preview-header">
+            <h2 id="previewTitle">Preview</h2>
+            <div class="header-buttons">
+                <button class="btn" onclick="openFullPage()">
+                    🚀 Buka Full
+                </button>
+                <button class="btn close-btn" onclick="closePreview()">×</button>
+            </div>
+        </div>
+        <div class="preview-iframe-container">
+            <iframe id="previewIframe" class="preview-iframe"></iframe>
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="loading-spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentFile = '';
+
+        function showPreview(filename, title) {
+            const previewOverlay = document.getElementById('previewOverlay');
+            const previewTitle = document.getElementById('previewTitle');
+            const previewIframe = document.getElementById('previewIframe');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            
+            currentFile = filename;
+            previewTitle.textContent = title;
+            
+            // Show loading
+            loadingOverlay.classList.add('active');
+            
+            // Load iframe
+            previewIframe.src = filename;
+            
+            // Hide loading after iframe loads
+            previewIframe.onload = function() {
+                setTimeout(() => {
+                    loadingOverlay.classList.remove('active');
+                }, 300);
+            };
+            
+            // Show overlay with slight delay for smooth animation
+            setTimeout(() => {
+                previewOverlay.classList.add('active');
+            }, 10);
+        }
+
+        function closePreview() {
+            const previewOverlay = document.getElementById('previewOverlay');
+            const previewIframe = document.getElementById('previewIframe');
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            
+            previewOverlay.classList.remove('active');
+            loadingOverlay.classList.remove('active');
+            
+            // Clear iframe after animation
+            setTimeout(() => {
+                previewIframe.src = '';
+            }, 400);
+        }
+
+        function openFullPage() {
+            if (currentFile) {
+                window.open(currentFile, '_blank');
+            }
+        }
+
+        // Enhanced swipe to close
+        let startY = 0;
+        let isDragging = false;
+        const overlay = document.getElementById('previewOverlay');
+        const dragHandle = document.querySelector('.preview-drag-handle');
+        
+        function handleTouchStart(e) {
+            startY = e.touches[0].clientY;
+            isDragging = true;
+            dragHandle.style.cursor = 'grabbing';
+        }
+
+        function handleTouchMove(e) {
+            if (!isDragging) return;
+            
+            const currentY = e.touches[0].clientY;
+            const diff = currentY - startY;
+            
+            if (diff > 0) {
+                overlay.style.transition = 'none';
+                overlay.style.bottom = `-${diff}px`;
+            }
+        }
+
+        function handleTouchEnd(e) {
+            if (!isDragging) return;
+            
+            isDragging = false;
+            dragHandle.style.cursor = 'grab';
+            overlay.style.transition = 'bottom 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+            
+            const diff = startY - e.changedTouches[0].clientY;
+            
+            if (diff > -100) {
+                closePreview();
+            } else {
+                overlay.style.bottom = '0';
+            }
+        }
+        
+        overlay.addEventListener('touchstart', handleTouchStart);
+        overlay.addEventListener('touchmove', handleTouchMove);
+        overlay.addEventListener('touchend', handleTouchEnd);
+
+        // Haptic feedback simulation (visual)
+        document.querySelectorAll('.list-item').forEach(item => {
+            item.addEventListener('touchstart', function() {
+                this.style.transform = 'scale(0.97)';
+            });
+            item.addEventListener('touchend', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>
