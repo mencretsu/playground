@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GROK TRADER v1 • Real Edge Only</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --bg: #0a0e17;
+            --card: #111827;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --green: #10b981;
+            --red: #ef4444;
+            --yellow: #f59e0b;
+            --blue: #3b82f6;
+        }
+        * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 12px;
+            line-height: 1.4;
+            min-height: 100vh;
+        }
+        .container { max-width: 100%; margin: 0 auto; }
+        h1 { font-size: 1.5rem; text-align: center; color: var(--blue); margin: 12px 0; }
+        .badge { font-size: 0.65rem; background: #1e293b; padding: 2px 8px; border-radius: 12px; }
+
+        .card {
+            background: var(--card);
+            border-radius: 10px;
+            padding: 14px;
+            margin: 14px 0;
+            border: 1px solid #1e293b;
+        }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .score { font-weight: bold; font-size: 1.1rem; }
+
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+        .item {
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+        .label { font-size: 0.75rem; color: var(--muted); margin-bottom: 4px; }
+
+        .decision {
+            font-size: 2.1rem;
+            font-weight: 900;
+            text-align: center;
+            padding: 18px;
+            border-radius: 12px;
+            margin: 16px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .buy    { background: linear-gradient(135deg, #059669, #10b981); color: white; }
+        .sell   { background: linear-gradient(135deg, #b91c1c, #ef4444); color: white; }
+        .hold   { background: #334155; color: var(--yellow); }
+
+        .grok-box {
+            background: rgba(59,130,246,0.08);
+            border: 1px solid var(--blue);
+            border-radius: 10px;
+            padding: 14px;
+            margin: 16px 0;
+            min-height: 80px;
+        }
+        .grok-box h3 { color: #60a5fa; margin-bottom: 10px; font-size: 1.1rem; }
+
+        .conf-item {
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+        .yes { border-color: var(--green); background: rgba(16,185,129,0.08); }
+        .no  { border-color: var(--red);   background: rgba(239,68,68,0.08); }
+        .wait{ border-color: var(--yellow); background: rgba(245,158,11,0.08); }
+
+        .chart-container { height: 220px; margin: 16px 0; background: #0f172a; border-radius: 10px; padding: 8px; }
+
+        button {
+            background: var(--blue);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            font-weight: bold;
+            width: 100%;
+            margin: 10px 0;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .small-btn { padding: 10px; font-size: 0.9rem; background: #334155; }
+
+        .muted { color: var(--muted); font-size: 0.8rem; text-align: center; }
+        #loading { display: none; color: var(--blue); font-weight: bold; text-align: center; padding: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <h1>GROK TRADER v1 <span class="badge">No Hype • Real Prob</span></h1>
+
+    <div id="loading">⏳ Menganalisa market...</div>
+
+    <div class="card">
+        <div class="header">
+            <h2>STATUS</h2>
+            <div class="score" id="edge-score">--/100</div>
+        </div>
+        <div class="grid-2">
+            <div class="item"><div class="label">Market</div><div id="market-mode">—</div></div>
+            <div class="item"><div class="label">Real Edge</div><div id="real-prob">—%</div></div>
+            <div class="item"><div class="label">Risk</div><div id="risk-level">—</div></div>
+            <div class="item"><div class="label">Konfirmasi</div><div><strong id="conf-count">0</strong>/6</div></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>6 Filter Kritis</h3>
+        <div class="grid-3" id="conf-grid">
+            <div class="conf-item wait" id="c1"><div>Price Action</div><div>wait</div></div>
+            <div class="conf-item wait" id="c2"><div>Trend Align</div><div>wait</div></div>
+            <div class="conf-item wait" id="c3"><div>Volume</div><div>wait</div></div>
+            <div class="conf-item wait" id="c4"><div>Momentum</div><div>wait</div></div>
+            <div class="conf-item wait" id="c5"><div>Structure</div><div>wait</div></div>
+            <div class="conf-item wait" id="c6"><div>S/R Zone</div><div>wait</div></div>
+        </div>
+    </div>
+
+    <div class="grok-box">
+        <h3>🧠 Grok Says</h3>
+        <div id="grok-says" class="muted">Tekan ANALISA untuk mulai...</div>
+    </div>
+
+    <div class="card">
+        <h3>KEPUTUSAN AKHIR</h3>
+        <div class="decision hold" id="final-act">WAIT</div>
+        <div class="muted" id="final-reason" style="margin-top:12px;">
+            Tunggu setup yang punya edge statistik jelas
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Risk Control</h3>
+        <div class="grid-2">
+            <div class="item"><div class="label">Stop Loss</div><div id="sl">--</div></div>
+            <div class="item"><div class="label">Take Profit</div><div id="tp">--</div></div>
+            <div class="item"><div class="label">Max Risk</div><div id="maxrisk">—%</div></div>
+            <div class="item"><div class="label">Position</div><div id="pos-size">—</div></div>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="priceChart"></canvas>
+    </div>
+
+    <div class="card">
+        <div style="display:flex;gap:10px;margin-bottom:12px;">
+            <select id="symbol" style="flex:1;padding:10px;border-radius:6px;background:#1e293b;color:white;border:1px solid #334155;">
+                <option value="BTCUSDT">BTC/USDT</option>
+                <option value="ETHUSDT">ETH/USDT</option>
+                <option value="SOLUSDT">SOL/USDT</option>
+                <option value="BNBUSDT">BNB/USDT</option>
+            </select>
+            <select id="tf" style="flex:1;padding:10px;border-radius:6px;background:#1e293b;color:white;border:1px solid #334155;">
+                <option value="15m">15m</option>
+                <option value="1h" selected>1h</option>
+                <option value="4h">4h</option>
+                <option value="1d">1d</option>
+            </select>
+        </div>
+
+        <button id="analyzeBtn" onclick="analyze()">JALANKAN ANALISA</button>
+        <button onclick="location.reload()" class="small-btn">Reset</button>
+    </div>
+
+    <div class="muted" style="text-align:center;margin-top:20px;font-size:0.75rem;">
+        Simulasi only • Bukan saran investasi • Gunakan dengan bijak
+    </div>
+
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let chart = null;
+let isAnalyzing = false;
+
+const confNames = ["Price Action", "Trend Align", "Volume", "Momentum", "Structure", "S/R Zone"];
+
+function setConf(idx, ok) {
+    const el = $(`c${idx+1}`);
+    if (!el) return;
+    el.className = `conf-item ${ok ? 'yes' : 'no'}`;
+    el.lastElementChild.textContent = ok ? 'YES' : 'NO';
+}
+
+function resetUI() {
+    $('conf-count').textContent = '0';
+    $('edge-score').textContent = '--/100';
+    $('real-prob').textContent = '--%';
+    $('risk-level').textContent = '—';
+    $('market-mode').textContent = '—';
+    $('final-act').textContent = 'WAIT';
+    $('final-act').className = 'decision hold';
+    $('final-reason').textContent = 'Tunggu setup yang punya edge statistik jelas';
+    $('grok-says').textContent = 'Tekan ANALISA untuk mulai...';
+    $('sl').textContent = '--';
+    $('tp').textContent = '--';
+    $('maxrisk').textContent = '—%';
+    $('pos-size').textContent = '—';
+
+    document.querySelectorAll('.conf-item').forEach(el => {
+        el.className = 'conf-item wait';
+        el.lastElementChild.textContent = 'wait';
+    });
+
+    if (chart) {
+        chart.destroy();
+        chart = null;
+    }
+}
+
+async function analyze() {
+    if (isAnalyzing) return;
+    isAnalyzing = true;
+    const btn = $('analyzeBtn');
+    btn.disabled = true;
+    btn.textContent = 'SEDANG ANALISA...';
+    $('loading').style.display = 'block';
+
+    resetUI();
+
+    try {
+        // Simulasi delay (ganti dengan fetch API real nanti)
+        await new Promise(r => setTimeout(r, 1200));
+
+        const price = Math.round(30000 + Math.random() * 40000);
+        const bullish = Math.random() > 0.48;
+
+        $('market-mode').textContent = bullish ? 'Bullish Bias' : 'Bearish / Sideways';
+
+        // 6 konfirmasi (probabilitas lebih realistis)
+        const checks = [
+            Math.random() > 0.38,           // Price Action
+            Math.random() > 0.55,           // Trend
+            Math.random() > 0.52,           // Volume
+            Math.random() > 0.48,           // Momentum
+            Math.random() > 0.62,           // Structure
+            Math.random() > 0.68            // S/R
+        ];
+
+        let confCount = 0;
+        checks.forEach((ok, i) => {
+            if (ok) confCount++;
+            setConf(i, ok);
+        });
+        $('conf-count').textContent = confCount;
+
+        // Edge probability Grok-style: konservatif
+        let prob = Math.round(confCount * 12.5 + (Math.random() * 10 - 5));
+        prob = Math.max(32, Math.min(87, prob));
+        $('real-prob').textContent = prob + '%';
+
+        const score = Math.round(prob * 0.9);
+        $('edge-score').textContent = score + '/100';
+
+        // Risk level
+        const risk = prob > 70 ? 'LOW' : prob > 52 ? 'MEDIUM' : 'HIGH';
+        $('risk-level').textContent = risk;
+
+        // Keputusan
+        let act = 'HOLD', color = 'hold', reason = 'No clear statistical edge right now.';
+        let grokText = `Probabilitas realistis ~${prob}%. `;
+
+        if (confCount >= 5 && prob >= 73) {
+            act = 'STRONG BUY'; color = 'buy';
+            reason = 'Setup sangat langka. Hampir semua align. Tapi SL wajib ketat.';
+            grokText += 'Jarang dapat 5+/6. Kalau gagal → mungkin black swan atau overread.';
+        } else if (confCount >= 4 && prob >= 60) {
+            act = 'BUY'; color = 'buy';
+            reason = 'Edge lumayan. Masuk dengan position size sedang.';
+            grokText += '4/6 biasanya zona trader dewasa. Jangan greed.';
+        } else if (confCount >= 5 && prob < 60) {
+            act = 'WEAK BUY'; color = 'buy';
+            reason = 'Banyak konfirmasi tapi prob rendah. Spekulasi kecil saja.';
+            grokText += 'Ini lebih ke gambling daripada trading.';
+        } else {
+            act = 'NO TRADE';
+            reason = 'Market tidak kasih keuntungan statistik hari ini. Sabar.';
+            grokText += 'Cash > FOMO. Tunggu setup bersih.';
+        }
+
+        if (risk === 'HIGH') grokText += ' ⚠️ RISK HIGH – jangan force.';
+
+        $('final-act').textContent = act;
+        $('final-act').className = `decision ${color}`;
+        $('final-reason').textContent = reason;
+        $('grok-says').textContent = grokText;
+
+        // Risk numbers
+        const atrPct = 1.2 + Math.random() * 2.0;
+        const slPct = risk === 'LOW' ? 1.5 : risk === 'MEDIUM' ? 2.1 : 3.0;
+        const sl = Math.round(price * (1 - slPct / 100));
+        const riskDist = price - sl;
+        const tp = Math.round(price + riskDist * 1.85);
+
+        $('sl').textContent = sl.toLocaleString();
+        $('tp').textContent = tp.toLocaleString();
+        $('maxrisk').textContent = slPct.toFixed(1) + '%';
+        $('pos-size').textContent = (1.5 / slPct).toFixed(2) + 'x';
+
+        // Chart
+        updateChart(price, color === 'buy' ? 'rgba(16,185,129,0.8)' : color === 'sell' ? 'rgba(239,68,68,0.8)' : 'rgba(245,158,11,0.8)');
+
+    } catch (err) {
+        $('grok-says').textContent = 'Error: ' + (err.message || 'Gagal menganalisa');
+        console.error(err);
+    } finally {
+        isAnalyzing = false;
+        btn.disabled = false;
+        btn.textContent = 'JALANKAN ANALISA';
+        $('loading').style.display = 'none';
+    }
+}
+
+function updateChart(basePrice, lineColor) {
+    const ctx = $('priceChart').getContext('2d');
+    if (chart) chart.destroy();
+
+    const data = [];
+    let v = basePrice;
+    for (let i = 0; i < 40; i++) {
+        v += (Math.random() - 0.5) * basePrice * 0.007;
+        data.push(Math.round(v));
+    }
+
+    chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: Array(40).fill(''),
+            datasets: [{
+                data: data,
+                borderColor: lineColor,
+                backgroundColor: lineColor.replace('0.8', '0.15'),
+                borderWidth: 2,
+                tension: 0.15,
+                pointRadius: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { display: false }, y: { display: false } }
+        }
+    });
+}
+
+// Auto run sekali saat load (opsional)
+window.addEventListener('load', () => {
+    setTimeout(analyze, 800); // mulai otomatis setelah halaman load
+});
+</script>
+</body>
+</html>
