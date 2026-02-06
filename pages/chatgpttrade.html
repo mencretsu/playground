@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QUANT AI TRADER</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{background:#0b1220;color:#e5e7eb;font-family:sans-serif;padding:12px}
+.card{background:#111827;padding:12px;border-radius:10px;margin-bottom:12px}
+h2{margin:6px 0;color:#60a5fa}
+.value{font-weight:bold;font-size:18px}
+.buy{color:#10b981}
+.sell{color:#ef4444}
+.hold{color:#f59e0b}
+</style>
+</head>
+<body>
+
+<div class="card">
+<h2>QUANT AI TRADER (Live Binance)</h2>
+<select id="symbol">
+<option>BTCUSDT</option>
+<option>ETHUSDT</option>
+<option>SOLUSDT</option>
+</select>
+<button onclick="run()">RUN ANALYSIS</button>
+</div>
+
+<div class="card">
+Price: <span id="price" class="value">-</span><br>
+EMA20 / EMA50 / EMA200: <span id="ema" class="value">-</span><br>
+RSI: <span id="rsi" class="value">-</span><br>
+ATR: <span id="atr" class="value">-</span><br>
+Structure: <span id="structure" class="value">-</span><br>
+Volume Spike: <span id="vol" class="value">-</span>
+</div>
+
+<div class="card">
+<h2>FINAL AI DECISION</h2>
+<div id="decision" class="value hold">ANALYZING...</div>
+<div id="sl"></div>
+<div id="tp"></div>
+</div>
+
+<canvas id="chart"></canvas>
+
+<script>
+let chart;
+
+async function fetchData(symbol){
+const res=await fetch(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=1h&limit=200`);
+return await res.json();
+}
+
+function ema(data, period){
+let k=2/(period+1);
+let emaArr=[data[0]];
+for(let i=1;i<data.length;i++)
+emaArr.push(data[i]*k+emaArr[i-1]*(1-k));
+return emaArr;
+}
+
+function rsi(closes, period=14){
+let gains=0,loss=0;
+for(let i=1;i<=period;i++){
+let diff=closes[i]-closes[i-1];
+diff>=0?gains+=diff:loss-=diff;
+}
+let rs=gains/loss;
+return 100-(100/(1+rs));
+}
+
+function atr(highs,lows,closes,period=14){
+let trs=[];
+for(let i=1;i<highs.length;i++){
+trs.push(Math.max(
+highs[i]-lows[i],
+Math.abs(highs[i]-closes[i-1]),
+Math.abs(lows[i]-closes[i-1])
+));
+}
+return trs.slice(-period).reduce((a,b)=>a+b)/period;
+}
+
+function structure(closes){
+let hh=0,ll=0;
+for(let i=1;i<closes.length;i++){
+if(closes[i]>closes[i-1])hh++;
+else ll++;
+}
+return hh>ll?"HH/HL":"LH/LL";
+}
+
+async function run(){
+const symbol=document.getElementById('symbol').value;
+const raw=await fetchData(symbol);
+
+const closes=raw.map(c=>parseFloat(c[4]));
+const highs=raw.map(c=>parseFloat(c[2]));
+const lows=raw.map(c=>parseFloat(c[3]));
+const volumes=raw.map(c=>parseFloat(c[5]));
+
+let price=closes.at(-1);
+
+let ema20=ema(closes,20).at(-1);
+let ema50=ema(closes,50).at(-1);
+let ema200=ema(closes,200).at(-1);
+let r=rsi(closes);
+let a=atr(highs,lows,closes);
+let s=structure(closes);
+
+let volSpike=volumes.at(-1) > volumes.slice(-20).reduce((a,b)=>a+b)/20;
+
+document.getElementById('price').innerText=price.toFixed(2);
+document.getElementById('ema').innerText=`${ema20.toFixed(0)} / ${ema50.toFixed(0)} / ${ema200.toFixed(0)}`;
+document.getElementById('rsi').innerText=r.toFixed(1);
+document.getElementById('atr').innerText=a.toFixed(2);
+document.getElementById('structure').innerText=s;
+document.getElementById('vol').innerText=volSpike?"YES":"NO";
+
+let decision="HOLD";
+let cls="hold";
+
+if(ema20>ema50 && ema50>ema200 && r>55 && s==="HH/HL" && volSpike){
+decision="STRONG BUY";
+cls="buy";
+}
+else if(ema20<ema50 && ema50<ema200 && r<45 && s==="LH/LL" && volSpike){
+decision="STRONG SELL";
+cls="sell";
+}
+
+document.getElementById('decision').innerText=decision;
+document.getElementById('decision').className="value "+cls;
+
+let sl,tp;
+if(decision.includes("BUY")){
+sl=price-a;
+tp=price+(a*2);
+}else if(decision.includes("SELL")){
+sl=price+a;
+tp=price-(a*2);
+}
+
+document.getElementById('sl').innerText="SL: "+(sl?sl.toFixed(2):"-");
+document.getElementById('tp').innerText="TP: "+(tp?tp.toFixed(2):"-");
+
+drawChart(closes);
+}
+
+function drawChart(data){
+if(chart)chart.destroy();
+chart=new Chart(document.getElementById('chart'),{
+type:'line',
+data:{labels:data.map((_,i)=>i),datasets:[{data}]},
+options:{responsive:true,plugins:{legend:{display:false}}}
+});
+}
+</script>
+
+</body>
+</html>
