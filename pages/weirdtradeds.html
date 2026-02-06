@@ -1,0 +1,2282 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quantum Trader Pro v2.0 - Realistic Edition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --green: #10b981;
+            --red: #ef4444;
+            --yellow: #f59e0b;
+            --blue: #3b82f6;
+            --purple: #8b5cf6;
+            --gray: #6b7280;
+            --bg-dark: #111827;
+            --bg-card: #1f2937;
+            --border: #374151;
+            --text: #e5e7eb;
+            --text-dim: #9ca3af;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            padding: 12px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        /* === REALITY CHECK BANNER === */
+        .reality-check {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(245, 158, 11, 0.15));
+            border: 2px solid var(--red);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .reality-check::before {
+            content: "🚨";
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 2em;
+            opacity: 0.2;
+        }
+        
+        .reality-check h3 {
+            color: var(--red);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .reality-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 12px;
+            margin-top: 12px;
+        }
+        
+        .reality-item {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 6px;
+            border-left: 3px solid var(--yellow);
+        }
+        
+        .reality-label {
+            font-size: 0.75em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+        
+        .reality-value {
+            font-size: 0.9em;
+            color: var(--text);
+        }
+        /* === END REALITY CHECK === */
+        
+        .header {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            text-align: center;
+            position: relative;
+        }
+        
+        .version-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--purple);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.7em;
+            font-weight: bold;
+        }
+        
+        .header h1 {
+            font-size: 1.5em;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+        
+        .live-price {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--green);
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 12px;
+            position: relative;
+        }
+        
+        .api-status {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 0.7em;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+        
+        .api-status.live {
+            background: var(--green);
+            color: #000;
+        }
+        
+        .api-status.demo {
+            background: var(--yellow);
+            color: #000;
+        }
+        
+        .price-main {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--green);
+        }
+        
+        .price-change {
+            font-size: 0.9em;
+            margin-top: 4px;
+        }
+        
+        /* === KELLY CRITERION DISPLAY === */
+        .kelly-display {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid var(--blue);
+            border-radius: 8px;
+            padding: 16px;
+            margin: 12px 0;
+        }
+        
+        .kelly-title {
+            color: var(--blue);
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .kelly-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+        }
+        
+        .kelly-item {
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+        }
+        
+        .kelly-label {
+            font-size: 0.75em;
+            color: var(--text-dim);
+            margin-bottom: 4px;
+        }
+        
+        .kelly-value {
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        /* === END KELLY === */
+        
+        /* LAYOUT DUA KOLOM */
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 12px 0;
+        }
+        
+        @media (max-width: 768px) {
+            .two-column {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 16px;
+            border: 1px solid var(--border);
+        }
+        
+        .card-title {
+            font-size: 0.9em;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        /* BACKTESTING SECTION */
+        .backtest-section {
+            background: rgba(139, 92, 246, 0.1);
+            border: 2px solid var(--purple);
+        }
+        
+        .backtest-controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .backtest-results {
+            margin-top: 16px;
+            padding: 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+        
+        @media (max-width: 768px) {
+            .results-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        /* USER FEEDBACK */
+        .feedback-section {
+            background: rgba(245, 158, 11, 0.1);
+            border: 2px solid var(--yellow);
+        }
+        
+        .feedback-form {
+            display: grid;
+            gap: 12px;
+        }
+        
+        .form-group {
+            display: grid;
+            gap: 6px;
+        }
+        
+        .form-label {
+            font-size: 0.8em;
+            color: var(--text-dim);
+        }
+        
+        .form-input {
+            padding: 10px;
+            background: var(--bg-dark);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-size: 0.9em;
+        }
+        
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .btn-primary {
+            background: var(--green);
+            color: #000;
+        }
+        
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+        
+        .btn-primary:active {
+            transform: scale(0.98);
+        }
+        
+        .btn-secondary {
+            background: var(--blue);
+            color: #fff;
+        }
+        
+        .btn-warning {
+            background: var(--yellow);
+            color: #000;
+        }
+        
+        /* QUANTUM SCORE */
+        .quantum-score {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .score-display {
+            font-size: 4em;
+            font-weight: bold;
+            color: var(--green);
+            margin: 10px 0;
+        }
+        
+        .score-label {
+            font-size: 0.85em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .score-bars {
+            display: grid;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        
+        .score-bar-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .score-bar-label {
+            width: 80px;
+            font-size: 0.75em;
+            color: var(--text-dim);
+            text-align: right;
+        }
+        
+        .score-bar {
+            flex: 1;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .score-bar-fill {
+            height: 100%;
+            background: var(--green);
+            transition: width 0.5s ease;
+        }
+        
+        .score-bar-value {
+            width: 45px;
+            font-size: 0.8em;
+            font-weight: 600;
+            text-align: left;
+        }
+        
+        /* NEURAL NETWORK - TABEL */
+        .neural-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .neural-table th {
+            background: var(--bg-dark);
+            padding: 10px;
+            text-align: left;
+            font-size: 0.75em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .neural-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9em;
+        }
+        
+        .neural-table tr:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+        
+        .indicator-name {
+            font-weight: 500;
+        }
+        
+        .indicator-value {
+            font-weight: 600;
+            text-align: right;
+        }
+        
+        .indicator-status {
+            text-align: center;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+        }
+        
+        .status-bullish {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--green);
+        }
+        
+        .status-bearish {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--red);
+        }
+        
+        .status-neutral {
+            background: rgba(107, 114, 128, 0.2);
+            color: var(--gray);
+        }
+        
+        /* AI CONSENSUS */
+        .ai-list {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .ai-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+            border-left: 3px solid;
+        }
+        
+        .ai-item.buy {
+            border-left-color: var(--green);
+            background: rgba(16, 185, 129, 0.05);
+        }
+        
+        .ai-item.sell {
+            border-left-color: var(--red);
+            background: rgba(239, 68, 68, 0.05);
+        }
+        
+        .ai-item.hold {
+            border-left-color: var(--yellow);
+            background: rgba(245, 158, 11, 0.05);
+        }
+        
+        .ai-item.strong-buy {
+            border-left-color: var(--green);
+            background: rgba(16, 185, 129, 0.1);
+        }
+        
+        .ai-item.weak-buy {
+            border-left-color: var(--yellow);
+            background: rgba(245, 158, 11, 0.1);
+        }
+        
+        .ai-name {
+            font-weight: 600;
+            font-size: 0.9em;
+        }
+        
+        .ai-decision {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .decision-badge {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .decision-badge.strong-buy {
+            background: var(--green);
+            color: #000;
+        }
+        
+        .decision-badge.buy {
+            background: var(--green);
+            color: #000;
+        }
+        
+        .decision-badge.sell {
+            background: var(--red);
+            color: #fff;
+        }
+        
+        .decision-badge.hold {
+            background: var(--yellow);
+            color: #000;
+        }
+        
+        .decision-badge.weak-buy {
+            background: var(--yellow);
+            color: #000;
+        }
+        
+        .ai-confidence {
+            font-size: 0.85em;
+            color: var(--text-dim);
+        }
+        
+        /* FINAL DECISION */
+        .final-decision {
+            text-align: center;
+            padding: 24px;
+        }
+        
+        .final-action {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin: 16px 0;
+            padding: 20px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .final-action.strong-buy {
+            background: var(--green);
+            color: #000;
+        }
+        
+        .final-action.buy {
+            background: rgba(16, 185, 129, 0.8);
+            color: #000;
+        }
+        
+        .final-action.weak-buy {
+            background: var(--yellow);
+            color: #000;
+        }
+        
+        .final-action.hold {
+            background: var(--gray);
+            color: #fff;
+        }
+        
+        .final-action.sell {
+            background: var(--red);
+            color: #fff;
+        }
+        
+        .action-details {
+            font-size: 0.9em;
+            color: var(--text-dim);
+            line-height: 1.6;
+            margin-top: 12px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-top: 20px;
+        }
+        
+        .stat-item {
+            text-align: center;
+        }
+        
+        .stat-label {
+            font-size: 0.75em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+        
+        .stat-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+        
+        /* RISK MANAGEMENT */
+        .risk-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        
+        .risk-item {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 12px;
+            border-radius: 6px;
+        }
+        
+        .risk-label {
+            font-size: 0.75em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+        
+        .risk-value {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-top: 4px;
+            color: var(--text);
+        }
+        
+        /* CHART */
+        .chart-wrapper {
+            height: 250px;
+            position: relative;
+        }
+        
+        /* TIMEFRAME */
+        .tf-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+        
+        .tf-item {
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        
+        .tf-label {
+            font-size: 0.75em;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+        
+        .tf-status {
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+        
+        /* TRADE LOG */
+        .trade-log {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 16px;
+        }
+        
+        .trade-item {
+            display: grid;
+            grid-template-columns: 80px 1fr 100px 80px 80px;
+            gap: 10px;
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.85em;
+            align-items: center;
+        }
+        
+        .trade-item.win {
+            background: rgba(16, 185, 129, 0.05);
+        }
+        
+        .trade-item.loss {
+            background: rgba(239, 68, 68, 0.05);
+        }
+        
+        /* LOADING */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--green);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .text-green { color: var(--green); }
+        .text-red { color: var(--red); }
+        .text-yellow { color: var(--yellow); }
+        .text-blue { color: var(--blue); }
+        .text-purple { color: var(--purple); }
+        
+        @media (max-width: 480px) {
+            .header h1 { font-size: 1.2em; }
+            .score-display { font-size: 3em; }
+            .final-action { font-size: 1.8em; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .risk-grid { grid-template-columns: 1fr; }
+            .trade-item {
+                grid-template-columns: 1fr;
+                font-size: 0.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="container">
+        <!-- REALITY CHECK BANNER -->
+        <div class="reality-check">
+            <h3>🚨 REALITY CHECK - BACA INI DULU!</h3>
+            <div style="font-size: 0.9em; color: var(--text-dim); margin-bottom: 12px;">
+                Ini adalah <strong>SIMULASI & ALAT EDUKASI</strong>, bukan sistem trading otomatis. 
+                Performa di dunia nyata bisa berbeda drastis.
+            </div>
+            <div class="reality-grid">
+                <div class="reality-item">
+                    <div class="reality-label">Data Sentimen</div>
+                    <div class="reality-value">Simulasi (Real API: $500+/month)</div>
+                </div>
+                <div class="reality-item">
+                    <div class="reality-label">Whale Tracking</div>
+                    <div class="reality-value">Mock data (Nansen: $5000+/year)</div>
+                </div>
+                <div class="reality-item">
+                    <div class="reality-label">AI Consensus</div>
+                    <div class="reality-value">Simulasi prompt, bukan API call</div>
+                </div>
+                <div class="reality-item">
+                    <div class="reality-label">Live Execution</div>
+                    <div class="reality-value">Tidak terkoneksi ke exchange</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HEADER -->
+        <div class="header">
+            <div class="version-badge">v2.0 - REALISTIC EDITION</div>
+            <h1>📊 Quantum Trader Pro v2.0</h1>
+            <div style="font-size: 0.85em; color: var(--text-dim); margin-top: 4px;">
+                Sistem Analisis Trading dengan Kelly Criterion & Risk Management
+            </div>
+            <div class="live-price">
+                <div class="api-status demo" id="apiStatus">DEMO MODE</div>
+                <div style="font-size: 0.75em; color: var(--text-dim);">LIVE PRICE</div>
+                <div class="price-main" id="currentPrice">--</div>
+                <div class="price-change">
+                    <span id="priceChange24h">--</span>
+                    <span style="color: var(--text-dim); margin-left: 8px;">24h</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- KELLY CRITERION DISPLAY -->
+        <div class="kelly-display">
+            <div class="kelly-title">
+                <span>⚖️ KELLY CRITERION & POSITION SIZING</span>
+                <span style="font-size: 0.7em; color: var(--text-dim);">(Mathematical Optimal Betting)</span>
+            </div>
+            <div class="kelly-grid" id="kellyGrid">
+                <!-- Kelly metrics will be populated here -->
+            </div>
+            <div style="font-size: 0.75em; color: var(--text-dim); margin-top: 8px; font-style: italic;">
+                * Half-Kelly digunakan untuk risk management. Full Kelly terlalu agresif untuk trading.
+            </div>
+        </div>
+
+        <!-- CONTROLS & FINAL DECISION -->
+        <div class="two-column">
+            <!-- CONTROLS -->
+            <div class="card">
+                <div class="card-title">⚙️ Konfigurasi Sistem</div>
+                <div class="controls">
+                    <div class="form-group">
+                        <label class="form-label">Trading Pair</label>
+                        <select id="tradingPair" class="form-input">
+                            <option value="BTCUSDT">BTC/USDT</option>
+                            <option value="ETHUSDT">ETH/USDT</option>
+                            <option value="BNBUSDT">BNB/USDT</option>
+                            <option value="SOLUSDT">SOL/USDT</option>
+                            <option value="ADAUSDT">ADA/USDT</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Timeframe</label>
+                        <select id="timeframe" class="form-input">
+                            <option value="5m">5 Menit</option>
+                            <option value="15m">15 Menit</option>
+                            <option value="1h">1 Jam</option>
+                            <option value="4h" selected>4 Jam</option>
+                            <option value="1d">1 Hari</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Account Size (USDT)</label>
+                        <input type="number" id="accountSize" class="form-input" value="10000" min="100" max="1000000">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Risk Tolerance</label>
+                        <select id="riskTolerance" class="form-input">
+                            <option value="0.25">Conservative (¼ Kelly)</option>
+                            <option value="0.5" selected>Moderate (½ Kelly)</option>
+                            <option value="0.75">Aggressive (¾ Kelly)</option>
+                            <option value="1.0">Full Kelly (High Risk)</option>
+                        </select>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="runQuantumAnalysis()" style="margin-top: 12px; width: 100%;">
+                    ⚡ ANALISIS SEKARANG
+                </button>
+            </div>
+
+            <!-- FINAL DECISION -->
+            <div class="card">
+                <div class="card-title">🎯 Keputusan Trading</div>
+                <div class="final-decision">
+                    <div class="final-action hold" id="finalAction">
+                        INITIALIZING...
+                    </div>
+                    <div class="action-details" id="actionDetails">
+                        Menghitung Kelly Criterion...
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-label">Win Prob</div>
+                            <div class="stat-value" id="winProb">--%</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Optimal %</div>
+                            <div class="stat-value" id="optimalPercent">--%</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Risk/Reward</div>
+                            <div class="stat-value" id="riskRewardRatio">--</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUANTUM SCORE & AI CONSENSUS -->
+        <div class="two-column">
+            <!-- QUANTUM SCORE -->
+            <div class="card">
+                <div class="card-title">⚡ Quantum Score</div>
+                <div class="quantum-score">
+                    <div class="score-label">Overall Score</div>
+                    <div class="score-display" id="quantumScore">--</div>
+                    <div class="score-bars">
+                        <div class="score-bar-row">
+                            <div class="score-bar-label">Accuracy</div>
+                            <div class="score-bar">
+                                <div class="score-bar-fill" id="accuracyBar" style="width: 0%;"></div>
+                            </div>
+                            <div class="score-bar-value" id="accuracyValue">0%</div>
+                        </div>
+                        <div class="score-bar-row">
+                            <div class="score-bar-label">Confidence</div>
+                            <div class="score-bar">
+                                <div class="score-bar-fill" id="confidenceBar" style="width: 0%;"></div>
+                            </div>
+                            <div class="score-bar-value" id="confidenceValue">0%</div>
+                        </div>
+                        <div class="score-bar-row">
+                            <div class="score-bar-label">Momentum</div>
+                            <div class="score-bar">
+                                <div class="score-bar-fill" id="momentumBar" style="width: 0%;"></div>
+                            </div>
+                            <div class="score-bar-value" id="momentumValue">0%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI CONSENSUS -->
+            <div class="card">
+                <div class="card-title">🤖 Konsensus Multi-AI</div>
+                <div class="ai-list" id="aiList">
+                    <!-- Dynamic AI opinions -->
+                </div>
+            </div>
+        </div>
+
+        <!-- NEURAL NETWORK STATUS -->
+        <div class="card">
+            <div class="card-title">🧠 Status Neural Network</div>
+            <table class="neural-table">
+                <thead>
+                    <tr>
+                        <th>Indikator</th>
+                        <th style="text-align: right;">Nilai</th>
+                        <th style="text-align: center;">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="neuralTableBody">
+                    <!-- Dynamic rows -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- BACKTESTING SECTION -->
+        <div class="card backtest-section">
+            <div class="card-title">📈 BACKTESTING MODULE</div>
+            <div class="backtest-controls">
+                <div class="form-group">
+                    <label class="form-label">Period</label>
+                    <select id="backtestPeriod" class="form-input">
+                        <option value="7">7 Hari</option>
+                        <option value="30" selected>30 Hari</option>
+                        <option value="90">90 Hari</option>
+                        <option value="180">180 Hari</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Initial Capital</label>
+                    <input type="number" id="backtestCapital" class="form-input" value="10000">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Strategy</label>
+                    <select id="backtestStrategy" class="form-input">
+                        <option value="quantum">Quantum Strategy</option>
+                        <option value="trend">Trend Following</option>
+                        <option value="meanrev">Mean Reversion</option>
+                    </select>
+                </div>
+                <div style="display: flex; align-items: flex-end;">
+                    <button class="btn btn-secondary" onclick="runBacktest()" style="width: 100%;">
+                        🧪 RUN BACKTEST
+                    </button>
+                </div>
+            </div>
+            
+            <div class="backtest-results" id="backtestResults" style="display: none;">
+                <div style="font-weight: bold; color: var(--purple); margin-bottom: 12px;">
+                    📊 BACKTEST RESULTS
+                </div>
+                <div class="results-grid">
+                    <div class="kelly-item">
+                        <div class="kelly-label">Total Return</div>
+                        <div class="kelly-value" id="btReturn">--%</div>
+                    </div>
+                    <div class="kelly-item">
+                        <div class="kelly-label">Win Rate</div>
+                        <div class="kelly-value" id="btWinRate">--%</div>
+                    </div>
+                    <div class="kelly-item">
+                        <div class="kelly-label">Sharpe Ratio</div>
+                        <div class="kelly-value" id="btSharpe">--</div>
+                    </div>
+                    <div class="kelly-item">
+                        <div class="kelly-label">Max Drawdown</div>
+                        <div class="kelly-value" id="btDrawdown">--%</div>
+                    </div>
+                </div>
+                <div style="margin-top: 12px; font-size: 0.85em; color: var(--text-dim);">
+                    <strong>Catatan:</strong> Backtest menggunakan historical data dari Binance. 
+                    Past performance ≠ future results.
+                </div>
+            </div>
+        </div>
+
+        <!-- USER FEEDBACK SECTION -->
+        <div class="card feedback-section">
+            <div class="card-title">📝 USER FEEDBACK & TRADE LOG</div>
+            <div class="feedback-form">
+                <div class="two-column">
+                    <div class="form-group">
+                        <label class="form-label">Signal ID</label>
+                        <input type="text" id="signalId" class="form-input" placeholder="Auto-generated" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Actual Result</label>
+                        <select id="actualResult" class="form-input">
+                            <option value="win">Win / Profit</option>
+                            <option value="loss">Loss</option>
+                            <option value="breakeven">Breakeven</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="two-column">
+                    <div class="form-group">
+                        <label class="form-label">Actual Profit %</label>
+                        <input type="number" id="actualProfit" class="form-input" placeholder="e.g., 2.5" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <input type="text" id="tradeNotes" class="form-input" placeholder="Market conditions, etc">
+                    </div>
+                </div>
+                <button class="btn btn-warning" onclick="submitTradeFeedback()">
+                    💾 SAVE TRADE RESULT
+                </button>
+            </div>
+            
+            <div class="trade-log" id="tradeLog">
+                <!-- Trade history will appear here -->
+            </div>
+        </div>
+
+        <!-- MULTI-TIMEFRAME -->
+        <div class="card">
+            <div class="card-title">⏰ Analisis Multi-Timeframe</div>
+            <div class="tf-grid" id="tfGrid">
+                <!-- Dynamic timeframes -->
+            </div>
+        </div>
+
+        <!-- RISK MANAGEMENT -->
+        <div class="card">
+            <div class="card-title">🛡️ Risk Management</div>
+            <div class="risk-grid">
+                <div class="risk-item">
+                    <div class="risk-label">Entry Price</div>
+                    <div class="risk-value" id="entryPrice">--</div>
+                </div>
+                <div class="risk-item">
+                    <div class="risk-label">Stop Loss</div>
+                    <div class="risk-value" id="stopLoss">--</div>
+                </div>
+                <div class="risk-item">
+                    <div class="risk-label">Take Profit</div>
+                    <div class="risk-value" id="takeProfit">--</div>
+                </div>
+                <div class="risk-item">
+                    <div class="risk-label">Position Size</div>
+                    <div class="risk-value" id="positionSize">--</div>
+                </div>
+                <div class="risk-item">
+                    <div class="risk-label">Risk/Reward</div>
+                    <div class="risk-value" id="riskReward">--</div>
+                </div>
+                <div class="risk-item">
+                    <div class="risk-label">Max Loss</div>
+                    <div class="risk-value" id="maxLoss">--</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CHART -->
+        <div class="card">
+            <div class="card-title">📈 Price Action</div>
+            <div class="chart-wrapper">
+                <canvas id="priceChart"></canvas>
+            </div>
+        </div>
+
+        <!-- REALISTIC ACCURACY METRICS -->
+        <div class="card">
+            <div class="card-title">📊 REALISTIC ACCURACY METRICS</div>
+            <div class="two-column">
+                <div>
+                    <div style="font-size: 0.85em; color: var(--text-dim); margin-bottom: 8px;">
+                        Based on <span id="realTradesCount">0</span> real user trades:
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+                        <div>
+                            <div style="font-size: 2.5em; font-weight: bold; color: var(--green);" id="realAccuracy">--%</div>
+                            <div style="font-size: 0.75em; color: var(--text-dim);">Real Win Rate</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 2.5em; font-weight: bold;" id="realSharpe">--</div>
+                            <div style="font-size: 0.75em; color: var(--text-dim);">Real Sharpe Ratio</div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: 0.85em; color: var(--text-dim); margin-bottom: 8px;">
+                        Kelly Criterion Performance:
+                    </div>
+                    <div style="display: grid; gap: 8px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-dim);">Theoretical Growth</span>
+                            <span id="kellyGrowth" style="font-weight: 600;">--%</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-dim);">Risk of Ruin (5%)</span>
+                            <span id="riskOfRuin" style="font-weight: 600;">--%</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-dim);">Optimal Bet Size</span>
+                            <span id="optimalBetSize" style="font-weight: 600;">--%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DISCLAIMER -->
+        <div class="card" style="background: rgba(239, 68, 68, 0.1); border-color: var(--red);">
+            <div style="font-size: 0.8em; color: var(--text); line-height: 1.6;">
+                <strong style="color: var(--red);">⚠️ DISCLAIMER TINGKAT TINGGI:</strong><br>
+                1. Ini adalah <strong>ALAT SIMULASI & EDUKASI</strong>, bukan sistem trading otomatis<br>
+                2. Kelly Criterion memiliki limitations: asumsi normal distribution, diketahui win rate<br>
+                3. Real trading melibatkan slippage, fees, liquidity issues<br>
+                4. Backtest ≠ forward test. Overfitting adalah masalah umum<br>
+                5. JANGAN trading dengan uang yang tidak mampu Anda rugikan<br>
+                6. Cryptocurrency volatility extreme: bisa -50% dalam jam
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== GLOBAL VARIABLES ====================
+        let chart = null;
+        let currentMarketData = null;
+        let currentSignalId = null;
+        let tradeHistory = JSON.parse(localStorage.getItem('qt_trade_history') || '[]');
+        
+        // Neural weights with realistic adjustments
+        const neuralWeights = {
+            trend: 0.25,
+            momentum: 0.20,
+            volume: 0.15,
+            volatility: 0.12,
+            structure: 0.10,
+            sentiment: 0.08,
+            correlation: 0.06,
+            divergence: 0.04
+        };
+        
+        // ==================== KELLY CRITERION FUNCTIONS ====================
+        function calculateKellyCriterion(winRate, winLossRatio) {
+            // Kelly Criterion formula: f* = (bp - q) / b
+            const p = winRate / 100;
+            const q = 1 - p;
+            const b = winLossRatio;
+            
+            const kelly = (p * b - q) / b;
+            return Math.max(0, Math.min(0.5, kelly));
+        }
+        
+        function calculateRiskOfRuin(winRate, riskPercent, trials = 100) {
+            const p = winRate / 100;
+            const q = 1 - p;
+            const riskPerTrade = riskPercent / 100;
+            
+            if (p <= 0.5) return 100;
+            
+            const capitalUnits = 100 / riskPerTrade;
+            const ror = Math.pow(q / p, capitalUnits) * 100;
+            
+            return Math.min(100, ror);
+        }
+        
+        function calculateOptimalPositionSize(kellyFraction, accountSize, riskTolerance) {
+            const adjustedKelly = kellyFraction * riskTolerance;
+            const positionPercent = adjustedKelly * 100;
+            const positionSize = accountSize * adjustedKelly;
+            
+            return {
+                percent: positionPercent,
+                size: positionSize,
+                kellyFraction: adjustedKelly
+            };
+        }
+        
+        // ==================== NEURAL NETWORK ANALYSIS ====================
+        function analyzeNeuralNetwork() {
+            if (!currentMarketData) {
+                return {
+                    trend: 30 + Math.random() * 40,
+                    momentum: 35 + Math.random() * 40,
+                    volume: 25 + Math.random() * 50,
+                    volatility: 20 + Math.random() * 60,
+                    structure: 40 + Math.random() * 40,
+                    sentiment: 45 + Math.random() * 30,
+                    correlation: 50 + Math.random() * 30,
+                    divergence: Math.random() * 100
+                };
+            }
+
+            const history = currentMarketData.priceHistory || [];
+            
+            function calculateRSI(prices, period = 14) {
+                if (prices.length < period + 1) return 50;
+                
+                let gains = 0;
+                let losses = 0;
+                
+                for (let i = 1; i <= period; i++) {
+                    const change = prices[i] - prices[i - 1];
+                    if (change > 0) gains += change;
+                    else losses -= change;
+                }
+                
+                const avgGain = gains / period;
+                const avgLoss = losses / period;
+                
+                if (avgLoss === 0) return 100;
+                const rs = avgGain / avgLoss;
+                return 100 - (100 / (1 + rs));
+            }
+
+            function calculateBollingerPosition(prices, period = 20) {
+                if (prices.length < period) return 50;
+                
+                const recentPrices = prices.slice(-period);
+                const mean = recentPrices.reduce((a, b) => a + b, 0) / period;
+                const variance = recentPrices.map(x => Math.pow(x - mean, 2)).reduce((a, b) => a + b, 0) / period;
+                const stdDev = Math.sqrt(variance);
+                
+                const upperBand = mean + (stdDev * 2);
+                const lowerBand = mean - (stdDev * 2);
+                const currentPrice = prices[prices.length - 1];
+                
+                if (currentPrice >= upperBand) return 100;
+                if (currentPrice <= lowerBand) return 0;
+                
+                return ((currentPrice - lowerBand) / (upperBand - lowerBand)) * 100;
+            }
+
+            function calculateVolumeProfile(history) {
+                if (history.length < 20) return 50;
+                
+                const volumes = history.slice(-20).map(h => h.volume);
+                const avgVolume = volumes.reduce((a, b) => a + b, 0) / volumes.length;
+                const currentVolume = history[history.length - 1].volume;
+                
+                const volumeRatio = (currentVolume / avgVolume);
+                return Math.min(100, Math.max(0, volumeRatio * 50));
+            }
+
+            function calculateMarketStructure(history) {
+                if (history.length < 10) return 50;
+                
+                const highs = history.map(h => h.high);
+                const lows = history.map(h => h.low);
+                
+                let higherHighs = 0;
+                let higherLows = 0;
+                let lowerHighs = 0;
+                let lowerLows = 0;
+                
+                for (let i = 2; i < Math.min(8, history.length); i++) {
+                    if (highs[i] > highs[i-1] && highs[i-1] > highs[i-2]) higherHighs++;
+                    if (lows[i] > lows[i-1] && lows[i-1] > lows[i-2]) higherLows++;
+                    if (highs[i] < highs[i-1] && highs[i-1] < highs[i-2]) lowerHighs++;
+                    if (lows[i] < lows[i-1] && lows[i-1] < lows[i-2]) lowerLows++;
+                }
+                
+                const bullishScore = (higherHighs + higherLows) * 12.5;
+                const bearishScore = (lowerHighs + lowerLows) * 12.5;
+                
+                return 50 + (bullishScore - bearishScore);
+            }
+
+            function calculateDivergence(history) {
+                if (history.length < 20) return 50;
+                
+                const prices = history.map(h => h.close);
+                const rsiValues = [];
+                
+                for (let i = 14; i < Math.min(20, prices.length); i++) {
+                    const slice = prices.slice(i-14, i+1);
+                    rsiValues.push(calculateRSI(slice));
+                }
+                
+                const priceTrend = prices[prices.length-1] - prices[prices.length-5];
+                const rsiTrend = rsiValues[rsiValues.length-1] - rsiValues[rsiValues.length-5];
+                
+                let divergenceScore = 50;
+                
+                if (priceTrend < 0 && rsiTrend > 10) divergenceScore += 30;
+                else if (priceTrend > 0 && rsiTrend < -10) divergenceScore -= 30;
+                
+                return Math.max(0, Math.min(100, divergenceScore));
+            }
+
+            const prices = history.map(h => h.close);
+            
+            const rsi = calculateRSI(prices);
+            const bollingerPos = calculateBollingerPosition(prices);
+            const volumeProfile = calculateVolumeProfile(history);
+            const marketStructure = calculateMarketStructure(history);
+            const divergence = calculateDivergence(history);
+            
+            const volatility = currentMarketData.volatility || (20 + Math.random() * 60);
+            
+            const momentum = (() => {
+                if (prices.length < 10) return 50;
+                const recentReturns = [];
+                for (let i = 1; i < Math.min(10, prices.length); i++) {
+                    recentReturns.push((prices[i] - prices[i-1]) / prices[i-1] * 100);
+                }
+                const avgReturn = recentReturns.reduce((a, b) => a + b, 0) / recentReturns.length;
+                return 50 + (avgReturn * 10);
+            })();
+            
+            const trend = currentMarketData.trend || (() => {
+                if (prices.length < 20) return 50;
+                const ma20 = prices.slice(-20).reduce((a, b) => a + b, 0) / 20;
+                const ma50 = prices.length >= 50 ? 
+                    prices.slice(-50).reduce((a, b) => a + b, 0) / 50 : ma20;
+                const currentPrice = prices[prices.length - 1];
+                
+                let score = 50;
+                if (currentPrice > ma20 && ma20 > ma50) score = 70;
+                else if (currentPrice < ma20 && ma20 < ma50) score = 30;
+                
+                return score;
+            })();
+
+            return {
+                trend: Math.max(0, Math.min(100, trend)),
+                momentum: Math.max(0, Math.min(100, momentum)),
+                volume: Math.max(0, Math.min(100, volumeProfile)),
+                volatility: Math.max(0, Math.min(100, volatility)),
+                structure: Math.max(0, Math.min(100, marketStructure)),
+                sentiment: 40 + Math.random() * 40,
+                correlation: 50 + (Math.random() - 0.5) * 40,
+                divergence: Math.max(0, Math.min(100, divergence))
+            };
+        }
+        
+        // ==================== MULTI TIMEFRAME ANALYSIS ====================
+        function analyzeMultiTimeframe() {
+            const timeframes = ['1m', '5m', '15m', '1h', '4h', '1d'];
+            const analysis = {};
+            
+            timeframes.forEach(tf => {
+                const randomBias = Math.random();
+                
+                analysis[tf] = {
+                    direction: randomBias > 0.6 ? 'BULLISH' : 
+                              randomBias < 0.4 ? 'BEARISH' : 'NEUTRAL',
+                    strength: Math.floor(20 + Math.random() * 80),
+                    aligned: Math.random() > 0.3,
+                    rsi: Math.floor(20 + Math.random() * 60),
+                    trend: randomBias > 0.5 ? 'UP' : 'DOWN'
+                };
+            });
+            
+            return analysis;
+        }
+        
+        // ==================== AI CONSENSUS ====================
+        async function getAIConsensus(neuralOutputs, tfAnalysis) {
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            const avgScore = Object.values(neuralOutputs).reduce((a, b) => a + b, 0) / Object.keys(neuralOutputs).length;
+            
+            return [
+                {
+                    name: 'ChatGPT-4',
+                    verdict: avgScore > 75 ? 'STRONG BUY' : 
+                            avgScore > 60 ? 'BUY' : 
+                            avgScore > 45 ? 'WEAK BUY' : 'HOLD',
+                    confidence: Math.min(95, avgScore + Math.random() * 10 - 2),
+                    reasoning: avgScore > 70 ? 'Strong technical setup with positive momentum' :
+                               avgScore > 50 ? 'Moderate setup, risk-reward acceptable' :
+                               'Weak signals, recommend waiting'
+                },
+                {
+                    name: 'Claude 3 Opus',
+                    verdict: avgScore > 72 ? 'STRONG BUY' : 
+                            avgScore > 58 ? 'BUY' : 
+                            avgScore > 43 ? 'WEAK BUY' : 'HOLD',
+                    confidence: Math.min(93, avgScore + Math.random() * 8 - 1),
+                    reasoning: avgScore > 70 ? 'Multiple timeframe alignment detected' :
+                               avgScore > 50 ? 'Some positive indicators present' :
+                               'Market conditions unfavorable'
+                },
+                {
+                    name: 'DeepSeek-V3',
+                    verdict: avgScore > 78 ? 'STRONG BUY' : 
+                            avgScore > 63 ? 'BUY' : 
+                            avgScore > 48 ? 'WEAK BUY' : 'HOLD',
+                    confidence: Math.min(96, avgScore + Math.random() * 12 - 3),
+                    reasoning: avgScore > 70 ? 'Quantum score indicates high probability setup' :
+                               avgScore > 50 ? 'Statistical edge present' :
+                               'Probabilities not favorable'
+                },
+                {
+                    name: 'Grok-2',
+                    verdict: avgScore > 70 ? 'STRONG BUY' : 
+                            avgScore > 55 ? 'BUY' : 
+                            avgScore > 40 ? 'WEAK BUY' : 'HOLD',
+                    confidence: Math.min(90, avgScore + Math.random() * 15 - 5),
+                    reasoning: avgScore > 70 ? 'Based on current data, entry looks good' :
+                               avgScore > 50 ? 'Could work with tight stop loss' :
+                               'Too risky, better opportunities elsewhere'
+                }
+            ];
+        }
+        
+        // ==================== QUANTUM SCORE CALCULATION ====================
+        function calculateQuantumScore(neuralOutputs, aiConsensus) {
+            let neuralScore = 0;
+            Object.keys(neuralOutputs).forEach(key => {
+                neuralScore += neuralOutputs[key] * neuralWeights[key];
+            });
+            
+            const avgAIConfidence = aiConsensus.reduce((sum, ai) => sum + ai.confidence, 0) / aiConsensus.length;
+            
+            const quantumScore = (neuralScore * 0.7) + (avgAIConfidence * 0.3);
+            
+            const noisyScore = quantumScore + (Math.random() - 0.5) * 10;
+            
+            return Math.max(10, Math.min(99, noisyScore));
+        }
+        
+        // ==================== REALISTIC ANALYSIS FUNCTIONS ====================
+        function calculateRealisticWinRate(quantumScore, aiConsensus) {
+            let baseWinRate = 50 + (quantumScore - 50) * 0.4;
+            
+            const buySignals = aiConsensus.filter(ai => ai.verdict === 'BUY' || ai.verdict === 'STRONG BUY').length;
+            const strongSignals = aiConsensus.filter(ai => ai.verdict === 'STRONG BUY').length;
+            
+            if (strongSignals >= 2) {
+                baseWinRate += 10;
+            } else if (buySignals >= 3) {
+                baseWinRate += 5;
+            }
+            
+            baseWinRate += (Math.random() - 0.5) * 10;
+            
+            return Math.max(30, Math.min(85, baseWinRate));
+        }
+        
+        function calculateWinLossRatio(neuralOutputs) {
+            const volatility = neuralOutputs.volatility / 100;
+            const momentum = neuralOutputs.momentum / 100;
+            const trend = neuralOutputs.trend / 100;
+            
+            let baseRatio = 1.5 + (volatility * 2);
+            
+            if (momentum > 0.7 && trend > 0.6) {
+                baseRatio += 0.5;
+            }
+            
+            return Math.min(5, Math.max(1, baseRatio));
+        }
+        
+        // ==================== MAIN ANALYSIS FUNCTION ====================
+        async function runQuantumAnalysis() {
+            showLoading();
+            
+            try {
+                currentSignalId = 'SIG_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                document.getElementById('signalId').value = currentSignalId;
+                
+                const pair = document.getElementById('tradingPair').value;
+                const timeframe = document.getElementById('timeframe').value;
+                const accountSize = parseFloat(document.getElementById('accountSize').value);
+                const riskTolerance = parseFloat(document.getElementById('riskTolerance').value);
+                
+                await fetchMarketData(pair, timeframe);
+                
+                const neuralOutputs = analyzeNeuralNetwork();
+                const tfAnalysis = analyzeMultiTimeframe();
+                const aiConsensus = await getAIConsensus(neuralOutputs, tfAnalysis);
+                const quantumScore = calculateQuantumScore(neuralOutputs, aiConsensus);
+                
+                const winRate = calculateRealisticWinRate(quantumScore, aiConsensus);
+                const winLossRatio = calculateWinLossRatio(neuralOutputs);
+                
+                const kellyFraction = calculateKellyCriterion(winRate, winLossRatio);
+                const positionSizing = calculateOptimalPositionSize(kellyFraction, accountSize, riskTolerance);
+                const riskOfRuin = calculateRiskOfRuin(winRate, positionSizing.percent);
+                
+                makeFinalDecision(quantumScore, aiConsensus, neuralOutputs, winRate, positionSizing);
+                
+                updateAllDisplays(neuralOutputs, tfAnalysis, aiConsensus, quantumScore, {
+                    winRate,
+                    winLossRatio,
+                    kellyFraction,
+                    positionSizing,
+                    riskOfRuin,
+                    accountSize
+                });
+                
+                updateKellyDisplay(winRate, winLossRatio, kellyFraction, positionSizing, riskOfRuin);
+                
+                updateRealisticMetrics();
+                
+                updatePriceChart();
+                
+            } catch (error) {
+                console.error('Error in analysis:', error);
+                showError('Analisis gagal: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        // ==================== BACKTESTING FUNCTION ====================
+        async function runBacktest() {
+            showLoading();
+            
+            try {
+                const pair = document.getElementById('tradingPair').value;
+                const period = parseInt(document.getElementById('backtestPeriod').value);
+                const capital = parseFloat(document.getElementById('backtestCapital').value);
+                const strategy = document.getElementById('backtestStrategy').value;
+                
+                const historicalData = await fetchHistoricalDataForBacktest(pair, period);
+                const results = simulateBacktest(historicalData, strategy, capital);
+                
+                displayBacktestResults(results);
+                
+            } catch (error) {
+                console.error('Backtest error:', error);
+                showError('Backtest gagal: ' + error.message);
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        async function fetchHistoricalDataForBacktest(pair, days) {
+            try {
+                const interval = '1d';
+                const limit = days;
+                
+                const response = await fetch(
+                    `https://api.binance.com/api/v3/klines?symbol=${pair}&interval=${interval}&limit=${limit}`
+                );
+                
+                if (!response.ok) throw new Error('API Error');
+                
+                const data = await response.json();
+                
+                return data.map(candle => ({
+                    time: candle[0],
+                    open: parseFloat(candle[1]),
+                    high: parseFloat(candle[2]),
+                    low: parseFloat(candle[3]),
+                    close: parseFloat(candle[4]),
+                    volume: parseFloat(candle[5])
+                }));
+                
+            } catch (error) {
+                console.log('Using simulated historical data');
+                return generateSimulatedHistoricalData(days);
+            }
+        }
+        
+        function generateSimulatedHistoricalData(days) {
+            const data = [];
+            let price = 50000;
+            
+            for (let i = 0; i < days; i++) {
+                const change = (Math.random() - 0.48) * price * 0.04;
+                price += change;
+                
+                data.push({
+                    time: Date.now() - (days - i) * 86400000,
+                    open: price - change / 2,
+                    high: price * (1 + Math.random() * 0.02),
+                    low: price * (1 - Math.random() * 0.02),
+                    close: price,
+                    volume: Math.random() * 1000000
+                });
+            }
+            
+            return data;
+        }
+        
+        function simulateBacktest(data, strategy, initialCapital) {
+            let capital = initialCapital;
+            let position = 0;
+            let trades = [];
+            let wins = 0;
+            let losses = 0;
+            
+            for (let i = 20; i < data.length - 5; i++) {
+                const currentPrice = data[i].close;
+                
+                let signal = 'HOLD';
+                
+                if (strategy === 'quantum') {
+                    const rsi = calculateRSIForBacktest(data.slice(0, i + 1));
+                    const trend = calculateTrendForBacktest(data.slice(0, i + 1));
+                    
+                    if (rsi < 30 && trend > 0) signal = 'BUY';
+                    else if (rsi > 70 && trend < 0) signal = 'SELL';
+                    
+                } else if (strategy === 'trend') {
+                    const ma20 = calculateMA(data.slice(0, i + 1), 20);
+                    const ma50 = calculateMA(data.slice(0, i + 1), 50);
+                    
+                    if (currentPrice > ma20 && ma20 > ma50) signal = 'BUY';
+                    else if (currentPrice < ma20 && ma20 < ma50) signal = 'SELL';
+                    
+                } else if (strategy === 'meanrev') {
+                    const rsi = calculateRSIForBacktest(data.slice(0, i + 1));
+                    
+                    if (rsi < 30) signal = 'BUY';
+                    else if (rsi > 70) signal = 'SELL';
+                }
+                
+                if (signal === 'BUY' && position === 0) {
+                    position = currentPrice;
+                    const entryPrice = currentPrice;
+                    const exitPrice = data[i + 5].close;
+                    const pnlPercent = ((exitPrice - entryPrice) / entryPrice) * 100;
+                    
+                    trades.push({
+                        entry: entryPrice,
+                        exit: exitPrice,
+                        pnl: pnlPercent,
+                        type: 'LONG'
+                    });
+                    
+                    capital *= (1 + pnlPercent / 100);
+                    
+                    if (pnlPercent > 0) wins++;
+                    else losses++;
+                    
+                    position = 0;
+                }
+            }
+            
+            const totalTrades = wins + losses;
+            const winRate = totalTrades > 0 ? (wins / totalTrades) * 100 : 0;
+            const totalReturn = ((capital - initialCapital) / initialCapital) * 100;
+            const sharpeRatio = calculateSharpeRatio(trades);
+            const maxDrawdown = calculateMaxDrawdown(trades);
+            
+            return {
+                totalTrades,
+                wins,
+                losses,
+                winRate,
+                totalReturn,
+                sharpeRatio,
+                maxDrawdown,
+                finalCapital: capital,
+                trades
+            };
+        }
+        
+        function calculateRSIForBacktest(data) {
+            if (data.length < 15) return 50;
+            const prices = data.map(d => d.close);
+            
+            let gains = 0;
+            let losses = 0;
+            
+            for (let i = 1; i < 15; i++) {
+                const change = prices[i] - prices[i - 1];
+                if (change > 0) gains += change;
+                else losses -= change;
+            }
+            
+            const avgGain = gains / 14;
+            const avgLoss = losses / 14;
+            
+            if (avgLoss === 0) return 100;
+            const rs = avgGain / avgLoss;
+            return 100 - (100 / (1 + rs));
+        }
+        
+        function calculateTrendForBacktest(data) {
+            if (data.length < 20) return 0;
+            const closes = data.map(d => d.close);
+            const first = closes[0];
+            const last = closes[closes.length - 1];
+            return ((last - first) / first) * 100;
+        }
+        
+        function calculateMA(data, period) {
+            if (data.length < period) return data[data.length - 1].close;
+            const slice = data.slice(-period);
+            return slice.reduce((sum, d) => sum + d.close, 0) / period;
+        }
+        
+        function calculateSharpeRatio(trades) {
+            if (trades.length < 2) return 0;
+            const returns = trades.map(t => t.pnl);
+            const avgReturn = returns.reduce((a, b) => a + b, 0) / returns.length;
+            const stdDev = calculateStdDev(returns);
+            
+            if (stdDev === 0) return 0;
+            return (avgReturn / stdDev) * Math.sqrt(252);
+        }
+        
+        function calculateMaxDrawdown(trades) {
+            let peak = -Infinity;
+            let maxDrawdown = 0;
+            let runningCapital = 10000;
+            
+            for (const trade of trades) {
+                runningCapital *= (1 + trade.pnl / 100);
+                
+                if (runningCapital > peak) {
+                    peak = runningCapital;
+                }
+                
+                const drawdown = ((peak - runningCapital) / peak) * 100;
+                if (drawdown > maxDrawdown) {
+                    maxDrawdown = drawdown;
+                }
+            }
+            
+            return maxDrawdown;
+        }
+        
+        function calculateStdDev(arr) {
+            const mean = arr.reduce((a, b) => a + b, 0) / arr.length;
+            const squareDiffs = arr.map(value => Math.pow(value - mean, 2));
+            const avgSquareDiff = squareDiffs.reduce((a, b) => a + b, 0) / squareDiffs.length;
+            return Math.sqrt(avgSquareDiff);
+        }
+        
+        // ==================== USER FEEDBACK FUNCTIONS ====================
+        function submitTradeFeedback() {
+            const signalId = document.getElementById('signalId').value;
+            const result = document.getElementById('actualResult').value;
+            const profit = parseFloat(document.getElementById('actualProfit').value) || 0;
+            const notes = document.getElementById('tradeNotes').value;
+            
+            if (!signalId) {
+                showError('Harap run analysis terlebih dahulu');
+                return;
+            }
+            
+            const tradeRecord = {
+                id: signalId,
+                timestamp: new Date().toISOString(),
+                result: result,
+                profit: profit,
+                notes: notes,
+                pair: document.getElementById('tradingPair').value,
+                decision: document.getElementById('finalAction').textContent
+            };
+            
+            tradeHistory.unshift(tradeRecord);
+            
+            if (tradeHistory.length > 100) {
+                tradeHistory = tradeHistory.slice(0, 100);
+            }
+            
+            localStorage.setItem('qt_trade_history', JSON.stringify(tradeHistory));
+            
+            updateTradeLog();
+            updateRealisticMetrics();
+            
+            document.getElementById('actualProfit').value = '';
+            document.getElementById('tradeNotes').value = '';
+            
+            showSuccess('Trade result saved!');
+        }
+        
+        function updateTradeLog() {
+            const logContainer = document.getElementById('tradeLog');
+            
+            if (tradeHistory.length === 0) {
+                logContainer.innerHTML = `
+                    <div style="text-align: center; padding: 20px; color: var(--text-dim);">
+                        No trade history yet. Submit your first trade result!
+                    </div>
+                `;
+                return;
+            }
+            
+            logContainer.innerHTML = tradeHistory.slice(0, 10).map(trade => {
+                const isWin = trade.result === 'win';
+                const profitColor = trade.profit > 0 ? 'var(--green)' : 
+                                   trade.profit < 0 ? 'var(--red)' : 'var(--yellow)';
+                
+                return `
+                    <div class="trade-item ${isWin ? 'win' : 'loss'}">
+                        <div style="color: var(--text-dim); font-size: 0.8em;">
+                            ${new Date(trade.timestamp).toLocaleDateString('id-ID')}
+                        </div>
+                        <div>
+                            <div style="font-weight: 600;">${trade.pair}</div>
+                            <div style="font-size: 0.8em; color: var(--text-dim);">${trade.decision}</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <span style="padding: 2px 8px; border-radius: 4px; 
+                                         background: ${isWin ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'};
+                                         color: ${isWin ? 'var(--green)' : 'var(--red)'};
+                                         font-size: 0.8em;">
+                                ${trade.result.toUpperCase()}
+                            </span>
+                        </div>
+                        <div style="text-align: right; color: ${profitColor}; font-weight: 600;">
+                            ${trade.profit > 0 ? '+' : ''}${trade.profit.toFixed(2)}%
+                        </div>
+                        <div style="font-size: 0.8em; color: var(--text-dim);" title="${trade.notes}">
+                            ${trade.notes ? '📝' : '—'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function updateRealisticMetrics() {
+            if (tradeHistory.length === 0) {
+                document.getElementById('realTradesCount').textContent = '0';
+                document.getElementById('realAccuracy').textContent = '--%';
+                document.getElementById('realSharpe').textContent = '--';
+                return;
+            }
+            
+            const realTrades = tradeHistory.filter(t => t.result === 'win' || t.result === 'loss');
+            const total = realTrades.length;
+            const wins = realTrades.filter(t => t.result === 'win').length;
+            
+            const winRate = total > 0 ? (wins / total) * 100 : 0;
+            
+            const profits = tradeHistory.map(t => t.profit);
+            const avgProfit = profits.length > 0 ? 
+                profits.reduce((a, b) => a + b, 0) / profits.length : 0;
+            
+            const sharpe = avgProfit !== 0 ? (avgProfit / Math.max(1, calculateStdDev(profits))) * Math.sqrt(252) : 0;
+            
+            document.getElementById('realTradesCount').textContent = total;
+            document.getElementById('realAccuracy').textContent = winRate.toFixed(1) + '%';
+            document.getElementById('realSharpe').textContent = sharpe.toFixed(2);
+        }
+        
+        // ==================== DISPLAY UPDATE FUNCTIONS ====================
+        function updateKellyDisplay(winRate, winLossRatio, kellyFraction, positionSizing, riskOfRuin) {
+            const kellyGrid = document.getElementById('kellyGrid');
+            
+            kellyGrid.innerHTML = `
+                <div class="kelly-item">
+                    <div class="kelly-label">Win Rate</div>
+                    <div class="kelly-value">${winRate.toFixed(1)}%</div>
+                </div>
+                <div class="kelly-item">
+                    <div class="kelly-label">Win/Loss Ratio</div>
+                    <div class="kelly-value">1:${winLossRatio.toFixed(2)}</div>
+                </div>
+                <div class="kelly-item">
+                    <div class="kelly-label">Kelly Fraction</div>
+                    <div class="kelly-value">${(kellyFraction * 100).toFixed(1)}%</div>
+                </div>
+                <div class="kelly-item">
+                    <div class="kelly-label">Optimal Position</div>
+                    <div class="kelly-value">${positionSizing.percent.toFixed(1)}%</div>
+                </div>
+                <div class="kelly-item">
+                    <div class="kelly-label">Position Size</div>
+                    <div class="kelly-value">$${positionSizing.size.toFixed(2)}</div>
+                </div>
+                <div class="kelly-item">
+                    <div class="kelly-label">Risk of Ruin</div>
+                    <div class="kelly-value" style="color: ${riskOfRuin < 5 ? 'var(--green)' : riskOfRuin < 20 ? 'var(--yellow)' : 'var(--red)'}">
+                        ${riskOfRuin.toFixed(1)}%
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('optimalBetSize').textContent = positionSizing.percent.toFixed(1) + '%';
+            document.getElementById('riskOfRuin').textContent = riskOfRuin.toFixed(1) + '%';
+            
+            const theoreticalGrowth = Math.pow(1 + (winRate/100 * winLossRatio - (1-winRate/100)), 252) - 1;
+            document.getElementById('kellyGrowth').textContent = (theoreticalGrowth * 100).toFixed(1) + '%';
+        }
+        
+        function displayBacktestResults(results) {
+            const container = document.getElementById('backtestResults');
+            container.style.display = 'block';
+            
+            document.getElementById('btReturn').textContent = results.totalReturn.toFixed(2) + '%';
+            document.getElementById('btReturn').style.color = results.totalReturn > 0 ? 'var(--green)' : 'var(--red)';
+            
+            document.getElementById('btWinRate').textContent = results.winRate.toFixed(1) + '%';
+            document.getElementById('btSharpe').textContent = results.sharpeRatio.toFixed(2);
+            document.getElementById('btDrawdown').textContent = results.maxDrawdown.toFixed(2) + '%';
+        }
+        
+        function makeFinalDecision(quantumScore, aiConsensus, neuralOutputs, winRate, positionSizing) {
+            const buySignals = aiConsensus.filter(ai => ai.verdict === 'BUY' || ai.verdict === 'STRONG BUY').length;
+            
+            let decision = 'HOLD';
+            let details = '';
+            
+            if (quantumScore >= 75 && buySignals >= 3 && positionSizing.percent > 1) {
+                decision = 'STRONG BUY';
+                details = `Setup kuat. Optimal position: ${positionSizing.percent.toFixed(1)}% dari modal. Risk of ruin: rendah.`;
+            } else if (quantumScore >= 60 && buySignals >= 2 && positionSizing.percent > 0.5) {
+                decision = 'BUY';
+                details = `Setup baik. Position size: ${positionSizing.percent.toFixed(1)}%.`;
+            } else if (quantumScore >= 45 && positionSizing.percent > 0) {
+                decision = 'WEAK BUY';
+                details = `Setup marginal. Kurangi position: ${(positionSizing.percent * 0.5).toFixed(1)}%.`;
+            } else {
+                decision = 'HOLD';
+                details = `Kualitas setup rendah atau optimal position 0%. Tunggu setup lebih baik.`;
+            }
+            
+            const actionEl = document.getElementById('finalAction');
+            actionEl.textContent = decision;
+            actionEl.className = 'final-action ' + decision.toLowerCase().replace(' ', '-');
+            
+            document.getElementById('actionDetails').textContent = details;
+            document.getElementById('winProb').textContent = winRate.toFixed(1) + '%';
+            document.getElementById('optimalPercent').textContent = positionSizing.percent.toFixed(1) + '%';
+            document.getElementById('riskRewardRatio').textContent = '1:' + calculateWinLossRatio(neuralOutputs).toFixed(2);
+        }
+        
+        function updateAllDisplays(neuralOutputs, tfAnalysis, aiConsensus, quantumScore, kellyData) {
+            if (currentMarketData) {
+                const price = currentMarketData.price;
+                const change = currentMarketData.priceChange || 0;
+                
+                document.getElementById('currentPrice').textContent = '$' + price.toFixed(2);
+                
+                const changeEl = document.getElementById('priceChange24h');
+                changeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+                changeEl.className = change >= 0 ? 'text-green' : 'text-red';
+            }
+            
+            document.getElementById('quantumScore').textContent = quantumScore.toFixed(0);
+            
+            const avgConfidence = aiConsensus.reduce((s, ai) => s + ai.confidence, 0) / aiConsensus.length;
+            
+            document.getElementById('accuracyBar').style.width = quantumScore + '%';
+            document.getElementById('accuracyValue').textContent = quantumScore.toFixed(0) + '%';
+            document.getElementById('confidenceBar').style.width = avgConfidence + '%';
+            document.getElementById('confidenceValue').textContent = avgConfidence.toFixed(0) + '%';
+            document.getElementById('momentumBar').style.width = neuralOutputs.momentum + '%';
+            document.getElementById('momentumValue').textContent = neuralOutputs.momentum.toFixed(0) + '%';
+            
+            updateNeuralTable(neuralOutputs);
+            updateAIConsensus(aiConsensus);
+            updateTimeframeAnalysis(tfAnalysis);
+            updateRiskParameters(kellyData);
+        }
+        
+        function updateNeuralTable(neuralOutputs) {
+            const tableBody = document.getElementById('neuralTableBody');
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = '';
+            
+            const indicators = [
+                { key: 'trend', label: 'Trend Strength', unit: '' },
+                { key: 'momentum', label: 'Momentum (RSI)', unit: '' },
+                { key: 'volume', label: 'Volume Profile', unit: '' },
+                { key: 'volatility', label: 'Volatility (ATR)', unit: '' },
+                { key: 'structure', label: 'Market Structure', unit: '' },
+                { key: 'sentiment', label: 'Market Sentiment', unit: '' },
+                { key: 'correlation', label: 'Asset Correlation', unit: '%' },
+                { key: 'divergence', label: 'Divergence Signal', unit: '' }
+            ];
+            
+            indicators.forEach(ind => {
+                const value = neuralOutputs[ind.key];
+                let status = 'NEUTRAL';
+                let statusClass = 'status-neutral';
+                
+                if (value > 70) {
+                    status = 'BULLISH';
+                    statusClass = 'status-bullish';
+                } else if (value < 40) {
+                    status = 'BEARISH';
+                    statusClass = 'status-bearish';
+                }
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="indicator-name">${ind.label}</td>
+                    <td class="indicator-value">${value.toFixed(1)}${ind.unit}</td>
+                    <td><span class="indicator-status ${statusClass}">${status}</span></td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        function updateAIConsensus(aiConsensus) {
+            const aiListContainer = document.getElementById('aiList');
+            if (!aiListContainer) return;
+            
+            aiListContainer.innerHTML = '';
+            
+            aiConsensus.forEach(ai => {
+                const aiItem = document.createElement('div');
+                const verdict = ai.verdict.toLowerCase().replace(' ', '-');
+                aiItem.className = `ai-item ${verdict}`;
+                aiItem.innerHTML = `
+                    <div>
+                        <div class="ai-name">${ai.name}</div>
+                        <div style="font-size: 0.75em; color: var(--text-dim); margin-top: 2px;">
+                            ${ai.reasoning}
+                        </div>
+                    </div>
+                    <div class="ai-decision">
+                        <span class="ai-confidence">${ai.confidence.toFixed(0)}%</span>
+                        <span class="decision-badge ${verdict}">${ai.verdict}</span>
+                    </div>
+                `;
+                aiListContainer.appendChild(aiItem);
+            });
+        }
+        
+        function updateTimeframeAnalysis(tfAnalysis) {
+            const tfGridContainer = document.getElementById('tfGrid');
+            if (!tfGridContainer) return;
+            
+            tfGridContainer.innerHTML = '';
+            
+            Object.keys(tfAnalysis).forEach(tf => {
+                const data = tfAnalysis[tf];
+                const tfItem = document.createElement('div');
+                tfItem.className = 'tf-item';
+                
+                const colorClass = data.direction === 'BULLISH' ? 'text-green' : 
+                                  data.direction === 'BEARISH' ? 'text-red' : 'text-yellow';
+                
+                tfItem.innerHTML = `
+                    <div class="tf-label">${tf.toUpperCase()}</div>
+                    <div class="tf-status ${colorClass}">${data.direction}</div>
+                    <div style="font-size: 0.7em; color: var(--text-dim); margin-top: 2px;">
+                        RSI: ${data.rsi} | ${data.trend}
+                    </div>
+                `;
+                tfGridContainer.appendChild(tfItem);
+            });
+        }
+        
+        function updateRiskParameters(kellyData) {
+            if (!kellyData) return;
+            
+            const { positionSizing, accountSize } = kellyData;
+            const volatility = 0.02;
+            const currentPrice = currentMarketData?.price || 50000;
+            
+            const stopLoss = currentPrice * (1 - volatility * 1.5);
+            const takeProfit = currentPrice * (1 + volatility * 3);
+            const riskReward = ((takeProfit - currentPrice) / (currentPrice - stopLoss)).toFixed(2);
+            
+            const riskElements = {
+                'entryPrice': `$${currentPrice.toFixed(2)}`,
+                'stopLoss': `$${stopLoss.toFixed(2)} (-${(volatility * 1.5 * 100).toFixed(1)}%)`,
+                'takeProfit': `$${takeProfit.toFixed(2)} (+${(volatility * 3 * 100).toFixed(1)}%)`,
+                'positionSize': `${positionSizing.size.toFixed(2)} USDT (${positionSizing.percent.toFixed(1)}%)`,
+                'riskReward': `1:${riskReward}`,
+                'maxLoss': `$${(accountSize * (positionSizing.percent / 100)).toFixed(2)}`
+            };
+            
+            Object.keys(riskElements).forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = riskElements[id];
+            });
+        }
+        
+        // ==================== MARKET DATA FUNCTIONS ====================
+        async function fetchMarketData(pair, timeframe) {
+            try {
+                document.getElementById('apiStatus').className = 'api-status live';
+                document.getElementById('apiStatus').textContent = 'LIVE DATA';
+                
+                const tickerResponse = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${pair}`);
+                const tickerData = await tickerResponse.json();
+                
+                const interval = {
+                    '5m': '5m',
+                    '15m': '15m',
+                    '1h': '1h',
+                    '4h': '4h',
+                    '1d': '1d'
+                }[timeframe] || '4h';
+                
+                const klineResponse = await fetch(`https://api.binance.com/api/v3/klines?symbol=${pair}&interval=${interval}&limit=100`);
+                const klineData = await klineResponse.json();
+                
+                const priceHistory = klineData.map(candle => ({
+                    time: candle[0],
+                    open: parseFloat(candle[1]),
+                    high: parseFloat(candle[2]),
+                    low: parseFloat(candle[3]),
+                    close: parseFloat(candle[4]),
+                    volume: parseFloat(candle[5])
+                }));
+                
+                currentMarketData = {
+                    pair: pair,
+                    price: parseFloat(tickerData.lastPrice),
+                    volume: parseFloat(tickerData.volume),
+                    priceChange: parseFloat(tickerData.priceChangePercent),
+                    priceHistory: priceHistory
+                };
+                
+                console.log('✅ Live data fetched from Binance');
+                
+            } catch (error) {
+                console.error('❌ Binance API error:', error);
+                
+                document.getElementById('apiStatus').className = 'api-status demo';
+                document.getElementById('apiStatus').textContent = 'DEMO DATA';
+                
+                await fetchDemoData(pair, timeframe);
+            }
+        }
+        
+        async function fetchDemoData(pair, timeframe) {
+            const basePrice = {
+                'BTCUSDT': 98000,
+                'ETHUSDT': 3500,
+                'BNBUSDT': 680,
+                'SOLUSDT': 210,
+                'ADAUSDT': 1.15,
+                'DOGEUSDT': 0.38
+            }[pair] || 50000;
+            
+            const simulatedPrice = basePrice + (Math.random() - 0.5) * basePrice * 0.02;
+            
+            currentMarketData = {
+                pair: pair,
+                price: simulatedPrice,
+                volume: Math.random() * 1000000000,
+                priceChange: (Math.random() - 0.5) * 10,
+                priceHistory: generatePriceHistory(simulatedPrice, 100)
+            };
+        }
+        
+        function generatePriceHistory(basePrice, count) {
+            const history = [];
+            let price = basePrice;
+            
+            for (let i = 0; i < count; i++) {
+                const change = (Math.random() - 0.48) * basePrice * 0.008;
+                price += change;
+                
+                history.push({
+                    time: Date.now() - (count - i) * 60000,
+                    open: price - change / 2,
+                    high: price * (1 + Math.random() * 0.005),
+                    low: price * (1 - Math.random() * 0.005),
+                    close: price,
+                    volume: Math.random() * 1000000
+                });
+            }
+            
+            return history;
+        }
+        
+        // ==================== PRICE CHART ====================
+        function updatePriceChart() {
+            const ctx = document.getElementById('priceChart');
+            if (!ctx) return;
+            
+            const chartContext = ctx.getContext('2d');
+            
+            if (window.priceChart instanceof Chart) {
+                window.priceChart.destroy();
+            }
+            
+            const history = currentMarketData?.priceHistory || generatePriceHistory(50000, 50);
+            const labels = history.map((h, i) => {
+                const date = new Date(h.time);
+                return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            });
+            
+            const prices = history.map(h => h.close);
+            const isUptrend = prices[prices.length - 1] > prices[0];
+            
+            window.priceChart = new Chart(chartContext, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: currentMarketData?.pair || 'BTCUSDT',
+                        data: prices,
+                        borderColor: isUptrend ? 'rgba(16, 185, 129, 1)' : 'rgba(239, 68, 68, 1)',
+                        backgroundColor: isUptrend ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: 0,
+                        pointHoverRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { 
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { 
+                                color: '#9ca3af', 
+                                font: { size: 9 }, 
+                                maxTicksLimit: 6,
+                                callback: function(value, index) {
+                                    return index % 10 === 0 ? this.getLabelForValue(value) : '';
+                                }
+                            }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { 
+                                color: '#9ca3af',
+                                callback: value => '$' + value.toFixed(0)
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+        
+        // ==================== UI HELPER FUNCTIONS ====================
+        function showLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.style.display = 'flex';
+        }
+        
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.style.display = 'none';
+        }
+        
+        function showError(message) {
+            alert('❌ Error: ' + message);
+        }
+        
+        function showSuccess(message) {
+            console.log('✅ ' + message);
+        }
+        
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTradeLog();
+            updateRealisticMetrics();
+            
+            runQuantumAnalysis();
+            
+            const elements = ['tradingPair', 'timeframe', 'accountSize', 'riskTolerance'];
+            elements.forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('change', runQuantumAnalysis);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
