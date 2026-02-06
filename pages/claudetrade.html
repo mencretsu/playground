@@ -595,6 +595,14 @@
             <div style="font-size: 0.75em; color: #8b93ff; margin-top: 8px;">
                 Advanced Multi-AI Trading Intelligence
             </div>
+            <div id="livePriceDisplay" style="margin-top: 10px; padding: 8px; background: rgba(0,243,255,0.1); border-radius: 8px; border: 1px solid rgba(0,243,255,0.3);">
+                <div style="font-size: 0.7em; color: #8b93ff;">LIVE PRICE</div>
+                <div style="font-size: 1.3em; font-weight: bold; color: var(--neon-blue);" id="currentPrice">--</div>
+                <div style="font-size: 0.75em; margin-top: 3px;">
+                    <span id="priceChange24h" style="font-weight: bold;">--</span>
+                    <span style="color: #8b93ff; margin-left: 8px;">24h</span>
+                </div>
+            </div>
         </div>
 
         <!-- QUANTUM SCORE -->
@@ -905,12 +913,74 @@
             }
         }
 
-        // === MARKET DATA SIMULATION ===
+        // === BINANCE LIVE DATA FETCHING ===
         async function fetchMarketData(pair, timeframe) {
-            // Simulate API delay
-            await new Promise(resolve => setTimeout(resolve, 500));
+            try {
+                // Fetch current price from Binance
+                const tickerResponse = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${pair}`);
+                const tickerData = await tickerResponse.json();
+                
+                // Fetch kline/candlestick data for historical prices
+                const interval = {
+                    '5m': '5m',
+                    '15m': '15m',
+                    '1h': '1h',
+                    '4h': '4h',
+                    '1d': '1d'
+                }[timeframe] || '1h';
+                
+                const klineResponse = await fetch(`https://api.binance.com/api/v3/klines?symbol=${pair}&interval=${interval}&limit=100`);
+                const klineData = await klineResponse.json();
+                
+                // Parse price history
+                const priceHistory = klineData.map(candle => ({
+                    time: candle[0],
+                    open: parseFloat(candle[1]),
+                    high: parseFloat(candle[2]),
+                    low: parseFloat(candle[3]),
+                    close: parseFloat(candle[4]),
+                    volume: parseFloat(candle[5])
+                }));
+                
+                const currentPrice = parseFloat(tickerData.lastPrice);
+                const volume24h = parseFloat(tickerData.volume);
+                const priceChange = parseFloat(tickerData.priceChangePercent);
+                
+                // Calculate volatility (ATR estimation)
+                const volatility = calculateVolatility(priceHistory);
+                
+                // Calculate trend strength
+                const trend = calculateTrendStrength(priceHistory);
+                
+                // Calculate momentum
+                const momentum = calculateMomentum(priceHistory);
+                
+                currentMarketData = {
+                    pair: pair,
+                    price: currentPrice,
+                    volume: volume24h,
+                    priceChange: priceChange,
+                    volatility: volatility,
+                    trend: trend,
+                    momentum: momentum,
+                    priceHistory: priceHistory,
+                    high24h: parseFloat(tickerData.highPrice),
+                    low24h: parseFloat(tickerData.lowPrice)
+                };
+                
+                console.log('✅ Live data fetched:', pair, currentPrice);
+                
+            } catch (error) {
+                console.error('❌ Binance API error:', error);
+                // Fallback to demo data
+                await fetchDemoData(pair, timeframe);
+            }
+        }
+        
+        // === FALLBACK DEMO DATA ===
+        async function fetchDemoData(pair, timeframe) {
+            console.log('⚠️ Using demo data (API unavailable)');
             
-            // Generate realistic market data
             const basePrice = {
                 'BTCUSDT': 98000,
                 'ETHUSDT': 3500,
@@ -927,19 +997,106 @@
                 volatility: 0.5 + Math.random() * 2,
                 trend: Math.random() * 100,
                 momentum: Math.random() * 100,
-                priceHistory: generatePriceHistory(basePrice, 50)
+                priceHistory: generatePriceHistory(basePrice, 100),
+                priceChange: (Math.random() - 0.5) * 10
             };
+        }
+        
+        // === TECHNICAL CALCULATIONS ===
+        function calculateVolatility(history) {
+            if (history.length < 14) return 50;
+            
+            // Calculate ATR (Average True Range)
+            let atrSum = 0;
+            for (let i = 1; i < Math.min(14, history.length); i++) {
+                const high = history[i].high;
+                const low = history[i].low;
+                const prevClose = history[i - 1].close;
+                
+                const tr = Math.max(
+                    high - low,
+                    Math.abs(high - prevClose),
+                    Math.abs(low - prevClose)
+                );
+                atrSum += tr;
+            }
+            
+            const atr = atrSum / 14;
+            const avgPrice = history[history.length - 1].close;
+            const volatilityPercent = (atr / avgPrice) * 100;
+            
+            // Normalize to 0-100 scale
+            return Math.min(100, volatilityPercent * 20);
+        }
+        
+        function calculateTrendStrength(history) {
+            if (history.length < 20) return 50;
+            
+            // Simple trend strength using price position relative to moving averages
+            const closes = history.map(h => h.close);
+            const currentPrice = closes[closes.length - 1];
+            
+            // Calculate MA20 and MA50
+            const ma20 = closes.slice(-20).reduce((a, b) => a + b, 0) / 20;
+            const ma50 = closes.length >= 50 
+                ? closes.slice(-50).reduce((a, b) => a + b, 0) / 50 
+                : ma20;
+            
+            // Trend score based on price position
+            let score = 50;
+            
+            if (currentPrice > ma20 && ma20 > ma50) {
+                score = 70 + ((currentPrice - ma20) / ma20) * 500;
+            } else if (currentPrice < ma20 && ma20 < ma50) {
+                score = 30 - ((ma20 - currentPrice) / ma20) * 500;
+            } else {
+                score = 50;
+            }
+            
+            return Math.max(0, Math.min(100, score));
+        }
+        
+        function calculateMomentum(history) {
+            if (history.length < 14) return 50;
+            
+            // Calculate RSI
+            const closes = history.map(h => h.close);
+            const changes = [];
+            
+            for (let i = 1; i < closes.length; i++) {
+                changes.push(closes[i] - closes[i - 1]);
+            }
+            
+            const recentChanges = changes.slice(-14);
+            const gains = recentChanges.filter(c => c > 0).reduce((a, b) => a + b, 0) / 14;
+            const losses = Math.abs(recentChanges.filter(c => c < 0).reduce((a, b) => a + b, 0)) / 14;
+            
+            if (losses === 0) return 100;
+            
+            const rs = gains / losses;
+            const rsi = 100 - (100 / (1 + rs));
+            
+            return rsi;
         }
 
         function generatePriceHistory(basePrice, count) {
+            // This is only used as fallback when Binance API fails
             const history = [];
             let price = basePrice;
             
             for (let i = 0; i < count; i++) {
-                price += (Math.random() - 0.48) * basePrice * 0.01;
+                const change = (Math.random() - 0.48) * basePrice * 0.008;
+                price += change;
+                
+                const high = price * (1 + Math.random() * 0.005);
+                const low = price * (1 - Math.random() * 0.005);
+                
                 history.push({
                     time: Date.now() - (count - i) * 60000,
-                    price: price,
+                    open: price - change / 2,
+                    high: high,
+                    low: low,
+                    close: price,
                     volume: Math.random() * 1000000
                 });
             }
@@ -1187,9 +1344,22 @@
 
         // === UPDATE ALL DISPLAYS ===
         function updateAllDisplays(neuralOutputs, tfAnalysis, aiConsensus, riskParams, quantumScore) {
+            // Update live price display
+            if (currentMarketData) {
+                const price = currentMarketData.price;
+                const change = currentMarketData.priceChange || 0;
+                
+                document.getElementById('currentPrice').textContent = '$' + price.toFixed(2);
+                
+                const changeEl = document.getElementById('priceChange24h');
+                const changeText = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+                changeEl.textContent = changeText;
+                changeEl.style.color = change >= 0 ? 'var(--neon-green)' : 'var(--neon-red)';
+            }
+            
             // Update quantum score
             document.getElementById('quantumScore').textContent = quantumScore.toFixed(0);
-            document.getElementById('scoreDescription').textContent = `Neural convergence at ${quantumScore.toFixed(1)}% • ${Object.keys(neuralOutputs).length} nodes active`;
+            document.getElementById('scoreDescription').textContent = `Neural convergence at ${quantumScore.toFixed(1)}% • ${Object.keys(neuralOutputs).length} nodes active • Live from Binance`;
             
             // Update bars
             document.getElementById('accuracyBar').style.width = quantumScore + '%';
@@ -1306,33 +1476,70 @@
             }
             
             const history = currentMarketData.priceHistory;
-            const labels = history.map((_, i) => i);
-            const prices = history.map(h => h.price);
+            
+            // Use last 50 candles for chart
+            const displayHistory = history.slice(-50);
+            const labels = displayHistory.map((h, i) => {
+                const date = new Date(h.time);
+                return date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            });
+            const prices = displayHistory.map(h => h.close);
+            
+            // Determine trend color
+            const firstPrice = prices[0];
+            const lastPrice = prices[prices.length - 1];
+            const isUptrend = lastPrice > firstPrice;
             
             chart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Price',
+                        label: currentMarketData.pair,
                         data: prices,
-                        borderColor: 'rgba(0, 243, 255, 1)',
-                        backgroundColor: 'rgba(0, 243, 255, 0.1)',
+                        borderColor: isUptrend ? 'rgba(57, 255, 20, 1)' : 'rgba(255, 7, 58, 1)',
+                        backgroundColor: isUptrend ? 'rgba(57, 255, 20, 0.1)' : 'rgba(255, 7, 58, 0.1)',
                         borderWidth: 2,
                         tension: 0.4,
                         fill: true,
-                        pointRadius: 0
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        pointHoverBackgroundColor: isUptrend ? 'rgba(57, 255, 20, 1)' : 'rgba(255, 7, 58, 1)'
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false }
+                        legend: { 
+                            display: true,
+                            labels: {
+                                color: '#8b93ff',
+                                font: { size: 11 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Price: $${context.parsed.y.toFixed(2)}`;
+                                }
+                            }
+                        }
                     },
                     scales: {
                         x: {
-                            display: false
+                            display: true,
+                            grid: { 
+                                color: 'rgba(255, 255, 255, 0.03)',
+                                drawBorder: false
+                            },
+                            ticks: { 
+                                color: '#8b93ff',
+                                font: { size: 9 },
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 6
+                            }
                         },
                         y: {
                             grid: { 
@@ -1341,7 +1548,10 @@
                             },
                             ticks: { 
                                 color: '#8b93ff',
-                                font: { size: 10 }
+                                font: { size: 10 },
+                                callback: function(value) {
+                                    return '$' + value.toFixed(2);
+                                }
                             }
                         }
                     },
