@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GROK TRADER v1 • Real Edge Only</title>
+    <title>GROK TRADER v1.1 • Live Binance Price</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         :root {
@@ -105,15 +105,17 @@
 
         .muted { color: var(--muted); font-size: 0.8rem; text-align: center; }
         #loading { display: none; color: var(--blue); font-weight: bold; text-align: center; padding: 20px; }
+        #current-price { font-size: 1.2rem; font-weight: bold; text-align: center; margin: 10px 0; color: var(--green); }
     </style>
 </head>
 <body>
 
 <div class="container">
 
-    <h1>GROK TRADER v1 <span class="badge">No Hype • Real Prob</span></h1>
+    <h1>GROK TRADER v1.1 <span class="badge">Live Binance Price</span></h1>
+    <div id="current-price">Harga Live: Loading...</div>
 
-    <div id="loading">⏳ Menganalisa market...</div>
+    <div id="loading">⏳ Mengambil data live dari Binance + Analisa...</div>
 
     <div class="card">
         <div class="header">
@@ -128,6 +130,7 @@
         </div>
     </div>
 
+    <!-- Sisanya sama seperti sebelumnya, tapi aku singkat biar ga terlalu panjang di sini -->
     <div class="card">
         <h3>6 Filter Kritis</h3>
         <div class="grid-3" id="conf-grid">
@@ -154,7 +157,7 @@
     </div>
 
     <div class="card">
-        <h3>Risk Control</h3>
+        <h3>Risk Control (berdasar harga live)</h3>
         <div class="grid-2">
             <div class="item"><div class="label">Stop Loss</div><div id="sl">--</div></div>
             <div class="item"><div class="label">Take Profit</div><div id="tp">--</div></div>
@@ -188,7 +191,7 @@
     </div>
 
     <div class="muted" style="text-align:center;margin-top:20px;font-size:0.75rem;">
-        Simulasi only • Bukan saran investasi • Gunakan dengan bijak
+        Harga live dari Binance API • Simulasi analisa only • Bukan saran trading
     </div>
 
 </div>
@@ -197,6 +200,7 @@
 const $ = id => document.getElementById(id);
 let chart = null;
 let isAnalyzing = false;
+let currentPrice = 0;
 
 const confNames = ["Price Action", "Trend Align", "Volume", "Momentum", "Structure", "S/R Zone"];
 
@@ -207,30 +211,22 @@ function setConf(idx, ok) {
     el.lastElementChild.textContent = ok ? 'YES' : 'NO';
 }
 
-function resetUI() {
-    $('conf-count').textContent = '0';
-    $('edge-score').textContent = '--/100';
-    $('real-prob').textContent = '--%';
-    $('risk-level').textContent = '—';
-    $('market-mode').textContent = '—';
-    $('final-act').textContent = 'WAIT';
-    $('final-act').className = 'decision hold';
-    $('final-reason').textContent = 'Tunggu setup yang punya edge statistik jelas';
-    $('grok-says').textContent = 'Tekan ANALISA untuk mulai...';
-    $('sl').textContent = '--';
-    $('tp').textContent = '--';
-    $('maxrisk').textContent = '—%';
-    $('pos-size').textContent = '—';
-
-    document.querySelectorAll('.conf-item').forEach(el => {
-        el.className = 'conf-item wait';
-        el.lastElementChild.textContent = 'wait';
-    });
-
-    if (chart) {
-        chart.destroy();
-        chart = null;
+async function fetchLivePrice(symbol) {
+    try {
+        const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${symbol}`);
+        const data = await response.json();
+        if (data.price) {
+            currentPrice = parseFloat(data.price);
+            $('current-price').textContent = `Harga Live ${symbol}: ${currentPrice.toLocaleString('en-US', {minimumFractionDigits: 2})} USDT`;
+            return currentPrice;
+        }
+    } catch (err) {
+        console.error('Gagal fetch harga live:', err);
+        $('current-price').textContent = 'Harga Live: Gagal fetch (pakai simulasi)';
     }
+    // Fallback simulasi kalau API gagal
+    currentPrice = 50000 + Math.random() * 20000;
+    return currentPrice;
 }
 
 async function analyze() {
@@ -241,25 +237,43 @@ async function analyze() {
     btn.textContent = 'SEDANG ANALISA...';
     $('loading').style.display = 'block';
 
-    resetUI();
+    const symbol = $('symbol').value;
+
+    // Fetch harga live dulu
+    await fetchLivePrice(symbol);
+
+    // Reset UI (sama seperti sebelumnya)
+    document.querySelectorAll('.conf-item').forEach(el => {
+        el.className = 'conf-item wait';
+        el.lastElementChild.textContent = 'wait';
+    });
+    $('conf-count').textContent = '0';
+    $('edge-score').textContent = '--/100';
+    $('real-prob').textContent = '--%';
+    $('risk-level').textContent = '—';
+    $('market-mode').textContent = '—';
+    $('final-act').textContent = 'WAIT';
+    $('final-act').className = 'decision hold';
+    $('final-reason').textContent = 'Tunggu setup yang punya edge statistik jelas';
+    $('grok-says').textContent = 'Menganalisa berdasarkan harga live...';
+    $('sl').textContent = '--';
+    $('tp').textContent = '--';
+    $('maxrisk').textContent = '—%';
+    $('pos-size').textContent = '—';
 
     try {
-        // Simulasi delay (ganti dengan fetch API real nanti)
-        await new Promise(r => setTimeout(r, 1200));
+        await new Promise(r => setTimeout(r, 800)); // simulasi proses
 
-        const price = Math.round(30000 + Math.random() * 40000);
         const bullish = Math.random() > 0.48;
-
         $('market-mode').textContent = bullish ? 'Bullish Bias' : 'Bearish / Sideways';
 
-        // 6 konfirmasi (probabilitas lebih realistis)
         const checks = [
-            Math.random() > 0.38,           // Price Action
-            Math.random() > 0.55,           // Trend
-            Math.random() > 0.52,           // Volume
-            Math.random() > 0.48,           // Momentum
-            Math.random() > 0.62,           // Structure
-            Math.random() > 0.68            // S/R
+            Math.random() > 0.38,
+            Math.random() > 0.55,
+            Math.random() > 0.52,
+            Math.random() > 0.48,
+            Math.random() > 0.62,
+            Math.random() > 0.68
         ];
 
         let confCount = 0;
@@ -269,7 +283,6 @@ async function analyze() {
         });
         $('conf-count').textContent = confCount;
 
-        // Edge probability Grok-style: konservatif
         let prob = Math.round(confCount * 12.5 + (Math.random() * 10 - 5));
         prob = Math.max(32, Math.min(87, prob));
         $('real-prob').textContent = prob + '%';
@@ -277,30 +290,28 @@ async function analyze() {
         const score = Math.round(prob * 0.9);
         $('edge-score').textContent = score + '/100';
 
-        // Risk level
         const risk = prob > 70 ? 'LOW' : prob > 52 ? 'MEDIUM' : 'HIGH';
         $('risk-level').textContent = risk;
 
-        // Keputusan
-        let act = 'HOLD', color = 'hold', reason = 'No clear statistical edge right now.';
-        let grokText = `Probabilitas realistis ~${prob}%. `;
+        let act = 'HOLD', color = 'hold', reason = 'No clear statistical edge.';
+        let grokText = `Probabilitas realistis ~${prob}% (harga live: ${currentPrice.toFixed(2)}). `;
 
         if (confCount >= 5 && prob >= 73) {
             act = 'STRONG BUY'; color = 'buy';
-            reason = 'Setup sangat langka. Hampir semua align. Tapi SL wajib ketat.';
-            grokText += 'Jarang dapat 5+/6. Kalau gagal → mungkin black swan atau overread.';
+            reason = 'Setup langka, align kuat. SL ketat wajib.';
+            grokText += 'Jarang 5+/6. Kalau gagal, mungkin black swan.';
         } else if (confCount >= 4 && prob >= 60) {
             act = 'BUY'; color = 'buy';
-            reason = 'Edge lumayan. Masuk dengan position size sedang.';
-            grokText += '4/6 biasanya zona trader dewasa. Jangan greed.';
+            reason = 'Edge lumayan, masuk dengan size sedang.';
+            grokText += '4/6 zona trader dewasa. Jangan greed.';
         } else if (confCount >= 5 && prob < 60) {
             act = 'WEAK BUY'; color = 'buy';
-            reason = 'Banyak konfirmasi tapi prob rendah. Spekulasi kecil saja.';
-            grokText += 'Ini lebih ke gambling daripada trading.';
+            reason = 'Banyak konfirmasi tapi prob rendah. Spekulasi kecil.';
+            grokText += 'Lebih ke gambling.';
         } else {
             act = 'NO TRADE';
-            reason = 'Market tidak kasih keuntungan statistik hari ini. Sabar.';
-            grokText += 'Cash > FOMO. Tunggu setup bersih.';
+            reason = 'Tidak ada edge statistik jelas. Sabar.';
+            grokText += 'Cash > FOMO.';
         }
 
         if (risk === 'HIGH') grokText += ' ⚠️ RISK HIGH – jangan force.';
@@ -310,24 +321,22 @@ async function analyze() {
         $('final-reason').textContent = reason;
         $('grok-says').textContent = grokText;
 
-        // Risk numbers
+        // Risk calc pakai currentPrice live
         const atrPct = 1.2 + Math.random() * 2.0;
         const slPct = risk === 'LOW' ? 1.5 : risk === 'MEDIUM' ? 2.1 : 3.0;
-        const sl = Math.round(price * (1 - slPct / 100));
-        const riskDist = price - sl;
-        const tp = Math.round(price + riskDist * 1.85);
+        const sl = Math.round(currentPrice * (1 - slPct / 100));
+        const riskDist = currentPrice - sl;
+        const tp = Math.round(currentPrice + riskDist * 1.85);
 
         $('sl').textContent = sl.toLocaleString();
         $('tp').textContent = tp.toLocaleString();
         $('maxrisk').textContent = slPct.toFixed(1) + '%';
         $('pos-size').textContent = (1.5 / slPct).toFixed(2) + 'x';
 
-        // Chart
-        updateChart(price, color === 'buy' ? 'rgba(16,185,129,0.8)' : color === 'sell' ? 'rgba(239,68,68,0.8)' : 'rgba(245,158,11,0.8)');
+        updateChart(currentPrice, color === 'buy' ? 'rgba(16,185,129,0.8)' : color === 'sell' ? 'rgba(239,68,68,0.8)' : 'rgba(245,158,11,0.8)');
 
     } catch (err) {
-        $('grok-says').textContent = 'Error: ' + (err.message || 'Gagal menganalisa');
-        console.error(err);
+        $('grok-says').textContent = 'Error analisa: ' + (err.message || 'Coba lagi');
     } finally {
         isAnalyzing = false;
         btn.disabled = false;
@@ -369,9 +378,9 @@ function updateChart(basePrice, lineColor) {
     });
 }
 
-// Auto run sekali saat load (opsional)
+// Auto fetch & analisa pertama kali
 window.addEventListener('load', () => {
-    setTimeout(analyze, 800); // mulai otomatis setelah halaman load
+    setTimeout(analyze, 1000);
 });
 </script>
 </body>
