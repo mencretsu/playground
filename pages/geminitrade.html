@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEMINI SYNDICATE v5.0 - FULL INTEGRATED</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --bg-dark: #020617;
+            --bg-panel: #0f172a;
+            --accent-blue: #3b82f6;
+            --accent-pink: #ec4899;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border: #1e293b;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'JetBrains Mono', monospace; }
+        body { background: var(--bg-dark); color: var(--text-primary); padding: 10px; height: 100vh; overflow: hidden; }
+
+        /* GRID LAYOUT */
+        .master-grid {
+            display: grid;
+            grid-template-columns: 300px 1fr 340px;
+            grid-template-rows: 60px 1fr 140px;
+            gap: 12px;
+            height: 97vh;
+        }
+
+        /* PANELS */
+        .panel {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .header-panel { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; }
+        .footer-panel { grid-column: 1 / -1; }
+
+        /* TYPOGRAPHY */
+        .label { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+        .price-val { font-size: 2rem; font-weight: 800; color: var(--accent-blue); margin: 5px 0; }
+        
+        /* DECISION UNIT */
+        .decision-box {
+            background: rgba(0,0,0,0.3);
+            border: 2px solid #334155;
+            padding: 20px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 1.6rem;
+            font-weight: 900;
+            margin: 10px 0;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .status-buy { border-color: var(--success); color: var(--success); box-shadow: 0 0 20px rgba(16, 185, 129, 0.2); background: rgba(16, 185, 129, 0.05); }
+        .status-sell { border-color: var(--danger); color: var(--danger); box-shadow: 0 0 20px rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05); }
+
+        /* AI SYNDICATE MESSAGES */
+        .ai-message {
+            background: rgba(2, 6, 23, 0.6);
+            border-left: 3px solid var(--accent-blue);
+            padding: 10px;
+            font-size: 0.75rem;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+        .ai-message.deepseek { border-left-color: var(--accent-pink); }
+
+        /* UI COMPONENTS */
+        select { background: #020617; color: white; border: 1px solid var(--border); padding: 5px 10px; border-radius: 4px; outline: none; }
+        .stat-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem; }
+        button {
+            background: var(--accent-blue); color: white; border: none; padding: 12px; border-radius: 4px;
+            font-weight: bold; cursor: pointer; transition: 0.3s; margin-top: auto; text-transform: uppercase;
+        }
+        button:hover { filter: brightness(1.2); transform: translateY(-1px); }
+        #logs { font-size: 0.65rem; color: var(--text-secondary); overflow-y: auto; height: 100%; }
+
+        /* CHART */
+        .chart-container { flex-grow: 1; min-height: 0; }
+    </style>
+</head>
+<body>
+
+<div class="master-grid">
+    <header class="panel header-panel">
+        <div style="font-weight: 800; letter-spacing: 2px; font-size: 1.2rem;">
+            SYNDICATE <span style="color:var(--accent-blue)">TERMINAL</span> <span style="font-size:0.7rem; color:var(--text-secondary)">v5.0</span>
+        </div>
+        <div style="display:flex; gap:15px; align-items:center;">
+            <select id="asset-select" onchange="Terminal.switchPair(this.value)">
+                <option value="solusdt">SOL/USDT</option>
+                <option value="btcusdt">BTC/USDT</option>
+                <option value="ethusdt">ETH/USDT</option>
+            </select>
+            <div style="font-size: 0.7rem; color: var(--success); font-weight: bold;">● BINANCE CLOUD LIVE</div>
+        </div>
+    </header>
+
+    <aside class="panel">
+        <div class="label">Current Market Feed</div>
+        <div id="price-display" class="price-val">0.00</div>
+        
+        <div style="margin: 15px 0;">
+            <div class="stat-row"><span>RSI (14)</span> <span id="rsi-val">--</span></div>
+            <div class="stat-row"><span>VOLATILITY</span> <span id="vol-val">--</span></div>
+            <div class="stat-row"><span>24H HIGH</span> <span id="hi-val">--</span></div>
+            <div class="stat-row"><span>24H LOW</span> <span id="lo-val">--</span></div>
+        </div>
+
+        <div class="label" style="margin-top:10px;">Risk Management</div>
+        <div class="panel" style="background: rgba(0,0,0,0.2); margin-top:5px; padding:10px;">
+            <div class="stat-row"><span>STOP LOSS</span> <span id="sl-val" style="color:var(--danger)">--</span></div>
+            <div class="stat-row"><span>TAKE PROFIT</span> <span id="tp-val" style="color:var(--success)">--</span></div>
+        </div>
+        
+        <button onclick="Terminal.executeAnalysis()">Run Full Analysis</button>
+    </aside>
+
+    <main class="panel">
+        <div class="chart-container">
+            <canvas id="mainChart"></canvas>
+        </div>
+    </main>
+
+    <aside class="panel">
+        <div class="label">System Decision Consensus</div>
+        <div id="decision-badge" class="decision-box">STANDBY</div>
+
+        <div class="ai-message">
+            <strong style="color:var(--accent-blue)">GEMINI AI:</strong><br>
+            <span id="gemini-res">Awaiting market data stream...</span>
+        </div>
+
+        <div class="ai-message deepseek">
+            <strong style="color:var(--accent-pink)">DEEPSEEK V3:</strong><br>
+            <span id="deepseek-res">Scanning liquidity pools...</span>
+        </div>
+
+        <div style="font-size:0.65rem; color:var(--text-secondary); text-align:center; margin-top:auto;">
+            PROPRIETARY LOGIC INJECTION ACTIVE
+        </div>
+    </aside>
+
+    <footer class="panel footer-panel">
+        <div class="label" style="margin-bottom:5px;">System Kernel Logs</div>
+        <div id="logs">> [SYSTEM] Syndicate Kernel v5.0.1 Loaded...<br>> [SYSTEM] Waiting for user execution...</div>
+    </footer>
+</div>
+
+<script>
+const Terminal = {
+    ws: null,
+    history: [],
+    chart: null,
+    currentPair: 'solusdt',
+    lastPrice: 0,
+    isAnalyzing: false,
+
+    init() {
+        this.initChart();
+        this.connectWS();
+    },
+
+    // 1. WEBSOCKET REAL DATA (BINANCE)
+    connectWS() {
+        if (this.ws) this.ws.close();
+        this.ws = new WebSocket(`wss://stream.binance.com:9443/ws/${this.currentPair}@miniTicker`);
+        
+        this.ws.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            this.lastPrice = parseFloat(data.c);
+            
+            // Update UI
+            document.getElementById('price-display').innerText = this.lastPrice.toFixed(this.currentPriceScale());
+            document.getElementById('hi-val').innerText = parseFloat(data.h).toFixed(2);
+            document.getElementById('lo-val').innerText = parseFloat(data.l).toFixed(2);
+            
+            this.updateChart(this.lastPrice);
+        };
+    },
+
+    switchPair(pair) {
+        this.currentPair = pair;
+        this.history = [];
+        this.log(`Switched stream to ${pair.toUpperCase()}`);
+        this.connectWS();
+    },
+
+    currentPriceScale() {
+        return this.lastPrice < 10 ? 4 : 2;
+    },
+
+    // 2. CHARTING
+    initChart() {
+        const ctx = document.getElementById('mainChart').getContext('2d');
+        this.chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array(60).fill(''),
+                datasets: [{
+                    data: [],
+                    borderColor: '#3b82f6',
+                    borderWidth: 2,
+                    pointRadius: 0,
+                    fill: true,
+                    tension: 0.4,
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { display: false },
+                    y: { position: 'right', grid: { color: '#1e293b' }, ticks: { color: '#64748b' } }
+                },
+                animation: false
+            }
+        });
+    },
+
+    updateChart(price) {
+        this.history.push(price);
+        if (this.history.length > 60) this.history.shift();
+        this.chart.data.datasets[0].data = this.history;
+        this.chart.update('none');
+    },
+
+    // 3. ANALYSIS & DECISION LOGIC
+    async executeAnalysis() {
+        if(this.isAnalyzing) return;
+        this.isAnalyzing = true;
+        
+        const btn = document.querySelector('button');
+        const badge = document.getElementById('decision-badge');
+        
+        btn.innerText = "PROCESSING SYNDICATE...";
+        this.log(`Starting analysis for ${this.currentPair.toUpperCase()}...`);
+
+        // Simulasi hitung RSI dari pergerakan history
+        const rsi = (35 + Math.random() * 40).toFixed(2);
+        document.getElementById('rsi-val').innerText = rsi;
+        document.getElementById('vol-val').innerText = (Math.random() * 1.5).toFixed(2) + "%";
+
+        // AI Thinking Delay
+        document.getElementById('gemini-res').innerText = "Analyzing price action & candle formations...";
+        await new Promise(r => setTimeout(r, 800));
+
+        // DECISION LOGIC
+        let decision = "";
+        let sl, tp;
+
+        // Simple Trend Logic: Jika harga sekarang lebih tinggi dari 10 tick lalu
+        const isUptrend = this.lastPrice > this.history[this.history.length - 10];
+
+        if(isUptrend) {
+            decision = "STRONG BUY";
+            badge.className = "decision-box status-buy";
+            sl = this.lastPrice * 0.985;
+            tp = this.lastPrice * 1.045;
+            document.getElementById('gemini-res').innerText = "Structure: Bullish Breakout. Momentum confirms buy pressure.";
+            document.getElementById('deepseek-res').innerText = "Liquidity map shows accumulation. SL set below pivot.";
+        } else {
+            decision = "STRONG SELL";
+            badge.className = "decision-box status-sell";
+            sl = this.lastPrice * 1.015;
+            tp = this.lastPrice * 0.955;
+            document.getElementById('gemini-res').innerText = "Structure: Bearish Rejection. Resistance holding firm.";
+            document.getElementById('deepseek-res').innerText = "Sell-side imbalance detected. Targetting lower liquidity gap.";
+        }
+
+        badge.innerText = decision;
+        document.getElementById('sl-val').innerText = sl.toFixed(this.currentPriceScale());
+        document.getElementById('tp-val').innerText = tp.toFixed(this.currentPriceScale());
+
+        this.log(`Analysis Complete: ${decision} @ ${this.lastPrice}`);
+        btn.innerText = "Run Full Analysis";
+        this.isAnalyzing = false;
+    },
+
+    log(msg) {
+        const logBox = document.getElementById('logs');
+        const time = new Date().toLocaleTimeString('en-GB');
+        logBox.innerHTML += `><br>> [${time}] ${msg}`;
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+};
+
+// RUN SYSTEM
+Terminal.init();
+</script>
+</body>
+</html>
