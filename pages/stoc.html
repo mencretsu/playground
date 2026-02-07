@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stochastic Oscillator</title>
+    <title>Simple Stochastic Oscillator</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * {
@@ -875,9 +875,10 @@
                             },
                             grid: {
                                 color: function(context) {
-                                    if (context.tick.value === 20) return 'rgba(16, 185, 129, 0.3)';
-                                    if (context.tick.value === 80) return 'rgba(239, 68, 68, 0.3)';
-                                    return 'rgba(51, 65, 85, 0.3)';
+                                    if (context.tick.value === 20) return 'rgba(16, 185, 129, 1)';
+                                    if (context.tick.value === 50) return 'rgba(255, 255, 255, 1)';
+                                    if (context.tick.value === 80) return 'rgba(239, 68, 68, 1)';
+                                    return 'rgba(51, 65, 85, 0.7)';
                                 }
                             }
                         },
