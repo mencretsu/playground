@@ -7,38 +7,39 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         :root {
-            --bg: #0a0e17;
-            --card: #111827;
-            --primary: #2563eb;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --text: #f3f4f6;
-            --text-muted: #9ca3af;
+            --bg: #000000;
+            --card: #0a0a0a;
+            --primary: #00ff00;
+            --success: #00ff00;
+            --danger: #ff0000;
+            --warning: #ffff00;
+            --text: #00ff00;
+            --text-muted: #00aa00;
+            --border: #333333;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Courier New', monospace;
             background: var(--bg);
             color: var(--text);
             padding: 0;
             min-height: 100vh;
-            padding-top: 140px; /* Space for sticky header */
+            padding-top: 100px;
+            font-size: 13px;
         }
         .container { max-width: 1400px; margin: 0 auto; padding: 0 10px; }
         
-        /* STICKY HEADER */
+        /* TERMINAL HEADER */
         .header {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            background: linear-gradient(135deg, #1e3a8a 0%, #111827 100%);
-            padding: 12px 15px;
-            border-bottom: 2px solid #374151;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+            background: #000;
+            padding: 8px 10px;
+            border-bottom: 2px solid #333333;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
             z-index: 1000;
-            backdrop-filter: blur(10px);
         }
         .header-content {
             max-width: 1400px;
@@ -48,270 +49,286 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .live-status h1 {
-            font-size: 1.3em;
-            font-weight: 600;
+            font-size: 1.1em;
+            font-weight: 400;
+            letter-spacing: 2px;
         }
         .live-dot {
-            width: 10px;
-            height: 10px;
-            background: #10b981;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 0;
+            animation: blink 1s infinite;
         }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; box-shadow: 0 0 8px #10b981; }
-            50% { opacity: 0.4; box-shadow: 0 0 2px #10b981; }
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
         }
         
-        /* COMPACT PRICE BOX */
+        /* COMPACT TERMINAL PRICE BOX */
         .price-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 8px;
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
         }
         .price-box {
-            background: rgba(30, 41, 59, 0.8);
-            border-radius: 6px;
-            padding: 8px 12px;
-            border: 1px solid #334155;
+            display: flex;
+            gap: 5px;
         }
         .price-box .label {
             color: var(--text-muted);
-            font-size: 0.75em;
-            margin-bottom: 2px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
         .price-box .value {
-            font-size: 1.1em;
             font-weight: 700;
             color: var(--text);
         }
-        .price-change.positive { color: #10b981; }
-        .price-change.negative { color: #ef4444; }
+        .price-change.positive { color: var(--primary); }
+        .price-change.negative { color: var(--danger); }
         
         /* Main Layout */
         .main-grid {
             display: grid;
-            grid-template-columns: 280px 1fr 280px;
-            gap: 15px;
-            margin-bottom: 15px;
+            grid-template-columns: 250px 1fr 250px;
+            gap: 10px;
+            margin-bottom: 10px;
         }
         @media (max-width: 1024px) {
             .main-grid { grid-template-columns: 1fr; }
-            body { padding-top: 160px; }
+            body { padding-top: 120px; }
         }
         
-        /* Panel */
+        /* TERMINAL PANEL */
         .panel {
             background: var(--card);
-            border-radius: 10px;
-            padding: 15px;
-            border: 1px solid #374151;
+            border: 1px solid var(--border);
+            padding: 10px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
         }
         .panel-title {
             color: var(--primary);
-            margin-bottom: 12px;
-            font-size: 1.05em;
-            border-bottom: 2px solid var(--primary);
-            padding-bottom: 6px;
-            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+            border-bottom: 1px solid var(--primary);
+            padding-bottom: 4px;
+            font-weight: 400;
+            letter-spacing: 1px;
         }
         
-        /* Controls */
-        .control-group { margin-bottom: 10px; }
+        /* TERMINAL CONTROLS */
+        .control-group { margin-bottom: 8px; }
         label {
             display: block;
             color: var(--text-muted);
-            margin-bottom: 4px;
-            font-size: 0.8em;
-            font-weight: 500;
+            margin-bottom: 3px;
+            font-size: 0.85em;
         }
         select, input {
             width: 100%;
-            padding: 8px;
-            background: #1f2937;
-            border: 1px solid #4b5563;
-            border-radius: 6px;
+            padding: 4px 6px;
+            background: #000;
+            border: 1px solid var(--border);
             color: var(--text);
-            font-size: 0.9em;
-            transition: border-color 0.3s;
+            font-size: 0.85em;
+            font-family: 'Courier New', monospace;
         }
         select:focus, input:focus {
             outline: none;
-            border-color: var(--primary);
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
         }
         button {
             width: 100%;
-            padding: 10px;
-            background: linear-gradient(135deg, var(--primary) 0%, #1d4ed8 100%);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
+            padding: 6px;
+            background: #000;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            font-weight: 400;
             cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 5px;
-            font-size: 0.9em;
+            transition: all 0.2s;
+            margin-top: 4px;
+            font-size: 0.85em;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1px;
         }
         button:hover { 
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+            background: var(--primary);
+            color: #000;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
         }
-        button:active { transform: translateY(0); }
+        button:active { transform: scale(0.98); }
         
         /* Confirmation List */
         .confirmation-list {
-            margin-top: 15px;
+            margin-top: 10px;
         }
         .confirmation-list h3 {
-            margin-bottom: 8px;
-            font-size: 0.95em;
+            margin-bottom: 6px;
+            font-size: 0.9em;
+            font-weight: 400;
         }
         .confirmation-item {
             display: flex;
             align-items: center;
-            padding: 6px 8px;
-            margin-bottom: 6px;
-            background: #1f2937;
-            border-radius: 5px;
-            border-left: 3px solid #4b5563;
-            font-size: 0.85em;
+            padding: 3px 5px;
+            margin-bottom: 3px;
+            background: #000;
+            border-left: 2px solid #00aa00;
+            font-size: 0.8em;
         }
         .confirmation-item.valid { border-left-color: var(--success); }
         .confirmation-item.invalid { border-left-color: var(--danger); }
         .confirmation-icon {
-            margin-right: 8px;
-            font-size: 1em;
+            margin-right: 6px;
+            font-size: 0.9em;
         }
         
-        /* Signal Box */
+        /* TERMINAL Signal Box */
         .signal-container {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
+            gap: 8px;
+            margin-bottom: 10px;
         }
         .signal-box {
             text-align: center;
-            padding: 12px;
-            border-radius: 8px;
-            background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-            border: 1px solid #374151;
-            transition: all 0.3s;
+            padding: 8px;
+            background: #000;
+            border: 1px solid var(--border);
         }
         .signal-box h3 {
-            font-size: 0.85em;
-            margin-bottom: 6px;
+            font-size: 0.8em;
+            margin-bottom: 4px;
             color: var(--text-muted);
+            font-weight: 400;
         }
         .signal-box .value {
-            font-size: 1.3em;
+            font-size: 1.1em;
             font-weight: 700;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
         .signal-box .status {
-            font-size: 0.75em;
+            font-size: 0.7em;
             color: var(--text-muted);
         }
         .signal-box.strong-buy {
-            background: linear-gradient(135deg, #065f46 0%, #047857 100%);
-            border-color: #10b981;
-            animation: glow-buy 2s infinite;
+            background: #000;
+            border-color: var(--success);
+            animation: terminal-glow-buy 1.5s infinite;
         }
         .signal-box.strong-sell {
-            background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
-            border-color: #ef4444;
-            animation: glow-sell 2s infinite;
+            background: #000;
+            border-color: var(--danger);
+            animation: terminal-glow-sell 1.5s infinite;
         }
-        @keyframes glow-buy {
-            0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.4); }
-            50% { box-shadow: 0 0 25px rgba(16, 185, 129, 0.7); }
+        @keyframes terminal-glow-buy {
+            0%, 100% { box-shadow: 0 0 5px rgba(0, 255, 0, 0.3); }
+            50% { box-shadow: 0 0 15px rgba(0, 255, 0, 0.6); }
         }
-        @keyframes glow-sell {
-            0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
-            50% { box-shadow: 0 0 25px rgba(239, 68, 68, 0.7); }
+        @keyframes terminal-glow-sell {
+            0%, 100% { box-shadow: 0 0 5px rgba(255, 0, 0, 0.3); }
+            50% { box-shadow: 0 0 15px rgba(255, 0, 0, 0.6); }
         }
         
-        /* SMOOTH CHART CONTAINER */
+        /* CHART CONTAINER - KEEP MODERN */
         .chart-container {
             height: 350px;
             position: relative;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 1px solid #334155;
-            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+            background: #000;
+            border: 1px solid var(--border);
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
         }
         
-        /* Risk Info */
+        /* TERMINAL Risk Info */
         .risk-info {
-            background: linear-gradient(135deg, #7c2d12 0%, #9a3412 100%);
-            border-radius: 8px;
-            padding: 10px;
-            margin-top: 15px;
-            border: 1px solid #ea580c;
-            font-size: 0.85em;
+            background: #000;
+            border: 1px solid var(--danger);
+            padding: 8px;
+            margin-top: 10px;
+            font-size: 0.75em;
+            box-shadow: 0 0 10px rgba(255, 0, 0, 0.2);
         }
         
         /* Trade Details */
         .trade-details {
-            margin-top: 15px;
-            background: #1f2937;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #374151;
+            margin-top: 10px;
+            background: #000;
+            padding: 8px;
+            border: 1px solid var(--border);
         }
         .trade-details h3 {
-            font-size: 0.95em;
-            margin-bottom: 10px;
+            font-size: 0.9em;
+            margin-bottom: 8px;
             color: var(--primary);
+            font-weight: 400;
         }
         .trade-details > div {
-            margin-bottom: 6px;
-            font-size: 0.85em;
+            margin-bottom: 4px;
+            font-size: 0.8em;
             display: flex;
             justify-content: space-between;
         }
         .trade-details span {
-            font-weight: 600;
-            color: var(--warning);
+            font-weight: 400;
+        }
+        
+        /* Position Size Box - Terminal Style */
+        .position-size-box {
+            background: #000;
+            padding: 6px;
+            border: 1px solid var(--primary);
+            margin-bottom: 8px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+        .position-size-box .label {
+            font-size: 0.7em;
+            color: var(--text-muted);
+            margin-bottom: 3px;
+        }
+        .position-size-box .value {
+            font-size: 1.1em;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .position-size-box .meta {
+            font-size: 0.7em;
+            color: var(--text-muted);
+            margin-top: 2px;
         }
     </style>
 </head>
 <body>
-    <!-- STICKY HEADER -->
+    <!-- TERMINAL HEADER -->
     <div class="header">
         <div class="header-content">
             <div class="live-status">
                 <div class="live-dot"></div>
-                <h1>Simple Trading System</h1>
-                <span id="last-update" style="margin-left: auto; color: var(--text-muted); font-size: 0.8em;"></span>
+                <h1>> SIMPLE_TRADING_SYSTEM_v3.0</h1>
+                <span id="last-update" style="margin-left: auto; color: var(--text-muted); font-size: 0.75em;"></span>
             </div>
             
             <div class="price-container">
                 <div class="price-box">
-                    <div class="label">Symbol</div>
-                    <div class="value" id="current-symbol">BTC/USDT</div>
+                    <span class="label">SYM:</span>
+                    <span class="value" id="current-symbol">BTC/USDT</span>
                 </div>
                 <div class="price-box">
-                    <div class="label">Price</div>
-                    <div class="value" id="current-price">$--</div>
+                    <span class="label">PRC:</span>
+                    <span class="value" id="current-price">$--</span>
                 </div>
                 <div class="price-box">
-                    <div class="label">24h Change</div>
-                    <div class="value">
+                    <span class="label">24H:</span>
+                    <span class="value">
                         <span id="price-change" class="price-change">--</span>
                         <span id="price-change-percent">(--%)</span>
-                    </div>
+                    </span>
                 </div>
                 <div class="price-box">
-                    <div class="label">Signal</div>
-                    <div class="value" id="signal-strength">--/100</div>
+                    <span class="label">SIG:</span>
+                    <span class="value" id="signal-strength">--/100</span>
                 </div>
             </div>
         </div>
@@ -321,7 +338,7 @@
         <div class="main-grid">
             <!-- Left Panel: Controls -->
             <div class="panel">
-                <h2 class="panel-title">⚙️ Settings</h2>
+                <h2 class="panel-title">[SETTINGS]</h2>
                 
                 <div class="control-group">
                     <label>Pair</label>
@@ -393,14 +410,14 @@
                     </select>
                 </div>
                 
-                <button onclick="loadAllData()">🔄 LOAD DATA</button>
-                <button onclick="backtest()" style="background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%); margin-top: 8px;">
-                    📊 BACKTEST
+                <button onclick="loadAllData()">[LOAD_DATA]</button>
+                <button onclick="backtest()" style="background: #000; color: #ffff00; border-color: #ffff00; margin-top: 6px;">
+                    [BACKTEST]
                 </button>
                 
                 <!-- Confirmation List -->
                 <div class="confirmation-list">
-                    <h3>✅ Confirmations</h3>
+                    <h3>[CONFIRMATIONS]</h3>
                     <div id="confirmation-list"></div>
                 </div>
             </div>
@@ -409,7 +426,7 @@
             <div>
                 <!-- Price Chart -->
                 <div class="panel">
-                    <h2 class="panel-title">📈 Price + EMA</h2>
+                    <h2 class="panel-title">[PRICE_CHART]</h2>
                     <div class="chart-container">
                         <canvas id="priceChart"></canvas>
                     </div>
@@ -417,7 +434,7 @@
                 
                 <!-- Indicators Chart -->
                 <div class="panel">
-                    <h2 class="panel-title">📊 Indicators</h2>
+                    <h2 class="panel-title">[INDICATORS]</h2>
                     <div class="chart-container">
                         <canvas id="indicatorChart"></canvas>
                     </div>
@@ -426,84 +443,83 @@
 
             <!-- Right Panel: Signals -->
             <div class="panel">
-                <h2 class="panel-title">🎯 Trading Signal</h2>
+                <h2 class="panel-title">[SIGNAL]</h2>
                 
                 <div class="signal-container">
                     <div class="signal-box" id="stoch-signal">
-                        <h3>Stochastic</h3>
+                        <h3>STOCH</h3>
                         <div class="value" id="stoch-value">--</div>
-                        <div class="status" id="stoch-status">Loading...</div>
+                        <div class="status" id="stoch-status">LOAD...</div>
                     </div>
                     <div class="signal-box" id="rsi-signal">
                         <h3>RSI</h3>
                         <div class="value" id="rsi-value">--</div>
-                        <div class="status" id="rsi-status">Loading...</div>
+                        <div class="status" id="rsi-status">LOAD...</div>
                     </div>
                     <div class="signal-box" id="trend-signal">
-                        <h3>Trend</h3>
+                        <h3>TREND</h3>
                         <div class="value" id="trend-value">--</div>
-                        <div class="status" id="trend-status">Loading...</div>
+                        <div class="status" id="trend-status">LOAD...</div>
                     </div>
                 </div>
                 
                 <!-- Master Signal -->
-                <div class="signal-box" id="master-signal" style="margin-top: 15px;">
-                    <h2 style="font-size: 1.1em; margin-bottom: 8px;">MASTER SIGNAL</h2>
-                    <div class="value" id="master-action" style="font-size: 1.8em;">ANALYZING</div>
-                    <div class="status" id="master-reason" style="margin-top: 6px;">Calculating...</div>
-                    <div style="margin-top: 12px; font-size: 0.85em; color: var(--text-muted);">
-                        Win Rate: <span id="win-rate">--%</span> | Confidence: <span id="confidence">--%</span>
+                <div class="signal-box" id="master-signal" style="margin-top: 10px;">
+                    <h2 style="font-size: 1em; margin-bottom: 6px; font-weight: 400;">[MASTER_SIGNAL]</h2>
+                    <div class="value" id="master-action" style="font-size: 1.6em;">ANALYZING...</div>
+                    <div class="status" id="master-reason" style="margin-top: 4px;">CALC...</div>
+                    <div style="margin-top: 10px; font-size: 0.8em; color: var(--text-muted);">
+                        WIN: <span id="win-rate">--%</span> | CONF: <span id="confidence">--%</span>
                     </div>
                 </div>
                 
                 <!-- Trade Details -->
                 <div class="trade-details">
-                    <h3>📝 Trade Plan</h3>
-                    <div style="background: rgba(37, 99, 235, 0.1); padding: 8px; border-radius: 4px; margin-bottom: 10px; border-left: 3px solid var(--primary);">
-                        <div style="font-size: 0.75em; color: var(--text-muted); margin-bottom: 4px;">POSITION SIZE</div>
-                        <div style="font-size: 1.2em; font-weight: 700; color: var(--primary);">
+                    <h3>[TRADE_PLAN]</h3>
+                    <div class="position-size-box">
+                        <div class="label">POSITION_SIZE</div>
+                        <div class="value">
                             <span id="position-size">--</span> USDT
                         </div>
-                        <div style="font-size: 0.75em; color: var(--text-muted); margin-top: 2px;">
-                            <span id="position-percent">--%</span> of capital @ <span id="position-leverage">--</span>x
+                        <div class="meta">
+                            <span id="position-percent">--%</span> @ <span id="position-leverage">--</span>x LEV
                         </div>
                     </div>
                     <div>
-                        <span>Entry:</span>
+                        <span>ENTRY:</span>
                         <span id="entry-price">--</span>
                     </div>
                     <div>
-                        <span>Target 1:</span>
+                        <span>TGT_1:</span>
                         <span id="target-1">--</span>
                     </div>
                     <div>
-                        <span>Target 2:</span>
+                        <span>TGT_2:</span>
                         <span id="target-2">--</span>
                     </div>
                     <div>
-                        <span>Stop Loss:</span>
-                        <span id="stop-loss">--</span>
+                        <span>STOP:</span>
+                        <span id="stop-loss" style="color: var(--danger);">--</span>
                     </div>
-                    <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #374151;">
-                        <span>Risk Amount:</span>
+                    <div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border);">
+                        <span>RISK:</span>
                         <span id="risk-amount" style="color: var(--danger);">--</span>
                     </div>
                     <div>
-                        <span>Potential Profit:</span>
+                        <span>PROFIT:</span>
                         <span id="potential-profit" style="color: var(--success);">--</span>
                     </div>
                     <div>
-                        <span>Risk/Reward:</span>
-                        <span id="risk-reward">--</span>
+                        <span>R/R:</span>
+                        <span id="risk-reward" style="color: var(--warning);">--</span>
                     </div>
                 </div>
                 
                 <!-- Risk Warning -->
                 <div class="risk-info">
-                    <strong>⚠️ WARNING:</strong> High win rate ≠ no losses. Always use stop loss. 
-                    Max 2% risk per trade.
-                    <div id="leverage-warning" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.2); display: none;">
-                        <strong>🚨 EXTREME LEVERAGE ALERT!</strong><br>
+                    <strong>[WARNING]</strong> HIGH_WIN_RATE != NO_LOSSES. USE_STOP_LOSS. MAX_2%_RISK.
+                    <div id="leverage-warning" style="margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(255,0,0,0.3); display: none;">
+                        <strong>[EXTREME_LEV]</strong><br>
                         <span id="leverage-warning-text"></span>
                     </div>
                 </div>
@@ -792,19 +808,19 @@
             let confidence = 50;
             
             if (buyPoints > sellPoints + 5) {
-                masterAction = 'STRONG BUY 🚀';
+                masterAction = '[STRONG_BUY]';
                 masterReason = `Multiple confirmations (${buyPoints.toFixed(0)} pts)`;
                 confidence = Math.min(95, 50 + (buyPoints - sellPoints) * 3);
             } else if (sellPoints > buyPoints + 5) {
-                masterAction = 'STRONG SELL 💥';
+                masterAction = '[STRONG_SELL]';
                 masterReason = `Multiple confirmations (${sellPoints.toFixed(0)} pts)`;
                 confidence = Math.min(95, 50 + (sellPoints - buyPoints) * 3);
             } else if (buyPoints > sellPoints) {
-                masterAction = 'WEAK BUY 📈';
+                masterAction = '[WEAK_BUY]';
                 masterReason = 'Light bullish bias';
                 confidence = 60;
             } else if (sellPoints > buyPoints) {
-                masterAction = 'WEAK SELL 📉';
+                masterAction = '[WEAK_SELL]';
                 masterReason = 'Light bearish bias';
                 confidence = 60;
             }
@@ -886,7 +902,7 @@
             document.getElementById('rsi-value').textContent = signals.rsi.value.toFixed(1);
             document.getElementById('rsi-status').textContent = signals.rsi.signal.replace('_', ' ').toUpperCase();
             
-            document.getElementById('trend-value').textContent = signals.trend.signal.includes('bull') ? '↗️' : '↘️';
+            document.getElementById('trend-value').textContent = signals.trend.signal.includes('bull') ? '/\\' : '\\/';
             document.getElementById('trend-status').textContent = signals.trend.signal.replace('_', ' ').toUpperCase();
             
             const masterBox = document.getElementById('master-signal');
@@ -943,7 +959,7 @@
                 const div = document.createElement('div');
                 div.className = `confirmation-item ${conf.valid ? 'valid' : 'invalid'}`;
                 div.innerHTML = `
-                    <span class="confirmation-icon">${conf.valid ? '✅' : '❌'}</span>
+                    <span class="confirmation-icon">${conf.valid ? '[+]' : '[-]'}</span>
                     <span>${conf.text}</span>
                 `;
                 confList.appendChild(div);
@@ -972,19 +988,20 @@
                         {
                             label: 'Price',
                             data: priceData.slice(-50).map(d => d.close),
-                            borderColor: '#60a5fa',
-                            backgroundColor: 'rgba(96, 165, 250, 0.15)',
-                            borderWidth: 2.5,
+                            borderColor: '#00ff00',
+                            backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                            borderWidth: 2,
                             fill: true,
-                            tension: 0.4, // SMOOTH CURVE
+                            tension: 0.4,
                             pointRadius: 0,
-                            pointHoverRadius: 4
+                            pointHoverRadius: 4,
+                            pointHoverBackgroundColor: '#00ff00'
                         },
                         {
                             label: 'EMA 20',
                             data: ema20.slice(-50),
-                            borderColor: '#10b981',
-                            borderWidth: 2,
+                            borderColor: '#00aaaa',
+                            borderWidth: 1.5,
                             borderDash: [5, 5],
                             tension: 0.4,
                             pointRadius: 0
@@ -992,8 +1009,8 @@
                         {
                             label: 'EMA 50',
                             data: ema50.slice(-50),
-                            borderColor: '#f59e0b',
-                            borderWidth: 2,
+                            borderColor: '#ffff00',
+                            borderWidth: 1.5,
                             tension: 0.4,
                             pointRadius: 0
                         }
@@ -1014,19 +1031,19 @@
                         legend: { 
                             position: 'top',
                             labels: {
-                                color: '#f3f4f6',
-                                font: { size: 11 }
+                                color: '#00ff00',
+                                font: { size: 10, family: 'Courier New' }
                             }
                         }
                     },
                     scales: {
                         x: {
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: '#9ca3af', font: { size: 10 } }
+                            grid: { color: 'rgba(0, 255, 0, 0.1)' },
+                            ticks: { color: '#00aa00', font: { size: 9, family: 'Courier New' } }
                         },
                         y: {
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: '#9ca3af', font: { size: 10 } }
+                            grid: { color: 'rgba(0, 255, 0, 0.1)' },
+                            ticks: { color: '#00aa00', font: { size: 9, family: 'Courier New' } }
                         }
                     }
                 }
@@ -1042,29 +1059,32 @@
                         {
                             label: '%K',
                             data: stoch.k,
-                            borderColor: '#60a5fa',
-                            borderWidth: 2.5,
+                            borderColor: '#00ff00',
+                            borderWidth: 2,
                             tension: 0.4,
                             pointRadius: 0,
-                            pointHoverRadius: 4
+                            pointHoverRadius: 4,
+                            pointHoverBackgroundColor: '#00ff00'
                         },
                         {
                             label: '%D',
                             data: stoch.d,
-                            borderColor: '#f472b6',
-                            borderWidth: 2.5,
+                            borderColor: '#ff00ff',
+                            borderWidth: 2,
                             tension: 0.4,
                             pointRadius: 0,
-                            pointHoverRadius: 4
+                            pointHoverRadius: 4,
+                            pointHoverBackgroundColor: '#ff00ff'
                         },
                         {
                             label: 'RSI',
                             data: rsi.slice(-stoch.k.length),
-                            borderColor: '#34d399',
-                            borderWidth: 2.5,
+                            borderColor: '#00aaaa',
+                            borderWidth: 2,
                             tension: 0.4,
                             pointRadius: 0,
                             pointHoverRadius: 4,
+                            pointHoverBackgroundColor: '#00aaaa',
                             yAxisID: 'y1'
                         }
                     ]
@@ -1084,29 +1104,29 @@
                         legend: {
                             position: 'top',
                             labels: {
-                                color: '#f3f4f6',
-                                font: { size: 11 }
+                                color: '#00ff00',
+                                font: { size: 10, family: 'Courier New' }
                             }
                         }
                     },
                     scales: {
                         x: {
-                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                            ticks: { color: '#9ca3af', font: { size: 10 } }
+                            grid: { color: 'rgba(0, 255, 0, 0.1)' },
+                            ticks: { color: '#00aa00', font: { size: 9, family: 'Courier New' } }
                         },
                         y: {
                             min: 0,
                             max: 100,
                             grid: {
                                 color: ctx => {
-                                    if (ctx.tick.value === 20) return 'rgba(16, 185, 129, 0.4)';
-                                    if (ctx.tick.value === 80) return 'rgba(239, 68, 68, 0.4)';
-                                    return 'rgba(255, 255, 255, 0.05)';
+                                    if (ctx.tick.value === 20) return 'rgba(0, 255, 0, 0.3)';
+                                    if (ctx.tick.value === 80) return 'rgba(255, 0, 0, 0.3)';
+                                    return 'rgba(0, 255, 0, 0.1)';
                                 }
                             },
                             ticks: {
-                                color: '#9ca3af',
-                                font: { size: 10 },
+                                color: '#00aa00',
+                                font: { size: 9, family: 'Courier New' },
                                 callback: value => {
                                     if (value === 20) return 'OS';
                                     if (value === 80) return 'OB';
@@ -1119,7 +1139,7 @@
                             min: 0,
                             max: 100,
                             grid: { drawOnChartArea: false },
-                            ticks: { color: '#9ca3af', font: { size: 10 } }
+                            ticks: { color: '#00aa00', font: { size: 9, family: 'Courier New' } }
                         }
                     }
                 }
