@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Trading System</title>
+    <title>Trading System</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         :root {
@@ -306,7 +306,7 @@
         <div class="header-content">
             <div class="live-status">
                 <div class="live-dot"></div>
-                <h1>> SIMPLE_TRADING_SYSTEM</h1>
+                <h1>> SIMPLE_TRADE</h1>
                 <span id="last-update" style="margin-left: auto; color: var(--text-muted); font-size: 0.75em;"></span>
             </div>
             
@@ -413,6 +413,9 @@
                 <button onclick="loadAllData()">[LOAD_DATA]</button>
                 <button onclick="backtest()" style="background: #000; color: #ffff00; border-color: #ffff00; margin-top: 6px;">
                     [BACKTEST]
+                </button>
+                <button id="sound-toggle" onclick="toggleSound()" style="background: #000; color: #00ff00; border-color: #00ff00; margin-top: 6px;">
+                    [SOUND:ON]
                 </button>
                 
                 <!-- Confirmation List -->
@@ -533,6 +536,82 @@
         let currentData = [];
         let backtestResults = [];
         let lastSignal = null;
+        
+        // Audio Context for SFX
+        let audioContext = null;
+        let isSoundEnabled = true;
+
+        // =================== SOUND EFFECTS ===================
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playBeep(frequency, duration, type = 'sine') {
+            if (!isSoundEnabled) return;
+            
+            initAudio();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.value = frequency;
+            oscillator.type = type;
+            
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        function playSignalSound(signalType) {
+            if (!isSoundEnabled) return;
+            
+            switch(signalType) {
+                case 'STRONG_BUY':
+                    // Triple beep ascending
+                    playBeep(800, 0.1, 'square');
+                    setTimeout(() => playBeep(1000, 0.1, 'square'), 100);
+                    setTimeout(() => playBeep(1200, 0.15, 'square'), 200);
+                    break;
+                    
+                case 'STRONG_SELL':
+                    // Triple beep descending
+                    playBeep(1200, 0.1, 'square');
+                    setTimeout(() => playBeep(1000, 0.1, 'square'), 100);
+                    setTimeout(() => playBeep(800, 0.15, 'square'), 200);
+                    break;
+                    
+                case 'WEAK_BUY':
+                    // Double beep
+                    playBeep(900, 0.1, 'sine');
+                    setTimeout(() => playBeep(1100, 0.1, 'sine'), 120);
+                    break;
+                    
+                case 'WEAK_SELL':
+                    // Double beep descending
+                    playBeep(1100, 0.1, 'sine');
+                    setTimeout(() => playBeep(900, 0.1, 'sine'), 120);
+                    break;
+                    
+                case 'HOLD':
+                    // Single neutral beep
+                    playBeep(800, 0.08, 'triangle');
+                    break;
+            }
+        }
+
+        function toggleSound() {
+            isSoundEnabled = !isSoundEnabled;
+            const btn = document.getElementById('sound-toggle');
+            btn.textContent = isSoundEnabled ? '[SOUND:ON]' : '[SOUND:OFF]';
+            btn.style.borderColor = isSoundEnabled ? '#00ff00' : '#666666';
+            btn.style.color = isSoundEnabled ? '#00ff00' : '#666666';
+        }
 
         // =================== CORE FUNCTIONS ===================
         async function fetchBinanceData(symbol, interval, limit = 100) {
@@ -911,6 +990,12 @@
             
             masterActionEl.textContent = masterSignal.action;
             masterReasonEl.textContent = masterSignal.reason;
+            
+            // Play sound if signal changed
+            if (lastSignal && lastSignal.action !== masterSignal.action) {
+                const signalType = masterSignal.action.replace('[', '').replace(']', '');
+                playSignalSound(signalType);
+            }
             
             masterBox.className = 'signal-box';
             if (masterSignal.action.includes('STRONG BUY')) {
