@@ -493,8 +493,8 @@
                         <option value="5m">5 Menit</option>
                         <option value="15m">15 Menit</option>
                         <option value="30m">30 Menit</option>
-                        <option value="1h" selected>1 Jam</option>
-                        <option value="4h">4 Jam</option>
+                        <option value="1h">1 Jam</option>
+                        <option value="4h" selected>4 Jam</option>
                         <option value="1d">1 Hari</option>
                         <option value="1w">1 Minggu</option>
                     </select>
@@ -522,7 +522,7 @@
         </div>
 
         <div class="trade-signal">
-            <h2>🎯 REKOMENDASI TRADING</h2>
+            <h2>- DECISION -</h2>
             <div class="trade-action" id="trade-action">ANALYZING...</div>
             <div class="trade-reason" id="trade-reason">Menunggu data...</div>
         </div>
@@ -876,9 +876,9 @@
                             grid: {
                                 color: function(context) {
                                     if (context.tick.value === 20) return 'rgba(16, 185, 129, 1)';
-                                    if (context.tick.value === 50) return 'rgba(255, 255, 255, 1)';
+                                    if (context.tick.value === 50) return 'rgba(242, 238, 0, 0.8)';
                                     if (context.tick.value === 80) return 'rgba(239, 68, 68, 1)';
-                                    return 'rgba(51, 65, 85, 0.7)';
+                                    return 'rgba(245, 245, 220, 0.4)';
                                 }
                             }
                         },
