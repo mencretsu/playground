@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Binance Futures Simulator</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0b0e11;
+      --bg-secondary: #131722;
+      --bg-tertiary: #1e2329;
+      --border-color: #2b3139;
+      --text-primary: #eaecef;
+      --text-secondary: #848e9c;
+      --green: #0ecb81;
+      --red: #f6465d;
+      --yellow: #f0b90b;
+      --blue: #3861fb;
+      --neon-green: #00ff88;
+      --neon-red: #ff0055;
+    }
+
+    body {
+      font-family: 'Rajdhani', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      overflow-x: hidden;
+    }
+
+    #root {
+      min-height: 100vh;
+      padding-bottom: 20px;
+    }
+
+    .header {
+      background: var(--bg-secondary);
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(10px);
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--yellow);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .balance-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--yellow);
+      text-align: right;
+    }
+
+    .balance-label {
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      padding: 12px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    @media (min-width: 768px) {
+      .main-grid {
+        grid-template-columns: 1fr 380px;
+      }
+    }
+
+    .card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .coin-selector {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .coin-btn {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 12px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .coin-btn:hover {
+      background: var(--bg-primary);
+      border-color: var(--yellow);
+    }
+
+    .coin-btn.active {
+      background: linear-gradient(135deg, var(--yellow), #fcd535);
+      border-color: var(--yellow);
+      color: var(--bg-primary);
+      box-shadow: 0 0 20px rgba(240, 185, 11, 0.4);
+    }
+
+    .price-display {
+      background: var(--bg-tertiary);
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border-color);
+    }
+
+    .price-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .price-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 32px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      animation: pulse 0.5s ease;
+    }
+
+    .price-change {
+      font-size: 14px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .price-change.positive {
+      color: var(--green);
+    }
+
+    .price-change.negative {
+      color: var(--red);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+
+    .trade-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .form-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .input-wrapper {
+      position: relative;
+    }
+
+    .form-input {
+      width: 100%;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--yellow);
+      box-shadow: 0 0 0 3px rgba(240, 185, 11, 0.1);
+    }
+
+    .input-suffix {
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      color: var(--text-secondary);
+      font-family: 'Rajdhani', sans-serif;
+      font-weight: 600;
+    }
+
+    .leverage-selector {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+
+    .leverage-btn {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .leverage-btn:hover {
+      background: var(--bg-primary);
+    }
+
+    .leverage-btn.active {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: white;
+    }
+
+    .percentage-selector {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .percentage-btn {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      padding: 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .percentage-btn:hover {
+      background: var(--yellow);
+      border-color: var(--yellow);
+      color: var(--bg-primary);
+    }
+
+    .margin-mode-toggle {
+      display: flex;
+      gap: 8px;
+      background: var(--bg-tertiary);
+      padding: 4px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+    }
+
+    .margin-mode-btn {
+      flex: 1;
+      padding: 8px 12px;
+      background: transparent;
+      border: none;
+      color: var(--text-secondary);
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+    }
+
+    .margin-mode-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .margin-mode-btn.active {
+      background: var(--yellow);
+      color: var(--bg-primary);
+    }
+
+    .order-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    .order-btn {
+      padding: 16px;
+      border: none;
+      border-radius: 6px;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .order-btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.3);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .order-btn:active::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .order-btn.long {
+      background: linear-gradient(135deg, var(--green), #0db770);
+      color: white;
+      box-shadow: 0 4px 16px rgba(14, 203, 129, 0.3);
+    }
+
+    .order-btn.long:hover {
+      box-shadow: 0 6px 24px rgba(14, 203, 129, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .order-btn.short {
+      background: linear-gradient(135deg, var(--red), #e63950);
+      color: white;
+      box-shadow: 0 4px 16px rgba(246, 70, 93, 0.3);
+    }
+
+    .order-btn.short:hover {
+      box-shadow: 0 6px 24px rgba(246, 70, 93, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .positions-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .position-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 16px;
+      position: relative;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .position-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .position-symbol {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .position-side {
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .position-side.long {
+      background: rgba(14, 203, 129, 0.2);
+      color: var(--green);
+      border: 1px solid var(--green);
+    }
+
+    .position-side.short {
+      background: rgba(246, 70, 93, 0.2);
+      color: var(--red);
+      border: 1px solid var(--red);
+    }
+
+    .position-details {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    .liquidation-warning {
+      padding: 8px 12px;
+      background: rgba(246, 70, 93, 0.1);
+      border: 1px solid var(--red);
+      border-radius: 4px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .liquidation-warning-icon {
+      color: var(--red);
+      font-size: 16px;
+    }
+
+    .liquidation-warning-text {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .liquidation-warning-label {
+      font-size: 10px;
+      color: var(--red);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 600;
+    }
+
+    .liquidation-warning-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--red);
+    }
+
+    .position-detail {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .position-detail-label {
+      color: var(--text-secondary);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .position-detail-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .position-pnl {
+      padding: 12px;
+      background: var(--bg-primary);
+      border-radius: 4px;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .pnl-label {
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .pnl-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .pnl-value.positive {
+      color: var(--neon-green);
+      text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+    }
+
+    .pnl-value.negative {
+      color: var(--neon-red);
+      text-shadow: 0 0 10px rgba(255, 0, 85, 0.5);
+    }
+
+    .close-btn {
+      width: 100%;
+      padding: 10px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+    }
+
+    .close-btn:hover {
+      background: var(--red);
+      border-color: var(--red);
+      color: white;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-secondary);
+    }
+
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.3;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .stat-card {
+      background: var(--bg-tertiary);
+      padding: 16px;
+      border-radius: 6px;
+      border: 1px solid var(--border-color);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .reset-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      transition: all 0.2s;
+      margin-top: 16px;
+    }
+
+    .reset-btn:hover {
+      background: var(--yellow);
+      border-color: var(--yellow);
+      color: var(--bg-primary);
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const COINS = ['BTC', 'ETH', 'XRP', 'SOL', 'BNB', 'ADA', 'DOGE', 'MATIC'];
+    const LEVERAGES = [1, 5, 10, 25, 50, 100, 125];
+    const AMOUNT_PERCENTAGES = [25, 50, 75, 100];
+
+    function FuturesSimulator() {
+      const [selectedCoin, setSelectedCoin] = useState('BTC');
+      const [prices, setPrices] = useState({});
+      const [priceChanges, setPriceChanges] = useState({});
+      const [previousPrices, setPreviousPrices] = useState({});
+      const [balance, setBalance] = useState(10000);
+      const [leverage, setLeverage] = useState(10);
+      const [amount, setAmount] = useState('');
+      const [marginMode, setMarginMode] = useState('cross'); // 'cross' or 'isolated'
+      const [positions, setPositions] = useState([]);
+      const [totalPnL, setTotalPnL] = useState(0);
+      
+      const priceIntervalRef = useRef(null);
+
+      // Fetch real live prices from Binance API
+      const fetchPrices = async () => {
+        try {
+          const symbols = COINS.map(coin => `${coin}USDT`).join(',');
+          const response = await fetch(`https://api.binance.com/api/v3/ticker/price`);
+          const data = await response.json();
+          
+          const newPrices = {};
+          const newChanges = {};
+          
+          data.forEach(ticker => {
+            const symbol = ticker.symbol.replace('USDT', '');
+            if (COINS.includes(symbol)) {
+              const price = parseFloat(ticker.price);
+              newPrices[symbol] = price;
+              
+              // Calculate 24h change
+              if (previousPrices[symbol]) {
+                const change = ((price - previousPrices[symbol]) / previousPrices[symbol]) * 100;
+                newChanges[symbol] = change;
+              }
+            }
+          });
+          
+          setPreviousPrices(prev => ({...prev, ...newPrices}));
+          setPrices(newPrices);
+          
+          // Fetch 24h ticker for accurate price changes
+          const ticker24h = await fetch(`https://api.binance.com/api/v3/ticker/24hr`);
+          const data24h = await ticker24h.json();
+          
+          const changes24h = {};
+          data24h.forEach(ticker => {
+            const symbol = ticker.symbol.replace('USDT', '');
+            if (COINS.includes(symbol)) {
+              changes24h[symbol] = parseFloat(ticker.priceChangePercent);
+            }
+          });
+          
+          setPriceChanges(changes24h);
+        } catch (error) {
+          console.error('Error fetching prices:', error);
+        }
+      };
+
+      // Initial fetch and set interval for live updates
+      useEffect(() => {
+        fetchPrices(); // Fetch immediately
+        
+        priceIntervalRef.current = setInterval(() => {
+          fetchPrices();
+        }, 3000); // Update every 3 seconds
+
+        return () => clearInterval(priceIntervalRef.current);
+      }, []);
+
+      // Update positions P&L
+      useEffect(() => {
+        let total = 0;
+        const updatedPositions = positions.map(pos => {
+          const currentPrice = prices[pos.symbol];
+          let pnl;
+          
+          if (pos.side === 'LONG') {
+            pnl = ((currentPrice - pos.entryPrice) / pos.entryPrice) * pos.amount * pos.leverage;
+          } else {
+            pnl = ((pos.entryPrice - currentPrice) / pos.entryPrice) * pos.amount * pos.leverage;
+          }
+          
+          total += pnl;
+          return { ...pos, pnl, currentPrice };
+        });
+        
+        setPositions(updatedPositions);
+        setTotalPnL(total);
+      }, [prices]);
+
+      const setAmountByPercentage = (percentage) => {
+        const calculatedAmount = (balance * percentage / 100).toFixed(2);
+        setAmount(calculatedAmount);
+      };
+
+      const calculateLiquidationPrice = (entryPrice, side, leverage) => {
+        // Simplified liquidation calculation
+        // For LONG: Liq Price = Entry Price * (1 - 1/leverage * 0.9)
+        // For SHORT: Liq Price = Entry Price * (1 + 1/leverage * 0.9)
+        const maintenanceMarginRate = 0.004; // 0.4% for most pairs
+        const liquidationBuffer = 1 / leverage;
+        
+        if (side === 'LONG') {
+          return entryPrice * (1 - liquidationBuffer * 0.9);
+        } else {
+          return entryPrice * (1 + liquidationBuffer * 0.9);
+        }
+      };
+
+      const openPosition = (side) => {
+        const amountNum = parseFloat(amount);
+        if (!amountNum || amountNum <= 0 || amountNum > balance) {
+          alert('Invalid amount!');
+          return;
+        }
+
+        const currentPrice = prices[selectedCoin];
+        if (!currentPrice) {
+          alert('Price not available yet. Please wait...');
+          return;
+        }
+
+        const liquidationPrice = calculateLiquidationPrice(currentPrice, side, leverage);
+
+        const newPosition = {
+          id: Date.now(),
+          symbol: selectedCoin,
+          side,
+          entryPrice: currentPrice,
+          currentPrice: currentPrice,
+          amount: amountNum,
+          leverage,
+          marginMode,
+          liquidationPrice,
+          pnl: 0,
+          timestamp: new Date().toLocaleTimeString()
+        };
+
+        setPositions([...positions, newPosition]);
+        setBalance(balance - amountNum);
+        setAmount('');
+      };
+
+      const closePosition = (id) => {
+        const position = positions.find(p => p.id === id);
+        if (position) {
+          setBalance(balance + position.amount + position.pnl);
+          setPositions(positions.filter(p => p.id !== id));
+        }
+      };
+
+      const resetSimulator = () => {
+        if (confirm('Reset simulator? All positions will be closed.')) {
+          setBalance(10000);
+          setPositions([]);
+          setTotalPnL(0);
+          setAmount('');
+          setLeverage(10);
+        }
+      };
+
+      const currentPrice = prices[selectedCoin];
+      const priceChange = priceChanges[selectedCoin] || 0;
+      const isPriceLoaded = Object.keys(prices).length > 0;
+
+      return (
+        <>
+          <div className="header">
+            <div className="logo">
+              ⚡ Binance Futures Demo
+              {isPriceLoaded && (
+                <span style={{
+                  marginLeft: '8px',
+                  fontSize: '10px',
+                  padding: '3px 8px',
+                  background: 'var(--green)',
+                  borderRadius: '3px',
+                  color: 'var(--bg-primary)',
+                  fontWeight: '700',
+                  animation: 'pulse 2s infinite'
+                }}>
+                  LIVE
+                </span>
+              )}
+            </div>
+            <div className="balance-display">
+              <div className="balance-label">Available Balance</div>
+              <div>${balance.toFixed(2)} USDT</div>
+            </div>
+          </div>
+
+          <div className="main-grid">
+            <div>
+              <div className="card">
+                <div className="card-title">Market</div>
+                
+                <div className="coin-selector">
+                  {COINS.map(coin => (
+                    <button
+                      key={coin}
+                      className={`coin-btn ${selectedCoin === coin ? 'active' : ''}`}
+                      onClick={() => setSelectedCoin(coin)}
+                    >
+                      {coin}/USDT
+                    </button>
+                  ))}
+                </div>
+
+                <div className="price-display">
+                  <div className="price-label">{selectedCoin}/USDT Perpetual</div>
+                  <div className="price-value">
+                    {prices[selectedCoin] ? 
+                      `$${prices[selectedCoin].toFixed(selectedCoin === 'BTC' || selectedCoin === 'ETH' ? 2 : selectedCoin === 'BNB' || selectedCoin === 'SOL' ? 2 : 4)}` 
+                      : 'Loading...'}
+                  </div>
+                  <div className={`price-change ${priceChange >= 0 ? 'positive' : 'negative'}`}>
+                    {priceChange >= 0 ? '▲' : '▼'} {Math.abs(priceChange).toFixed(2)}%
+                  </div>
+                </div>
+
+                <div className="stats-grid">
+                  <div className="stat-card">
+                    <div className="stat-label">Open Positions</div>
+                    <div className="stat-value">{positions.length}</div>
+                  </div>
+                  <div className="stat-card">
+                    <div className="stat-label">Total P&L</div>
+                    <div className="stat-value" style={{
+                      color: totalPnL >= 0 ? 'var(--neon-green)' : 'var(--neon-red)'
+                    }}>
+                      ${totalPnL.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+
+                <button className="reset-btn" onClick={resetSimulator}>
+                  🔄 Reset Simulator
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="card">
+                <div className="card-title">Place Order</div>
+                
+                <div className="trade-form">
+                  <div className="form-group">
+                    <label className="form-label">Margin Mode</label>
+                    <div className="margin-mode-toggle">
+                      <button
+                        className={`margin-mode-btn ${marginMode === 'cross' ? 'active' : ''}`}
+                        onClick={() => setMarginMode('cross')}
+                      >
+                        Cross
+                      </button>
+                      <button
+                        className={`margin-mode-btn ${marginMode === 'isolated' ? 'active' : ''}`}
+                        onClick={() => setMarginMode('isolated')}
+                      >
+                        Isolated
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Leverage</label>
+                    <div className="leverage-selector">
+                      {LEVERAGES.map(lev => (
+                        <button
+                          key={lev}
+                          className={`leverage-btn ${leverage === lev ? 'active' : ''}`}
+                          onClick={() => setLeverage(lev)}
+                        >
+                          {lev}x
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Amount (USDT)</label>
+                    <div className="input-wrapper">
+                      <input
+                        type="number"
+                        className="form-input"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder="0.00"
+                        step="0.01"
+                      />
+                      <span className="input-suffix">USDT</span>
+                    </div>
+                    <div className="percentage-selector">
+                      {AMOUNT_PERCENTAGES.map(pct => (
+                        <button
+                          key={pct}
+                          className="percentage-btn"
+                          onClick={() => setAmountByPercentage(pct)}
+                        >
+                          {pct}%
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="order-buttons">
+                    <button className="order-btn long" onClick={() => openPosition('LONG')}>
+                      Long
+                    </button>
+                    <button className="order-btn short" onClick={() => openPosition('SHORT')}>
+                      Short
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="card">
+                <div className="card-title">Open Positions ({positions.length})</div>
+                
+                {positions.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-icon">📊</div>
+                    <div>No open positions</div>
+                  </div>
+                ) : (
+                  <div className="positions-list">
+                    {positions.map(position => {
+                      const isNearLiquidation = position.side === 'LONG' 
+                        ? position.currentPrice <= position.liquidationPrice * 1.05
+                        : position.currentPrice >= position.liquidationPrice * 0.95;
+                      
+                      return (
+                        <div key={position.id} className="position-card">
+                          <div className="position-header">
+                            <span className="position-symbol">{position.symbol}/USDT</span>
+                            <span className={`position-side ${position.side.toLowerCase()}`}>
+                              {position.side} {position.leverage}x
+                            </span>
+                          </div>
+
+                          <div style={{
+                            fontSize: '10px',
+                            color: 'var(--text-secondary)',
+                            marginBottom: '8px',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            fontWeight: '600'
+                          }}>
+                            {position.marginMode} Margin
+                          </div>
+
+                          {isNearLiquidation && (
+                            <div className="liquidation-warning">
+                              <span className="liquidation-warning-icon">⚠️</span>
+                              <div className="liquidation-warning-text">
+                                <span className="liquidation-warning-label">Liquidation Price</span>
+                                <span className="liquidation-warning-value">
+                                  ${position.liquidationPrice.toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="position-details">
+                            <div className="position-detail">
+                              <span className="position-detail-label">Entry</span>
+                              <span className="position-detail-value">
+                                ${position.entryPrice.toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="position-detail">
+                              <span className="position-detail-label">Current</span>
+                              <span className="position-detail-value">
+                                ${position.currentPrice.toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="position-detail">
+                              <span className="position-detail-label">Amount</span>
+                              <span className="position-detail-value">
+                                ${position.amount.toFixed(2)}
+                              </span>
+                            </div>
+                            <div className="position-detail">
+                              <span className="position-detail-label">Liq. Price</span>
+                              <span className="position-detail-value" style={{
+                                color: isNearLiquidation ? 'var(--red)' : 'var(--text-primary)'
+                              }}>
+                                ${position.liquidationPrice.toFixed(2)}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="position-pnl">
+                            <div className="pnl-label">Unrealized P&L</div>
+                            <div className={`pnl-value ${position.pnl >= 0 ? 'positive' : 'negative'}`}>
+                              {position.pnl >= 0 ? '+' : ''}${position.pnl.toFixed(2)}
+                            </div>
+                          </div>
+
+                          <button className="close-btn" onClick={() => closePosition(position.id)}>
+                            Close Position
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </>
+      );
+    }
+
+    ReactDOM.render(<FuturesSimulator />, document.getElementById('root'));
+  </script>
+</body>
+</html>
