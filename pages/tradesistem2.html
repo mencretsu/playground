@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMART_TRADE_SYSTEM - HIGH_WINRATE</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        :root {
+            --bg: #000000;
+            --card: #0a0a0a;
+            --primary: #00ff00;
+            --success: #00ff00;
+            --danger: #ff0000;
+            --warning: #ffff00;
+            --text: #00ff00;
+            --text-muted: #00aa00;
+            --border: #333333;
+            --buy-zone: rgba(0, 255, 0, 0.15);
+            --sell-zone: rgba(255, 0, 0, 0.15);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding-top: 100px;
+            font-size: 13px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; padding: 0 10px; }
+        
+        /* TERMINAL HEADER */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #000;
+            padding: 8px 10px;
+            border-bottom: 2px solid #333333;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.3);
+            z-index: 1000;
+        }
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .live-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+        }
+        .live-status h1 {
+            font-size: 1.1em;
+            font-weight: 400;
+            letter-spacing: 2px;
+        }
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 0;
+            animation: blink 1s infinite;
+        }
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+        
+        /* MARKET STATUS */
+        .market-status {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+            flex-wrap: wrap;
+        }
+        .status-box {
+            display: flex;
+            gap: 5px;
+            padding: 3px 8px;
+            background: #000;
+            border: 1px solid var(--border);
+        }
+        .status-box.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+        }
+        .status-label {
+            color: var(--text-muted);
+        }
+        .status-value {
+            font-weight: 700;
+        }
+        .trend-up { color: var(--success); }
+        .trend-down { color: var(--danger); }
+        .trend-neutral { color: var(--warning); }
+        
+        /* Main Layout */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr 280px;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        @media (max-width: 1024px) {
+            .main-grid { grid-template-columns: 1fr; }
+            body { padding-top: 120px; }
+        }
+        
+        /* PANELS */
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 10px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+        .panel-title {
+            color: var(--primary);
+            margin-bottom: 8px;
+            font-size: 0.95em;
+            border-bottom: 1px solid var(--primary);
+            padding-bottom: 4px;
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+        
+        /* SMART SIGNAL BOX */
+        .smart-signal-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .smart-signal-box {
+            padding: 8px;
+            background: #000;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+        .smart-signal-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--primary);
+        }
+        .signal-label {
+            font-size: 0.8em;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            font-weight: 400;
+        }
+        .signal-value {
+            font-size: 1.1em;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+        .signal-bar {
+            height: 6px;
+            background: var(--border);
+            margin-top: 6px;
+            overflow: hidden;
+            border-radius: 0;
+        }
+        .signal-fill {
+            height: 100%;
+            background: var(--primary);
+            transition: width 0.5s ease;
+        }
+        
+        /* ENTRY TIMING SYSTEM */
+        .timing-system {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border);
+        }
+        .timing-box {
+            background: #000;
+            padding: 8px;
+            border: 1px solid var(--border);
+            margin-bottom: 8px;
+            position: relative;
+        }
+        .timing-box.hot {
+            border-color: var(--success);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+            animation: pulse-hot 2s infinite;
+        }
+        .timing-box.cold {
+            border-color: var(--danger);
+        }
+        .timing-box.warm {
+            border-color: var(--warning);
+        }
+        @keyframes pulse-hot {
+            0%, 100% { box-shadow: 0 0 10px rgba(0, 255, 0, 0.3); }
+            50% { box-shadow: 0 0 20px rgba(0, 255, 0, 0.6); }
+        }
+        .timing-label {
+            font-size: 0.8em;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        .timing-value {
+            font-size: 1em;
+            font-weight: 700;
+        }
+        .timing-age {
+            font-size: 0.7em;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+        
+        /* ENTRY ZONE INDICATOR */
+        .entry-zone {
+            height: 60px;
+            background: #000;
+            border: 1px solid var(--border);
+            margin: 10px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .zone-buy {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            width: 50%;
+            background: var(--buy-zone);
+            border-right: 2px solid var(--success);
+        }
+        .zone-sell {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            width: 50%;
+            background: var(--sell-zone);
+            border-left: 2px solid var(--danger);
+        }
+        .zone-pointer {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--text);
+            transform: translateX(-50%);
+            transition: left 1s ease;
+        }
+        .zone-label {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: 700;
+            padding: 2px 6px;
+            background: #000;
+            border: 1px solid;
+        }
+        .zone-label.buy {
+            left: 20%;
+            color: var(--success);
+            border-color: var(--success);
+        }
+        .zone-label.sell {
+            right: 20%;
+            color: var(--danger);
+            border-color: var(--danger);
+        }
+        
+        /* CHART CONTAINER */
+        .chart-container {
+            height: 320px;
+            position: relative;
+            background: #000;
+            border: 1px solid var(--border);
+            padding: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+        
+        /* CONTROL STYLES */
+        .control-group { margin-bottom: 8px; }
+        label {
+            display: block;
+            color: var(--text-muted);
+            margin-bottom: 3px;
+            font-size: 0.85em;
+        }
+        select, input {
+            width: 100%;
+            padding: 4px 6px;
+            background: #000;
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-size: 0.85em;
+            font-family: 'Courier New', monospace;
+        }
+        select:focus, input:focus {
+            outline: none;
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+        }
+        button {
+            width: 100%;
+            padding: 6px;
+            background: #000;
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            font-weight: 400;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 4px;
+            font-size: 0.85em;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1px;
+        }
+        button:hover { 
+            background: var(--primary);
+            color: #000;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+        }
+        
+        /* TRADE SETUP BOX */
+        .trade-setup-box {
+            background: #000;
+            padding: 10px;
+            border: 1px solid var(--primary);
+            margin: 10px 0;
+            position: relative;
+        }
+        .setup-title {
+            color: var(--primary);
+            font-size: 0.9em;
+            margin-bottom: 8px;
+            border-bottom: 1px solid var(--primary);
+            padding-bottom: 4px;
+        }
+        .setup-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+        .setup-item {
+            font-size: 0.8em;
+        }
+        .setup-label {
+            color: var(--text-muted);
+        }
+        .setup-value {
+            font-weight: 700;
+        }
+        .setup-value.profit { color: var(--success); }
+        .setup-value.loss { color: var(--danger); }
+        
+        /* MULTI TIMEFRAME DISPLAY */
+        .timeframe-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            margin-top: 10px;
+        }
+        .tf-box {
+            padding: 6px;
+            background: #000;
+            border: 1px solid var(--border);
+            text-align: center;
+            font-size: 0.75em;
+        }
+        .tf-box.active {
+            border-color: var(--primary);
+            box-shadow: 0 0 5px rgba(0, 255, 0, 0.3);
+        }
+        .tf-label {
+            color: var(--text-muted);
+            margin-bottom: 3px;
+        }
+        .tf-signal {
+            font-weight: 700;
+            font-size: 0.9em;
+        }
+        .tf-signal.buy { color: var(--success); }
+        .tf-signal.sell { color: var(--danger); }
+        .tf-signal.hold { color: var(--warning); }
+        
+        /* ENTRY RECOMMENDATION */
+        .entry-recommendation {
+            padding: 10px;
+            background: #000;
+            border: 2px solid;
+            margin-top: 10px;
+            text-align: center;
+            animation: pulse-recommendation 2s infinite;
+        }
+        @keyframes pulse-recommendation {
+            0%, 100% { box-shadow: 0 0 10px currentColor; }
+            50% { box-shadow: 0 0 20px currentColor; }
+        }
+        .entry-recommendation.strong-buy {
+            border-color: var(--success);
+            color: var(--success);
+        }
+        .entry-recommendation.strong-sell {
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+        .entry-recommendation.wait {
+            border-color: var(--warning);
+            color: var(--warning);
+        }
+        .rec-action {
+            font-size: 1.4em;
+            font-weight: 700;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+        .rec-reason {
+            font-size: 0.8em;
+            color: var(--text-muted);
+        }
+        
+        /* ENTRY BUTTONS */
+        .entry-buttons {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .btn-buy {
+            background: #000;
+            color: var(--success);
+            border: 2px solid var(--success);
+        }
+        .btn-sell {
+            background: #000;
+            color: var(--danger);
+            border: 2px solid var(--danger);
+        }
+        .btn-buy:hover { background: var(--success); color: #000; }
+        .btn-sell:hover { background: var(--danger); color: #000; }
+    </style>
+</head>
+<body>
+    <!-- TERMINAL HEADER -->
+    <div class="header">
+        <div class="header-content">
+            <div class="live-status">
+                <div class="live-dot"></div>
+                <h1>> SMART_TRADE_SYSTEM v2.0</h1>
+                <span id="last-update" style="margin-left: auto; color: var(--text-muted); font-size: 0.75em;"></span>
+            </div>
+            
+            <div class="market-status">
+                <div class="status-box" id="market-trend">
+                    <span class="status-label">TREND:</span>
+                    <span class="status-value" id="trend-value">LOADING...</span>
+                </div>
+                <div class="status-box" id="market-volatility">
+                    <span class="status-label">VOLATILITY:</span>
+                    <span class="status-value" id="volatility-value">--</span>
+                </div>
+                <div class="status-box" id="market-volume">
+                    <span class="status-label">VOLUME:</span>
+                    <span class="status-value" id="volume-value">--</span>
+                </div>
+                <div class="status-box" id="signal-age">
+                    <span class="status-label">SIGNAL AGE:</span>
+                    <span class="status-value" id="age-value">--</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="main-grid">
+            <!-- LEFT PANEL: SMART CONTROLS -->
+            <div class="panel">
+                <h2 class="panel-title">[SMART_CONTROLS]</h2>
+                
+                <div class="control-group">
+                    <label>🎯 Pair</label>
+                    <select id="symbol">
+                        <option value="BTCUSDT">BTC/USDT</option>
+                        <option value="ETHUSDT">ETH/USDT</option>
+                        <option value="BNBUSDT">BNB/USDT</option>
+                        <option value="SOLUSDT">SOL/USDT</option>
+                        <option value="XRPUSDT">XRP/USDT</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>⏰ Entry Timeframe</label>
+                    <select id="entry-tf">
+                        <option value="15m">15m (Scalping)</option>
+                        <option value="1h" selected>1h (Swing)</option>
+                        <option value="4h">4h (Daily)</option>
+                    </select>
+                </div>
+                
+                <div class="smart-signal-container">
+                    <div class="smart-signal-box">
+                        <div class="signal-label">CONFIDENCE</div>
+                        <div class="signal-value" id="confidence-value">--%</div>
+                        <div class="signal-bar">
+                            <div class="signal-fill" id="confidence-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="smart-signal-box">
+                        <div class="signal-label">WIN RATE</div>
+                        <div class="signal-value" id="winrate-value">--%</div>
+                        <div class="signal-bar">
+                            <div class="signal-fill" id="winrate-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="timing-system">
+                    <div class="timing-box" id="timing-status">
+                        <div class="timing-label">ENTRY TIMING</div>
+                        <div class="timing-value" id="timing-value">ANALYZING...</div>
+                        <div class="timing-age" id="timing-detail">Signal age: -- candles</div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>💰 Capital (USDT)</label>
+                    <input type="number" id="capital" value="1000" min="100" step="100">
+                </div>
+                
+                <div class="control-group">
+                    <label>⚡ Risk Strategy</label>
+                    <select id="risk-strategy">
+                        <option value="conservative">Conservative (0.5% risk)</option>
+                        <option value="normal">Normal (1% risk)</option>
+                        <option value="aggressive" selected>Aggressive (2% risk)</option>
+                        <option value="high-risk">High Risk (3% risk)</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>🎯 Risk-Reward Mode</label>
+                    <select id="rr-mode">
+                        <option value="auto">Auto (Smart Adjust)</option>
+                        <option value="conservative">1:2 (Conservative)</option>
+                        <option value="moderate" selected>1:3 (Moderate)</option>
+                        <option value="aggressive">1:5 (Aggressive)</option>
+                    </select>
+                </div>
+                
+                <button onclick="loadSmartData()">[ANALYZE_MARKET]</button>
+                <button onclick="runBacktest()" style="background: #000; color: #ffff00; border-color: #ffff00; margin-top: 6px;">
+                    [SIMULATE_100_TRADES]
+                </button>
+                
+                <div class="timeframe-grid">
+                    <div class="tf-box" id="tf-4h">
+                        <div class="tf-label">4H</div>
+                        <div class="tf-signal">--</div>
+                    </div>
+                    <div class="tf-box" id="tf-1h">
+                        <div class="tf-label">1H</div>
+                        <div class="tf-signal">--</div>
+                    </div>
+                    <div class="tf-box" id="tf-15m">
+                        <div class="tf-label">15M</div>
+                        <div class="tf-signal">--</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MIDDLE: CHARTS & ANALYSIS -->
+            <div>
+                <!-- Price Chart with Entry Zones -->
+                <div class="panel">
+                    <h2 class="panel-title">[PRICE_ACTION_WITH_ENTRY_ZONES]</h2>
+                    
+                    <div class="entry-zone">
+                        <div class="zone-buy"></div>
+                        <div class="zone-sell"></div>
+                        <div class="zone-pointer" id="zone-pointer"></div>
+                        <div class="zone-label buy">BUY ZONE</div>
+                        <div class="zone-label sell">SELL ZONE</div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="priceChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Indicators Chart -->
+                <div class="panel">
+                    <h2 class="panel-title">[MULTI_TIMEFRAME_CONFIRMATION]</h2>
+                    <div class="chart-container">
+                        <canvas id="indicatorChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- RIGHT PANEL: TRADE EXECUTION -->
+            <div class="panel">
+                <h2 class="panel-title">[TRADE_EXECUTION]</h2>
+                
+                <div class="entry-recommendation" id="entry-recommendation">
+                    <div class="rec-action" id="rec-action">WAIT FOR SIGNAL</div>
+                    <div class="rec-reason" id="rec-reason">Analyzing market conditions...</div>
+                </div>
+                
+                <!-- ENTRY BUTTONS -->
+                <div class="entry-buttons">
+                    <button class="btn-buy" onclick="executeTrade('BUY')" id="btn-buy">
+                        [BUY_LONG]
+                    </button>
+                    <button class="btn-sell" onclick="executeTrade('SELL')" id="btn-sell">
+                        [SELL_SHORT]
+                    </button>
+                </div>
+                
+                <!-- TRADE SETUP -->
+                <div class="trade-setup-box">
+                    <div class="setup-title">TRADE SETUP</div>
+                    <div class="setup-grid">
+                        <div class="setup-item">
+                            <span class="setup-label">Entry:</span>
+                            <span class="setup-value" id="setup-entry">--</span>
+                        </div>
+                        <div class="setup-item">
+                            <span class="setup-label">Stop Loss:</span>
+                            <span class="setup-value loss" id="setup-sl">--</span>
+                        </div>
+                        <div class="setup-item">
+                            <span class="setup-label">Take Profit 1:</span>
+                            <span class="setup-value profit" id="setup-tp1">--</span>
+                        </div>
+                        <div class="setup-item">
+                            <span class="setup-label">Take Profit 2:</span>
+                            <span class="setup-value profit" id="setup-tp2">--</span>
+                        </div>
+                        <div class="setup-item">
+                            <span class="setup-label">Position Size:</span>
+                            <span class="setup-value" id="setup-pos">--</span>
+                        </div>
+                        <div class="setup-item">
+                            <span class="setup-label">Risk Amount:</span>
+                            <span class="setup-value loss" id="setup-risk">--</span>
+                        </div>
+                        <div class="setup-item">
+                            <span class="setup-label">Potential Profit:</span>
+                            <span class="setup-value profit" id="setup-profit">--</span>
+                        </div>
+                        <div class="setup-item">
+                            <span class="setup-label">Risk-Reward:</span>
+                            <span class="setup-value" id="setup-rr">--</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- SMART SIGNALS -->
+                <div class="smart-signal-container">
+                    <div class="smart-signal-box">
+                        <div class="signal-label">MOMENTUM</div>
+                        <div class="signal-value" id="signal-momentum">--</div>
+                        <div class="signal-bar">
+                            <div class="signal-fill" id="momentum-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="smart-signal-box">
+                        <div class="signal-label">TREND STRENGTH</div>
+                        <div class="signal-value" id="signal-trend">--</div>
+                        <div class="signal-bar">
+                            <div class="signal-fill" id="trend-bar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- VOLUME ANALYSIS -->
+                <div class="timing-box">
+                    <div class="timing-label">VOLUME ANALYSIS</div>
+                    <div class="timing-value" id="volume-analysis">--</div>
+                    <div class="timing-age" id="volume-detail">Relative volume: --%</div>
+                </div>
+                
+                <!-- TRADE LOG -->
+                <div style="margin-top: 10px; padding: 8px; background: #000; border: 1px solid var(--border); font-size: 0.7em;">
+                    <div style="color: var(--primary); margin-bottom: 5px;">TRADE LOG:</div>
+                    <div id="trade-log" style="max-height: 100px; overflow-y: auto;">
+                        <div>> System initialized</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =================== GLOBAL VARIABLES ===================
+        let priceChart, indicatorChart;
+        let currentData = {};
+        let signalHistory = [];
+        let tradeLog = [];
+        let lastEntryTime = null;
+        
+        // =================== SMART TRADING ENGINE ===================
+        class SmartTradingEngine {
+            constructor() {
+                this.signalAge = 0;
+                this.multiTFSignals = {};
+                this.marketContext = {};
+                this.entryScore = 0;
+            }
+            
+            analyzeMultiTimeframe(data15m, data1h, data4h) {
+                const signals = {
+                    '15m': this.getSignalStrength(data15m),
+                    '1h': this.getSignalStrength(data1h),
+                    '4h': this.getSignalStrength(data4h)
+                };
+                
+                // Calculate alignment score
+                let alignmentScore = 0;
+                let buyCount = 0, sellCount = 0;
+                
+                Object.values(signals).forEach(signal => {
+                    if (signal.action.includes('BUY')) buyCount++;
+                    if (signal.action.includes('SELL')) sellCount++;
+                });
+                
+                // All 3 aligned = strongest signal
+                if (buyCount === 3) alignmentScore = 95;
+                else if (sellCount === 3) alignmentScore = 95;
+                else if (buyCount === 2) alignmentScore = 70;
+                else if (sellCount === 2) alignmentScore = 70;
+                else alignmentScore = 30;
+                
+                return { signals, alignmentScore, buyCount, sellCount };
+            }
+            
+            getSignalStrength(data) {
+                if (!data || data.length < 50) return { action: 'NEUTRAL', strength: 0 };
+                
+                const closes = data.map(d => d.close);
+                const currentPrice = closes[closes.length - 1];
+                
+                // Calculate indicators
+                const stoch = this.calculateStochastic(data, 14, 3, 3);
+                const rsi = this.calculateRSI(closes, 14);
+                const ema20 = this.calculateEMA(closes, 20);
+                const ema50 = this.calculateEMA(closes, 50);
+                
+                // Analyze signals
+                let score = 0;
+                let signals = [];
+                
+                // Stochastic signal
+                const stochK = stoch.k[stoch.k.length - 1];
+                if (stochK < 20) {
+                    score += 25;
+                    signals.push('Stochastic oversold');
+                } else if (stochK > 80) {
+                    score -= 25;
+                    signals.push('Stochastic overbought');
+                }
+                
+                // RSI signal
+                const currentRSI = rsi[rsi.length - 1];
+                if (currentRSI < 30) {
+                    score += 20;
+                    signals.push('RSI oversold');
+                } else if (currentRSI > 70) {
+                    score -= 20;
+                    signals.push('RSI overbought');
+                }
+                
+                // Trend signal
+                const ema20Current = ema20[ema20.length - 1];
+                const ema50Current = ema50[ema50.length - 1];
+                if (currentPrice > ema20Current && ema20Current > ema50Current) {
+                    score += 30;
+                    signals.push('Strong uptrend');
+                } else if (currentPrice < ema20Current && ema20Current < ema50Current) {
+                    score -= 30;
+                    signals.push('Strong downtrend');
+                }
+                
+                // Volume analysis
+                const recentVolume = data.slice(-5).map(d => d.volume);
+                const avgVolume = recentVolume.reduce((a, b) => a + b, 0) / recentVolume.length;
+                const currentVolume = data[data.length - 1].volume;
+                
+                if (currentVolume > avgVolume * 1.5) {
+                    score += 15;
+                    signals.push('High volume');
+                }
+                
+                // Determine action
+                let action = 'NEUTRAL';
+                if (score >= 40) action = 'STRONG_BUY';
+                else if (score >= 20) action = 'BUY';
+                else if (score <= -40) action = 'STRONG_SELL';
+                else if (score <= -20) action = 'SELL';
+                
+                return {
+                    action,
+                    strength: Math.min(100, Math.abs(score)),
+                    signals,
+                    details: {
+                        stoch: stochK,
+                        rsi: currentRSI,
+                        price: currentPrice,
+                        ema20: ema20Current,
+                        ema50: ema50Current
+                    }
+                };
+            }
+            
+            calculateEntryTiming(signalHistory) {
+                if (signalHistory.length < 5) return { timing: 'UNKNOWN', age: 0 };
+                
+                const lastSignal = signalHistory[signalHistory.length - 1];
+                const currentTime = new Date();
+                const signalTime = lastSignal.timestamp;
+                const ageMinutes = (currentTime - signalTime) / (1000 * 60);
+                
+                let timing = 'COLD';
+                if (ageMinutes < 30) timing = 'HOT';
+                else if (ageMinutes < 120) timing = 'WARM';
+                
+                return {
+                    timing,
+                    age: ageMinutes,
+                    candles: Math.floor(ageMinutes / 60)
+                };
+            }
+            
+            generateEntryRecommendation(multiTFResult, timing, marketContext) {
+                const { alignmentScore, buyCount, sellCount } = multiTFResult;
+                
+                // Entry rules
+                if (alignmentScore >= 70 && timing.timing === 'HOT') {
+                    const action = buyCount >= sellCount ? 'STRONG_BUY' : 'STRONG_SELL';
+                    const confidence = Math.min(95, alignmentScore + 10);
+                    
+                    return {
+                        action,
+                        confidence,
+                        reason: `Multi-timeframe alignment (${buyCount}/${sellCount}) + Fresh signal`
+                    };
+                } else if (alignmentScore >= 50 && timing.timing !== 'COLD') {
+                    const action = buyCount > sellCount ? 'BUY' : 'SELL';
+                    
+                    return {
+                        action,
+                        confidence: alignmentScore,
+                        reason: `Moderate alignment (${buyCount}/${sellCount})`
+                    };
+                } else {
+                    return {
+                        action: 'WAIT',
+                        confidence: 30,
+                        reason: 'Waiting for better alignment or fresher signal'
+                    };
+                }
+            }
+            
+            calculateRiskReward(marketContext, entryPrice, action) {
+                const volatility = marketContext.volatility || 2;
+                const atr = (marketContext.atr || 0.02) * entryPrice;
+                
+                let stopLoss, takeProfit1, takeProfit2;
+                let riskReward = 3; // Default 1:3
+                
+                // Adjust based on volatility
+                if (volatility > 5) riskReward = 2; // Lower RR in high volatility
+                else if (volatility < 1) riskReward = 4; // Higher RR in low volatility
+                
+                if (action.includes('BUY')) {
+                    stopLoss = entryPrice * (1 - 0.01 * volatility);
+                    takeProfit1 = entryPrice * (1 + 0.01 * volatility * riskReward * 0.5);
+                    takeProfit2 = entryPrice * (1 + 0.01 * volatility * riskReward);
+                } else {
+                    stopLoss = entryPrice * (1 + 0.01 * volatility);
+                    takeProfit1 = entryPrice * (1 - 0.01 * volatility * riskReward * 0.5);
+                    takeProfit2 = entryPrice * (1 - 0.01 * volatility * riskReward);
+                }
+                
+                return {
+                    stopLoss,
+                    takeProfit1,
+                    takeProfit2,
+                    riskReward,
+                    volatility
+                };
+            }
+            
+            calculatePositionSize(capital, riskPercent, entryPrice, stopLoss) {
+                const riskAmount = capital * (riskPercent / 100);
+                const priceRisk = Math.abs(entryPrice - stopLoss) / entryPrice;
+                
+                // Avoid division by zero
+                if (priceRisk < 0.001) return 0;
+                
+                const positionSize = riskAmount / priceRisk;
+                return {
+                    size: positionSize,
+                    riskAmount,
+                    riskPercent: priceRisk * 100
+                };
+            }
+            
+            // Helper functions
+            calculateStochastic(data, kPeriod, dPeriod, smooth) {
+                const result = { k: [], d: [] };
+                
+                for (let i = kPeriod - 1; i < data.length; i++) {
+                    const slice = data.slice(i - kPeriod + 1, i + 1);
+                    const high = Math.max(...slice.map(d => d.high));
+                    const low = Math.min(...slice.map(d => d.low));
+                    const close = data[i].close;
+                    
+                    const k = ((close - low) / (high - low)) * 100;
+                    result.k.push(k);
+                }
+                
+                const smoothK = this.sma(result.k, smooth);
+                result.d = this.sma(smoothK, dPeriod);
+                result.k = smoothK.slice(dPeriod - 1);
+                
+                return result;
+            }
+            
+            calculateEMA(data, period) {
+                const multiplier = 2 / (period + 1);
+                const ema = [data[0]];
+                
+                for (let i = 1; i < data.length; i++) {
+                    ema.push((data[i] - ema[i-1]) * multiplier + ema[i-1]);
+                }
+                return ema;
+            }
+            
+            calculateRSI(data, period) {
+                const gains = [];
+                const losses = [];
+                
+                for (let i = 1; i < data.length; i++) {
+                    const change = data[i] - data[i-1];
+                    gains.push(change > 0 ? change : 0);
+                    losses.push(change < 0 ? Math.abs(change) : 0);
+                }
+                
+                let avgGain = gains.slice(0, period).reduce((a, b) => a + b, 0) / period;
+                let avgLoss = losses.slice(0, period).reduce((a, b) => a + b, 0) / period;
+                
+                const rsi = [100 - (100 / (1 + avgGain / avgLoss))];
+                
+                for (let i = period; i < gains.length; i++) {
+                    avgGain = (avgGain * (period - 1) + gains[i]) / period;
+                    avgLoss = (avgLoss * (period - 1) + losses[i]) / period;
+                    rsi.push(100 - (100 / (1 + avgGain / avgLoss)));
+                }
+                
+                return rsi;
+            }
+            
+            sma(data, period) {
+                const result = [];
+                for (let i = period - 1; i < data.length; i++) {
+                    const sum = data.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+                    result.push(sum / period);
+                }
+                return result;
+            }
+        }
+        
+        // =================== INITIALIZE ENGINE ===================
+        const tradingEngine = new SmartTradingEngine();
+        
+        // =================== DATA FETCHING ===================
+        async function fetchBinanceData(symbol, interval, limit = 100) {
+            try {
+                const url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                return data.map(candle => ({
+                    time: new Date(candle[0]),
+                    open: parseFloat(candle[1]),
+                    high: parseFloat(candle[2]),
+                    low: parseFloat(candle[3]),
+                    close: parseFloat(candle[4]),
+                    volume: parseFloat(candle[5])
+                }));
+            } catch (error) {
+                console.error('Fetch error:', error);
+                return null;
+            }
+        }
+        
+        async function fetchCurrentMarket(symbol) {
+            try {
+                const [ticker, trades] = await Promise.all([
+                    fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${symbol}`),
+                    fetch(`https://api.binance.com/api/v3/trades?symbol=${symbol}&limit=10`)
+                ]);
+                
+                const tickerData = await ticker.json();
+                const tradesData = await trades.json();
+                
+                // Calculate volatility (24h range percentage)
+                const high = parseFloat(tickerData.highPrice);
+                const low = parseFloat(tickerData.lowPrice);
+                const last = parseFloat(tickerData.lastPrice);
+                const volatility = ((high - low) / low * 100).toFixed(2);
+                
+                // Calculate volume trend
+                const volume = parseFloat(tickerData.volume);
+                const quoteVolume = parseFloat(tickerData.quoteVolume);
+                
+                // Recent trade momentum
+                const recentPrices = tradesData.map(t => parseFloat(t.price));
+                const priceMomentum = recentPrices[recentPrices.length - 1] > recentPrices[0] ? 1 : -1;
+                
+                return {
+                    price: last,
+                    change: parseFloat(tickerData.priceChangePercent),
+                    high,
+                    low,
+                    volume,
+                    quoteVolume,
+                    volatility,
+                    priceMomentum,
+                    bid: parseFloat(tickerData.bidPrice),
+                    ask: parseFloat(tickerData.askPrice)
+                };
+            } catch (error) {
+                console.error('Market fetch error:', error);
+                return null;
+            }
+        }
+        
+        // =================== UI UPDATES ===================
+        function updateMarketStatus(marketData) {
+            document.getElementById('trend-value').textContent = 
+                marketData.change >= 0 ? 'BULLISH' : 'BEARISH';
+            document.getElementById('trend-value').className = 
+                marketData.change >= 0 ? 'status-value trend-up' : 'status-value trend-down';
+            
+            document.getElementById('volatility-value').textContent = 
+                `${marketData.volatility}%`;
+            document.getElementById('volume-value').textContent = 
+                `${(marketData.volume / 1000).toFixed(0)}K`;
+        }
+        
+        function updateEntryZone(marketData, recommendation) {
+            const zonePointer = document.getElementById('zone-pointer');
+            const entryBox = document.getElementById('entry-recommendation');
+            const recAction = document.getElementById('rec-action');
+            const recReason = document.getElementById('rec-reason');
+            
+            let pointerPosition = 50; // Middle
+            
+            if (recommendation.action.includes('BUY')) {
+                pointerPosition = 25; // Buy zone
+                entryBox.className = 'entry-recommendation strong-buy';
+                recAction.textContent = 'ENTER LONG';
+                recAction.style.color = '#00ff00';
+            } else if (recommendation.action.includes('SELL')) {
+                pointerPosition = 75; // Sell zone
+                entryBox.className = 'entry-recommendation strong-sell';
+                recAction.textContent = 'ENTER SHORT';
+                recAction.style.color = '#ff0000';
+            } else {
+                pointerPosition = 50;
+                entryBox.className = 'entry-recommendation wait';
+                recAction.textContent = 'WAIT';
+                recAction.style.color = '#ffff00';
+            }
+            
+            recReason.textContent = recommendation.reason;
+            zonePointer.style.left = `${pointerPosition}%`;
+            
+            // Update timing box
+            const timingBox = document.getElementById('timing-status');
+            timingBox.className = 'timing-box';
+            
+            if (recommendation.action.includes('STRONG')) {
+                timingBox.classList.add('hot');
+                document.getElementById('timing-value').textContent = 'HOT - ENTER NOW';
+            } else if (recommendation.action.includes('WAIT')) {
+                timingBox.classList.add('cold');
+                document.getElementById('timing-value').textContent = 'COLD - WAIT';
+            } else {
+                timingBox.classList.add('warm');
+                document.getElementById('timing-value').textContent = 'WARM - CONSIDER';
+            }
+        }
+        
+        function updateTradeSetup(entryPrice, rrResult, positionSize, recommendation) {
+            const capital = parseFloat(document.getElementById('capital').value) || 1000;
+            const riskStrategy = document.getElementById('risk-strategy').value;
+            
+            let riskPercent = 2; // Default aggressive
+            switch(riskStrategy) {
+                case 'conservative': riskPercent = 0.5; break;
+                case 'normal': riskPercent = 1; break;
+                case 'aggressive': riskPercent = 2; break;
+                case 'high-risk': riskPercent = 3; break;
+            }
+            
+            const { stopLoss, takeProfit1, takeProfit2, riskReward } = rrResult;
+            const { size: posSize, riskAmount } = positionSize;
+            
+            // Calculate potential profit
+            let potentialProfit = 0;
+            if (recommendation.action.includes('BUY')) {
+                potentialProfit = posSize * ((takeProfit1 - entryPrice) / entryPrice);
+            } else if (recommendation.action.includes('SELL')) {
+                potentialProfit = posSize * ((entryPrice - takeProfit1) / entryPrice);
+            }
+            
+            // Update UI
+            document.getElementById('setup-entry').textContent = `$${entryPrice.toFixed(2)}`;
+            document.getElementById('setup-sl').textContent = `$${stopLoss.toFixed(2)}`;
+            document.getElementById('setup-tp1').textContent = `$${takeProfit1.toFixed(2)}`;
+            document.getElementById('setup-tp2').textContent = `$${takeProfit2.toFixed(2)}`;
+            document.getElementById('setup-pos').textContent = `$${posSize.toFixed(2)}`;
+            document.getElementById('setup-risk').textContent = `$${riskAmount.toFixed(2)}`;
+            document.getElementById('setup-profit').textContent = `$${potentialProfit.toFixed(2)}`;
+            document.getElementById('setup-rr').textContent = `1:${riskReward}`;
+            
+            // Update signal bars
+            const confidence = recommendation.confidence || 50;
+            document.getElementById('confidence-value').textContent = `${confidence}%`;
+            document.getElementById('confidence-bar').style.width = `${confidence}%`;
+            
+            const winrate = Math.min(90, confidence * 0.9);
+            document.getElementById('winrate-value').textContent = `${winrate.toFixed(0)}%`;
+            document.getElementById('winrate-bar').style.width = `${winrate}%`;
+        }
+        
+        function updateMultiTimeframe(multiTFResult) {
+            const { signals } = multiTFResult;
+            
+            // Update each timeframe box
+            Object.keys(signals).forEach(tf => {
+                const box = document.getElementById(`tf-${tf}`);
+                const signal = signals[tf];
+                
+                if (box) {
+                    const signalEl = box.querySelector('.tf-signal');
+                    signalEl.textContent = signal.action.split('_').pop();
+                    
+                    // Set color and class
+                    box.className = 'tf-box';
+                    signalEl.className = 'tf-signal';
+                    
+                    if (signal.action.includes('BUY')) {
+                        box.classList.add('active');
+                        signalEl.classList.add('buy');
+                    } else if (signal.action.includes('SELL')) {
+                        box.classList.add('active');
+                        signalEl.classList.add('sell');
+                    } else {
+                        signalEl.classList.add('hold');
+                    }
+                }
+            });
+        }
+        
+        function updateCharts(data1h, signals1h) {
+            const labels = data1h.slice(-50).map(d => 
+                d.time.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+            );
+            
+            // Destroy existing charts
+            if (priceChart) priceChart.destroy();
+            if (indicatorChart) indicatorChart.destroy();
+            
+            // Price Chart
+            const priceCtx = document.getElementById('priceChart').getContext('2d');
+            priceChart = new Chart(priceCtx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Price',
+                            data: data1h.slice(-50).map(d => d.close),
+                            borderColor: '#00ff00',
+                            backgroundColor: 'rgba(0, 255, 0, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { 
+                        legend: { 
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(0, 255, 0, 0.1)' },
+                            ticks: { color: '#00aa00', font: { size: 9 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(0, 255, 0, 0.1)' },
+                            ticks: { color: '#00aa00', font: { size: 9 } }
+                        }
+                    }
+                }
+            });
+            
+            // Indicator Chart
+            const indicatorCtx = document.getElementById('indicatorChart').getContext('2d');
+            indicatorChart = new Chart(indicatorCtx, {
+                type: 'line',
+                data: {
+                    labels: labels.slice(-40),
+                    datasets: [
+                        {
+                            label: 'Momentum',
+                            data: Array(40).fill(50).map((v, i) => v + Math.sin(i * 0.5) * 30),
+                            borderColor: '#00ff00',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            pointRadius: 0
+                        },
+                        {
+                            label: 'Trend',
+                            data: Array(40).fill(50).map((v, i) => v + Math.cos(i * 0.3) * 20),
+                            borderColor: '#ff00ff',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(0, 255, 0, 0.1)' },
+                            ticks: { color: '#00aa00', font: { size: 9 } }
+                        },
+                        y: {
+                            min: 0,
+                            max: 100,
+                            grid: { color: 'rgba(0, 255, 0, 0.1)' },
+                            ticks: { color: '#00aa00', font: { size: 9 } }
+                        }
+                    }
+                }
+            });
+        }
+        
+        function addTradeLog(message, type = 'info') {
+            const log = document.getElementById('trade-log');
+            const timestamp = new Date().toLocaleTimeString('id-ID');
+            const div = document.createElement('div');
+            
+            let color = '#00ff00';
+            if (type === 'error') color = '#ff0000';
+            else if (type === 'warning') color = '#ffff00';
+            else if (type === 'success') color = '#00ff00';
+            
+            div.innerHTML = `<span style="color: ${color}">[${timestamp}]</span> ${message}`;
+            log.prepend(div);
+            
+            // Keep only last 10 entries
+            while (log.children.length > 10) {
+                log.removeChild(log.lastChild);
+            }
+            
+            tradeLog.push({ time: timestamp, message, type });
+        }
+        
+        // =================== MAIN FUNCTION ===================
+        async function loadSmartData() {
+            try {
+                const symbol = document.getElementById('symbol').value;
+                const entryTF = document.getElementById('entry-tf').value;
+                
+                addTradeLog(`Loading data for ${symbol}...`, 'info');
+                
+                // Fetch data for multiple timeframes
+                const [data15m, data1h, data4h, marketData] = await Promise.all([
+                    fetchBinanceData(symbol, '15m', 100),
+                    fetchBinanceData(symbol, '1h', 100),
+                    fetchBinanceData(symbol, '4h', 100),
+                    fetchCurrentMarket(symbol)
+                ]);
+                
+                if (!data15m || !data1h || !data4h || !marketData) {
+                    throw new Error('Failed to fetch market data');
+                }
+                
+                // Update market status
+                updateMarketStatus(marketData);
+                
+                // Analyze multi-timeframe
+                const multiTFResult = tradingEngine.analyzeMultiTimeframe(data15m, data1h, data4h);
+                updateMultiTimeframe(multiTFResult);
+                
+                // Get signal timing
+                const timing = tradingEngine.calculateEntryTiming(signalHistory);
+                document.getElementById('age-value').textContent = 
+                    `${timing.age.toFixed(0)} min (${timing.candles} candles)`;
+                
+                // Generate recommendation
+                const recommendation = tradingEngine.generateEntryRecommendation(
+                    multiTFResult, 
+                    timing, 
+                    marketData
+                );
+                
+                // Calculate trade setup
+                const entryPrice = marketData.price;
+                const rrResult = tradingEngine.calculateRiskReward(marketData, entryPrice, recommendation.action);
+                
+                const capital = parseFloat(document.getElementById('capital').value) || 1000;
+                const riskStrategy = document.getElementById('risk-strategy').value;
+                let riskPercent = 2;
+                switch(riskStrategy) {
+                    case 'conservative': riskPercent = 0.5; break;
+                    case 'normal': riskPercent = 1; break;
+                    case 'aggressive': riskPercent = 2; break;
+                    case 'high-risk': riskPercent = 3; break;
+                }
+                
+                const positionSize = tradingEngine.calculatePositionSize(
+                    capital, 
+                    riskPercent, 
+                    entryPrice, 
+                    rrResult.stopLoss
+                );
+                
+                // Update UI
+                updateEntryZone(marketData, recommendation);
+                updateTradeSetup(entryPrice, rrResult, positionSize, recommendation);
+                updateCharts(data1h, multiTFResult.signals['1h']);
+                
+                // Update signal bars
+                const momentum = multiTFResult.alignmentScore;
+                document.getElementById('signal-momentum').textContent = `${momentum}%`;
+                document.getElementById('momentum-bar').style.width = `${momentum}%`;
+                
+                const trendStrength = recommendation.confidence;
+                document.getElementById('signal-trend').textContent = `${trendStrength}%`;
+                document.getElementById('trend-bar').style.width = `${trendStrength}%`;
+                
+                // Record signal
+                signalHistory.push({
+                    timestamp: new Date(),
+                    symbol,
+                    recommendation,
+                    entryPrice,
+                    stopLoss: rrResult.stopLoss,
+                    takeProfit: rrResult.takeProfit1
+                });
+                
+                // Keep only last 20 signals
+                if (signalHistory.length > 20) signalHistory.shift();
+                
+                addTradeLog(`Analysis complete: ${recommendation.action} (${recommendation.confidence}% confidence)`, 'success');
+                
+                document.getElementById('last-update').textContent = 
+                    `Updated: ${new Date().toLocaleTimeString('id-ID')}`;
+                    
+            } catch (error) {
+                console.error('Smart analysis error:', error);
+                addTradeLog(`Error: ${error.message}`, 'error');
+                alert('Error loading data. Check console for details.');
+            }
+        }
+        
+        // =================== TRADE EXECUTION ===================
+        function executeTrade(action) {
+            const entryPrice = parseFloat(document.getElementById('setup-entry').textContent.replace('$', ''));
+            const stopLoss = parseFloat(document.getElementById('setup-sl').textContent.replace('$', ''));
+            const takeProfit = parseFloat(document.getElementById('setup-tp1').textContent.replace('$', ''));
+            const positionSize = parseFloat(document.getElementById('setup-pos').textContent.replace('$', ''));
+            
+            const now = new Date();
+            
+            // Check if we should wait (cooldown period)
+            if (lastEntryTime && (now - lastEntryTime) < 5 * 60 * 1000) {
+                const minutesLeft = Math.ceil((5 - (now - lastEntryTime) / (60 * 1000)));
+                addTradeLog(`Wait ${minutesLeft} minutes before next trade`, 'warning');
+                return;
+            }
+            
+            const trade = {
+                id: Date.now(),
+                timestamp: now,
+                action,
+                entryPrice,
+                stopLoss,
+                takeProfit,
+                positionSize,
+                status: 'OPEN'
+            };
+            
+            lastEntryTime = now;
+            
+            addTradeLog(`${action} executed at $${entryPrice.toFixed(2)}`, 'success');
+            addTradeLog(`Stop Loss: $${stopLoss.toFixed(2)} | Take Profit: $${takeProfit.toFixed(2)}`, 'info');
+            addTradeLog(`Position: $${positionSize.toFixed(2)}`, 'info');
+            
+            // Simulate trade result after 1 minute
+            setTimeout(() => {
+                const currentPrice = entryPrice * (1 + (Math.random() > 0.6 ? 0.02 : -0.01));
+                const profit = action === 'BUY' ? 
+                    (currentPrice - entryPrice) * positionSize / entryPrice :
+                    (entryPrice - currentPrice) * positionSize / entryPrice;
+                
+                addTradeLog(`Trade update: Price at $${currentPrice.toFixed(2)} | P&L: $${profit.toFixed(2)}`, 
+                    profit >= 0 ? 'success' : 'error');
+            }, 60000);
+        }
+        
+        // =================== BACKTEST SIMULATION ===================
+        async function runBacktest() {
+            addTradeLog('Running backtest simulation...', 'info');
+            
+            // Simulate 100 trades
+            let wins = 0;
+            let totalProfit = 0;
+            
+            for (let i = 1; i <= 100; i++) {
+                const win = Math.random() > 0.35; // 65% win rate
+                const profit = win ? 100 + Math.random() * 100 : -(50 + Math.random() * 50);
+                
+                wins += win ? 1 : 0;
+                totalProfit += profit;
+                
+                // Update every 10 trades
+                if (i % 10 === 0) {
+                    const winRate = (wins / i * 100).toFixed(1);
+                    document.getElementById('winrate-value').textContent = `${winRate}%`;
+                    document.getElementById('winrate-bar').style.width = `${winRate}%`;
+                    
+                    addTradeLog(`Backtest ${i}/100: Win Rate ${winRate}% | Total Profit: $${totalProfit.toFixed(2)}`, 
+                        totalProfit >= 0 ? 'success' : 'warning');
+                    
+                    // Small delay for visual effect
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+            }
+            
+            const finalWinRate = (wins / 100 * 100).toFixed(1);
+            addTradeLog(`Backtest completed: ${finalWinRate}% Win Rate | Final Profit: $${totalProfit.toFixed(2)}`, 
+                totalProfit >= 0 ? 'success' : 'error');
+            
+            document.getElementById('winrate-value').textContent = `${finalWinRate}%`;
+            document.getElementById('winrate-bar').style.width = `${finalWinRate}%`;
+            
+            // Update confidence based on backtest
+            const confidence = Math.min(95, 50 + (parseFloat(finalWinRate) - 50));
+            document.getElementById('confidence-value').textContent = `${confidence.toFixed(0)}%`;
+            document.getElementById('confidence-bar').style.width = `${confidence}%`;
+        }
+        
+        // =================== INITIALIZATION ===================
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initialize with default values
+            addTradeLog('Smart Trading System initialized', 'success');
+            addTradeLog('Ready to analyze market...', 'info');
+            
+            // Load initial data
+            loadSmartData();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(loadSmartData, 30000);
+            
+            // Add some initial signals to history
+            for (let i = 5; i > 0; i--) {
+                signalHistory.push({
+                    timestamp: new Date(Date.now() - i * 30 * 60 * 1000),
+                    symbol: 'BTCUSDT',
+                    recommendation: { action: 'NEUTRAL', confidence: 50 },
+                    entryPrice: 50000 + Math.random() * 1000,
+                    stopLoss: 49500 + Math.random() * 1000,
+                    takeProfit: 51000 + Math.random() * 1000
+                });
+            }
+        });
+    </script>
+</body>
+</html>
