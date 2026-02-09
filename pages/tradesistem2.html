@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMART_TRADE_SYSTEM - HIGH_WINRATE</title>
+    <title>SMART_TRADE_SYSTEM - HIGH_WINRATE - LEVERAGE</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         :root {
@@ -304,6 +304,55 @@
             outline: none;
             box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
         }
+        
+        /* LEVERAGE SLIDER */
+        .leverage-container {
+            margin-bottom: 8px;
+        }
+        .leverage-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+        .leverage-value {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--warning);
+        }
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: var(--border);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            background: var(--warning);
+            cursor: pointer;
+            border: 2px solid #000;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            background: var(--warning);
+            cursor: pointer;
+            border: 2px solid #000;
+        }
+        .leverage-warning {
+            font-size: 0.7em;
+            color: var(--danger);
+            margin-top: 3px;
+            display: none;
+        }
+        .leverage-warning.show {
+            display: block;
+        }
+        
         button {
             width: 100%;
             padding: 6px;
@@ -347,6 +396,9 @@
         .setup-item {
             font-size: 0.8em;
         }
+        .setup-item.full-width {
+            grid-column: 1 / -1;
+        }
         .setup-label {
             color: var(--text-muted);
         }
@@ -355,6 +407,7 @@
         }
         .setup-value.profit { color: var(--success); }
         .setup-value.loss { color: var(--danger); }
+        .setup-value.leverage { color: var(--warning); font-size: 1.1em; }
         
         /* MULTI TIMEFRAME DISPLAY */
         .timeframe-grid {
@@ -449,7 +502,7 @@
         <div class="header-content">
             <div class="live-status">
                 <div class="live-dot"></div>
-                <h1>> SMART_TRADE_SYSTEM v2.0</h1>
+                <h1>> SMART_TRADE_SYSTEM v2.0 [LEVERAGE_MODE]</h1>
                 <span id="last-update" style="margin-left: auto; color: var(--text-muted); font-size: 0.75em;"></span>
             </div>
             
@@ -528,6 +581,17 @@
                 <div class="control-group">
                     <label>💰 Capital (USDT)</label>
                     <input type="number" id="capital" value="1000" min="100" step="100">
+                </div>
+                
+                <div class="leverage-container">
+                    <div class="leverage-display">
+                        <label style="margin: 0;">⚡ Leverage</label>
+                        <span class="leverage-value" id="leverage-display">10x</span>
+                    </div>
+                    <input type="range" id="leverage" min="1" max="100" value="10" step="1">
+                    <div class="leverage-warning" id="leverage-warning">
+                        ⚠️ HIGH LEVERAGE = HIGH RISK
+                    </div>
                 </div>
                 
                 <div class="control-group">
@@ -622,6 +686,10 @@
                 <div class="trade-setup-box">
                     <div class="setup-title">TRADE SETUP</div>
                     <div class="setup-grid">
+                        <div class="setup-item full-width">
+                            <span class="setup-label">Leverage:</span>
+                            <span class="setup-value leverage" id="setup-leverage">--x</span>
+                        </div>
                         <div class="setup-item">
                             <span class="setup-label">Entry:</span>
                             <span class="setup-value" id="setup-entry">--</span>
@@ -639,8 +707,12 @@
                             <span class="setup-value profit" id="setup-tp2">--</span>
                         </div>
                         <div class="setup-item">
-                            <span class="setup-label">Position Size:</span>
-                            <span class="setup-value" id="setup-pos">--</span>
+                            <span class="setup-label">Base Position:</span>
+                            <span class="setup-value" id="setup-base-pos">--</span>
+                        </div>
+                        <div class="setup-item">
+                            <span class="setup-label">Leveraged Position:</span>
+                            <span class="setup-value profit" id="setup-pos">--</span>
                         </div>
                         <div class="setup-item">
                             <span class="setup-label">Risk Amount:</span>
@@ -653,6 +725,10 @@
                         <div class="setup-item">
                             <span class="setup-label">Risk-Reward:</span>
                             <span class="setup-value" id="setup-rr">--</span>
+                        </div>
+                        <div class="setup-item">
+                            <span class="setup-label">Liquidation Price:</span>
+                            <span class="setup-value loss" id="setup-liquidation">--</span>
                         </div>
                     </div>
                 </div>
@@ -700,6 +776,28 @@
         let signalHistory = [];
         let tradeLog = [];
         let lastEntryTime = null;
+        
+        // =================== LEVERAGE CONTROL ===================
+        const leverageSlider = document.getElementById('leverage');
+        const leverageDisplay = document.getElementById('leverage-display');
+        const leverageWarning = document.getElementById('leverage-warning');
+        
+        leverageSlider.addEventListener('input', function() {
+            const value = this.value;
+            leverageDisplay.textContent = value + 'x';
+            
+            // Show warning for high leverage
+            if (value >= 20) {
+                leverageWarning.classList.add('show');
+            } else {
+                leverageWarning.classList.remove('show');
+            }
+            
+            // Update trade setup if data exists
+            if (currentData.entryPrice) {
+                updateTradeSetupWithCurrentData();
+            }
+        });
         
         // =================== SMART TRADING ENGINE ===================
         class SmartTradingEngine {
@@ -893,19 +991,34 @@
                 };
             }
             
-            calculatePositionSize(capital, riskPercent, entryPrice, stopLoss) {
+            calculatePositionSize(capital, riskPercent, entryPrice, stopLoss, leverage) {
                 const riskAmount = capital * (riskPercent / 100);
                 const priceRisk = Math.abs(entryPrice - stopLoss) / entryPrice;
                 
                 // Avoid division by zero
-                if (priceRisk < 0.001) return 0;
+                if (priceRisk < 0.001) return { size: 0, leveragedSize: 0, riskAmount, riskPercent: 0 };
                 
-                const positionSize = riskAmount / priceRisk;
+                const basePositionSize = riskAmount / priceRisk;
+                const leveragedPositionSize = basePositionSize * leverage;
+                
                 return {
-                    size: positionSize,
+                    size: basePositionSize,
+                    leveragedSize: leveragedPositionSize,
                     riskAmount,
                     riskPercent: priceRisk * 100
                 };
+            }
+            
+            calculateLiquidationPrice(entryPrice, leverage, action) {
+                // Simplified liquidation calculation
+                // Actual liquidation considers maintenance margin, but this is approximate
+                const liquidationPercent = (1 / leverage) * 0.9; // 90% of the margin
+                
+                if (action.includes('BUY')) {
+                    return entryPrice * (1 - liquidationPercent);
+                } else {
+                    return entryPrice * (1 + liquidationPercent);
+                }
             }
             
             // Helper functions
@@ -1096,7 +1209,7 @@
             }
         }
         
-        function updateTradeSetup(entryPrice, rrResult, positionSize, recommendation) {
+        function updateTradeSetup(entryPrice, rrResult, positionSize, recommendation, leverage) {
             const capital = parseFloat(document.getElementById('capital').value) || 1000;
             const riskStrategy = document.getElementById('risk-strategy').value;
             
@@ -1109,25 +1222,35 @@
             }
             
             const { stopLoss, takeProfit1, takeProfit2, riskReward } = rrResult;
-            const { size: posSize, riskAmount } = positionSize;
+            const { size: baseSize, leveragedSize, riskAmount } = positionSize;
             
-            // Calculate potential profit
+            // Calculate liquidation price
+            const liquidationPrice = tradingEngine.calculateLiquidationPrice(
+                entryPrice, 
+                leverage, 
+                recommendation.action
+            );
+            
+            // Calculate potential profit (using leveraged position)
             let potentialProfit = 0;
             if (recommendation.action.includes('BUY')) {
-                potentialProfit = posSize * ((takeProfit1 - entryPrice) / entryPrice);
+                potentialProfit = leveragedSize * ((takeProfit1 - entryPrice) / entryPrice);
             } else if (recommendation.action.includes('SELL')) {
-                potentialProfit = posSize * ((entryPrice - takeProfit1) / entryPrice);
+                potentialProfit = leveragedSize * ((entryPrice - takeProfit1) / entryPrice);
             }
             
             // Update UI
+            document.getElementById('setup-leverage').textContent = `${leverage}x`;
             document.getElementById('setup-entry').textContent = `$${entryPrice.toFixed(2)}`;
             document.getElementById('setup-sl').textContent = `$${stopLoss.toFixed(2)}`;
             document.getElementById('setup-tp1').textContent = `$${takeProfit1.toFixed(2)}`;
             document.getElementById('setup-tp2').textContent = `$${takeProfit2.toFixed(2)}`;
-            document.getElementById('setup-pos').textContent = `$${posSize.toFixed(2)}`;
+            document.getElementById('setup-base-pos').textContent = `$${baseSize.toFixed(2)}`;
+            document.getElementById('setup-pos').textContent = `$${leveragedSize.toFixed(2)}`;
             document.getElementById('setup-risk').textContent = `$${riskAmount.toFixed(2)}`;
             document.getElementById('setup-profit').textContent = `$${potentialProfit.toFixed(2)}`;
             document.getElementById('setup-rr').textContent = `1:${riskReward}`;
+            document.getElementById('setup-liquidation').textContent = `$${liquidationPrice.toFixed(2)}`;
             
             // Update signal bars
             const confidence = recommendation.confidence || 50;
@@ -1283,13 +1406,47 @@
             tradeLog.push({ time: timestamp, message, type });
         }
         
+        // =================== UPDATE WITH CURRENT DATA ===================
+        function updateTradeSetupWithCurrentData() {
+            if (!currentData.entryPrice) return;
+            
+            const leverage = parseInt(document.getElementById('leverage').value) || 10;
+            const capital = parseFloat(document.getElementById('capital').value) || 1000;
+            const riskStrategy = document.getElementById('risk-strategy').value;
+            
+            let riskPercent = 2;
+            switch(riskStrategy) {
+                case 'conservative': riskPercent = 0.5; break;
+                case 'normal': riskPercent = 1; break;
+                case 'aggressive': riskPercent = 2; break;
+                case 'high-risk': riskPercent = 3; break;
+            }
+            
+            const positionSize = tradingEngine.calculatePositionSize(
+                capital,
+                riskPercent,
+                currentData.entryPrice,
+                currentData.rrResult.stopLoss,
+                leverage
+            );
+            
+            updateTradeSetup(
+                currentData.entryPrice,
+                currentData.rrResult,
+                positionSize,
+                currentData.recommendation,
+                leverage
+            );
+        }
+        
         // =================== MAIN FUNCTION ===================
         async function loadSmartData() {
             try {
                 const symbol = document.getElementById('symbol').value;
                 const entryTF = document.getElementById('entry-tf').value;
+                const leverage = parseInt(document.getElementById('leverage').value) || 10;
                 
-                addTradeLog(`Loading data for ${symbol}...`, 'info');
+                addTradeLog(`Loading data for ${symbol} with ${leverage}x leverage...`, 'info');
                 
                 // Fetch data for multiple timeframes
                 const [data15m, data1h, data4h, marketData] = await Promise.all([
@@ -1340,12 +1497,21 @@
                     capital, 
                     riskPercent, 
                     entryPrice, 
-                    rrResult.stopLoss
+                    rrResult.stopLoss,
+                    leverage
                 );
+                
+                // Store current data for updates
+                currentData = {
+                    entryPrice,
+                    rrResult,
+                    recommendation,
+                    marketData
+                };
                 
                 // Update UI
                 updateEntryZone(marketData, recommendation);
-                updateTradeSetup(entryPrice, rrResult, positionSize, recommendation);
+                updateTradeSetup(entryPrice, rrResult, positionSize, recommendation, leverage);
                 updateCharts(data1h, multiTFResult.signals['1h']);
                 
                 // Update signal bars
@@ -1370,7 +1536,7 @@
                 // Keep only last 20 signals
                 if (signalHistory.length > 20) signalHistory.shift();
                 
-                addTradeLog(`Analysis complete: ${recommendation.action} (${recommendation.confidence}% confidence)`, 'success');
+                addTradeLog(`Analysis complete: ${recommendation.action} (${recommendation.confidence}% confidence) at ${leverage}x`, 'success');
                 
                 document.getElementById('last-update').textContent = 
                     `Updated: ${new Date().toLocaleTimeString('id-ID')}`;
@@ -1384,10 +1550,12 @@
         
         // =================== TRADE EXECUTION ===================
         function executeTrade(action) {
+            const leverage = parseInt(document.getElementById('leverage').value) || 10;
             const entryPrice = parseFloat(document.getElementById('setup-entry').textContent.replace('$', ''));
             const stopLoss = parseFloat(document.getElementById('setup-sl').textContent.replace('$', ''));
             const takeProfit = parseFloat(document.getElementById('setup-tp1').textContent.replace('$', ''));
             const positionSize = parseFloat(document.getElementById('setup-pos').textContent.replace('$', ''));
+            const liquidationPrice = parseFloat(document.getElementById('setup-liquidation').textContent.replace('$', ''));
             
             const now = new Date();
             
@@ -1406,14 +1574,16 @@
                 stopLoss,
                 takeProfit,
                 positionSize,
+                leverage,
+                liquidationPrice,
                 status: 'OPEN'
             };
             
             lastEntryTime = now;
             
-            addTradeLog(`${action} executed at $${entryPrice.toFixed(2)}`, 'success');
+            addTradeLog(`${action} executed at $${entryPrice.toFixed(2)} with ${leverage}x leverage`, 'success');
             addTradeLog(`Stop Loss: $${stopLoss.toFixed(2)} | Take Profit: $${takeProfit.toFixed(2)}`, 'info');
-            addTradeLog(`Position: $${positionSize.toFixed(2)}`, 'info');
+            addTradeLog(`Leveraged Position: $${positionSize.toFixed(2)} | Liquidation: $${liquidationPrice.toFixed(2)}`, 'warning');
             
             // Simulate trade result after 1 minute
             setTimeout(() => {
@@ -1434,10 +1604,11 @@
             // Simulate 100 trades
             let wins = 0;
             let totalProfit = 0;
+            const leverage = parseInt(document.getElementById('leverage').value) || 10;
             
             for (let i = 1; i <= 100; i++) {
                 const win = Math.random() > 0.35; // 65% win rate
-                const profit = win ? 100 + Math.random() * 100 : -(50 + Math.random() * 50);
+                const profit = win ? (100 + Math.random() * 100) * leverage : -(50 + Math.random() * 50);
                 
                 wins += win ? 1 : 0;
                 totalProfit += profit;
@@ -1448,7 +1619,7 @@
                     document.getElementById('winrate-value').textContent = `${winRate}%`;
                     document.getElementById('winrate-bar').style.width = `${winRate}%`;
                     
-                    addTradeLog(`Backtest ${i}/100: Win Rate ${winRate}% | Total Profit: $${totalProfit.toFixed(2)}`, 
+                    addTradeLog(`Backtest ${i}/100: Win Rate ${winRate}% | Total Profit: $${totalProfit.toFixed(2)} (${leverage}x)`, 
                         totalProfit >= 0 ? 'success' : 'warning');
                     
                     // Small delay for visual effect
@@ -1457,7 +1628,7 @@
             }
             
             const finalWinRate = (wins / 100 * 100).toFixed(1);
-            addTradeLog(`Backtest completed: ${finalWinRate}% Win Rate | Final Profit: $${totalProfit.toFixed(2)}`, 
+            addTradeLog(`Backtest completed: ${finalWinRate}% Win Rate | Final Profit: $${totalProfit.toFixed(2)} with ${leverage}x leverage`, 
                 totalProfit >= 0 ? 'success' : 'error');
             
             document.getElementById('winrate-value').textContent = `${finalWinRate}%`;
@@ -1472,7 +1643,7 @@
         // =================== INITIALIZATION ===================
         document.addEventListener('DOMContentLoaded', () => {
             // Initialize with default values
-            addTradeLog('Smart Trading System initialized', 'success');
+            addTradeLog('Smart Trading System with Leverage initialized', 'success');
             addTradeLog('Ready to analyze market...', 'info');
             
             // Load initial data
