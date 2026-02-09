@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SL TP Calculator</title>
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background:#111;
+    color:#fff;
+    padding:15px;
+}
+input, select, button{
+    width:100%;
+    padding:10px;
+    margin:6px 0;
+    border-radius:8px;
+    border:none;
+    font-size:16px;
+}
+button{
+    background:#00ff88;
+    color:#000;
+    font-weight:bold;
+}
+.result{
+    margin-top:15px;
+    background:#222;
+    padding:12px;
+    border-radius:8px;
+    line-height:1.7;
+    white-space:pre-line;
+}
+.copybtn{
+    background:#ffaa00;
+}
+</style>
+</head>
+<body>
+
+<h2>SL TP Calculator (Risk 8%)</h2>
+
+<label>Modal ($)</label>
+<input type="number" id="modal" value="10"/>
+
+<label>Leverage (x)</label>
+<input type="number" id="lev" value="100"/>
+
+<label>Posisi</label>
+<select id="side">
+  <option value="long">LONG</option>
+  <option value="short">SHORT</option>
+</select>
+
+<label>Harga Entry</label>
+<input type="number" id="entry" value="100"/>
+
+<label>SL di Chart (%)</label>
+<input type="number" id="slpercent" value="2"/>
+
+<label>Risk Reward</label>
+<select id="rr">
+  <option value="2">1 : 2</option>
+  <option value="3">1 : 3</option>
+</select>
+
+<button onclick="hitung()">Hitung</button>
+<button class="copybtn" onclick="copyHasil()">Copy Hasil</button>
+
+<div class="result" id="hasil"></div>
+
+<script>
+let hasilText = "";
+
+function hitung(){
+    let modal = parseFloat(document.getElementById("modal").value);
+    let lev = parseFloat(document.getElementById("lev").value);
+    let entry = parseFloat(document.getElementById("entry").value);
+    let slp = parseFloat(document.getElementById("slpercent").value);
+    let rr = parseFloat(document.getElementById("rr").value);
+    let side = document.getElementById("side").value;
+
+    let riskPercent = 8;
+    let riskDollar = modal * (riskPercent/100);
+
+    let posisi = riskDollar / (slp/100);
+    let margin = posisi / lev;
+
+    let tpDollar = riskDollar * rr;
+    let tpPercent = slp * rr;
+
+    let slPrice, tpPrice;
+
+    if(side === "long"){
+        slPrice = entry - (entry * slp/100);
+        tpPrice = entry + (entry * tpPercent/100);
+    } else {
+        slPrice = entry + (entry * slp/100);
+        tpPrice = entry - (entry * tpPercent/100);
+    }
+
+    hasilText =
+`=== RISK ===
+SL ($): $${riskDollar.toFixed(2)}
+TP ($): $${tpDollar.toFixed(2)}
+
+=== HARGA (${side.toUpperCase()}) ===
+Entry: ${entry}
+SL Price: ${slPrice.toFixed(4)}
+TP Price: ${tpPrice.toFixed(4)}
+
+=== CHART % ===
+SL: ${slp}%
+TP: ${tpPercent}%
+
+=== POSISI ===
+Ukuran Posisi: $${posisi.toFixed(2)}
+Margin Terpakai: $${margin.toFixed(2)}`;
+
+    document.getElementById("hasil").innerText = hasilText;
+}
+
+function copyHasil(){
+    navigator.clipboard.writeText(hasilText);
+    alert("Hasil dicopy!");
+}
+</script>
+
+</body>
+</html>
