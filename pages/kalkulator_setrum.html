@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalkulator Listrik</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --card: #161616;
+    --border: #2a2a2a;
+    --accent: #f0e040;
+    --accent2: #40e0f0;
+    --text: #f0f0f0;
+    --muted: #888;
+    --red: #ff5050;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    padding: 20px 16px 60px;
+  }
+
+  header {
+    text-align: center;
+    margin-bottom: 28px;
+    padding-top: 16px;
+  }
+
+  header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1;
+  }
+
+  header h1 span { color: var(--accent); }
+  header p { color: var(--muted); font-size: .85rem; margin-top: 6px; font-family: 'Space Mono', monospace; }
+
+  .tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .tab {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+    font-size: .78rem;
+    cursor: pointer;
+    transition: all .2s;
+  }
+
+  .tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+    font-weight: 700;
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card {
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-size: .75rem;
+    font-family: 'Space Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+  }
+
+  label {
+    display: block;
+    font-size: .82rem;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .input-wrap {
+    position: relative;
+    margin-bottom: 14px;
+  }
+
+  input[type=number], select {
+    width: 100%;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 1rem;
+    padding: 12px 14px;
+    border-radius: 10px;
+    outline: none;
+    transition: border-color .2s;
+    -moz-appearance: textfield;
+  }
+
+  input[type=number]:focus, select:focus { border-color: var(--accent); }
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  .unit {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: 'Space Mono', monospace;
+    font-size: .8rem;
+    color: var(--accent2);
+  }
+
+  .btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--accent);
+    color: #000;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: opacity .2s, transform .1s;
+    letter-spacing: .5px;
+  }
+
+  .btn:active { transform: scale(.98); opacity: .9; }
+
+  .results { display: none; margin-top: 16px; }
+  .results.show { display: block; }
+
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  .result-item {
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+  }
+
+  .result-item.highlight {
+    border-color: var(--accent);
+    grid-column: span 2;
+  }
+
+  .result-item.highlight2 { border-color: var(--accent2); }
+
+  .r-label {
+    font-family: 'Space Mono', monospace;
+    font-size: .7rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .r-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .r-val.big {
+    font-size: 1.8rem;
+    color: var(--accent);
+  }
+
+  .r-val.cyan { color: var(--accent2); }
+
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 16px 0;
+  }
+
+  /* Biaya section */
+  .range-wrap { margin-bottom: 14px; }
+  input[type=range] {
+    width: 100%;
+    accent-color: var(--accent);
+    height: 4px;
+    margin-top: 8px;
+  }
+
+  .range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Space Mono', monospace;
+    font-size: .7rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .tariff-info {
+    background: var(--bg);
+    border-left: 3px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: .78rem;
+    color: var(--muted);
+  }
+
+  .tariff-info span { color: var(--accent); font-weight: 700; }
+
+  /* Alat list */
+  .device-list { margin-bottom: 14px; }
+  .device-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    transition: border-color .2s;
+  }
+  .device-row:hover { border-color: #444; }
+  .device-name { flex: 1; font-size: .85rem; }
+  .device-watt { font-family: 'Space Mono', monospace; font-size: .8rem; color: var(--accent); min-width: 50px; text-align: right; }
+  .device-del { background: none; border: none; color: var(--red); font-size: 1rem; cursor: pointer; padding: 2px 6px; }
+
+  .add-device {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .add-device input { flex: 1; }
+  .add-device input:last-of-type { flex: 0 0 90px; }
+  .add-btn {
+    background: var(--accent);
+    border: none;
+    color: #000;
+    font-weight: 700;
+    font-size: 1.2rem;
+    width: 44px;
+    border-radius: 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .total-bar {
+    background: var(--accent);
+    color: #000;
+    border-radius: 10px;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+  }
+
+  select option { background: #1a1a1a; }
+
+  @media (max-width: 360px) {
+    .result-grid { grid-template-columns: 1fr; }
+    .result-item.highlight { grid-column: span 1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚡ Kalkulator <span>Listrik</span></h1>
+  <p>watt · va · biaya · peralatan</p>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('watt')">Watt / VA</button>
+  <button class="tab" onclick="switchTab('biaya')">Biaya</button>
+  <button class="tab" onclick="switchTab('alat')">Alat Rumah</button>
+</div>
+
+<!-- PANEL 1: WATT / VA -->
+<div class="panel active" id="panel-watt">
+  <div class="card">
+    <div class="card-title">Konversi & Hitung</div>
+
+    <label>Mode Hitung</label>
+    <div class="input-wrap" style="margin-bottom:18px">
+      <select id="mode" onchange="updateMode()">
+        <option value="v_i">Tegangan × Arus → Watt/VA</option>
+        <option value="w_pf">Watt ÷ Power Factor → VA</option>
+        <option value="va_pf">VA × Power Factor → Watt</option>
+      </select>
+    </div>
+
+    <div id="inputs-vi">
+      <label>Tegangan (V)</label>
+      <div class="input-wrap"><input type="number" id="volt" value="220" min="0"><span class="unit">V</span></div>
+      <label>Arus (A)</label>
+      <div class="input-wrap"><input type="number" id="ampere" value="" placeholder="misal 2.5" min="0"><span class="unit">A</span></div>
+      <label>Power Factor (0.1–1.0)</label>
+      <div class="input-wrap"><input type="number" id="pf1" value="0.85" min="0.1" max="1" step="0.01"><span class="unit">PF</span></div>
+    </div>
+
+    <div id="inputs-wpf" style="display:none">
+      <label>Daya (Watt)</label>
+      <div class="input-wrap"><input type="number" id="watt_in" value="" placeholder="misal 500" min="0"><span class="unit">W</span></div>
+      <label>Power Factor (0.1–1.0)</label>
+      <div class="input-wrap"><input type="number" id="pf2" value="0.85" min="0.1" max="1" step="0.01"><span class="unit">PF</span></div>
+    </div>
+
+    <div id="inputs-vapf" style="display:none">
+      <label>Daya Semu (VA)</label>
+      <div class="input-wrap"><input type="number" id="va_in" value="" placeholder="misal 600" min="0"><span class="unit">VA</span></div>
+      <label>Power Factor (0.1–1.0)</label>
+      <div class="input-wrap"><input type="number" id="pf3" value="0.85" min="0.1" max="1" step="0.01"><span class="unit">PF</span></div>
+    </div>
+
+    <button class="btn" onclick="hitungWatt()">HITUNG</button>
+  </div>
+
+  <div class="results" id="res-watt">
+    <div class="card">
+      <div class="card-title">Hasil</div>
+      <div class="result-grid">
+        <div class="result-item highlight">
+          <div class="r-label">Daya Aktif (Watt)</div>
+          <div class="r-val big" id="r-watt">—</div>
+        </div>
+        <div class="result-item highlight2">
+          <div class="r-label">Daya Semu (VA)</div>
+          <div class="r-val cyan" id="r-va">—</div>
+        </div>
+        <div class="result-item">
+          <div class="r-label">Arus (A)</div>
+          <div class="r-val" id="r-amp">—</div>
+        </div>
+        <div class="result-item">
+          <div class="r-label">Power Factor</div>
+          <div class="r-val" id="r-pf">—</div>
+        </div>
+      </div>
+      <div class="tariff-info" id="r-note">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL 2: BIAYA -->
+<div class="panel" id="panel-biaya">
+  <div class="card">
+    <div class="card-title">Estimasi Biaya Listrik</div>
+
+    <label>Daya Perangkat (Watt)</label>
+    <div class="input-wrap"><input type="number" id="b-watt" value="" placeholder="misal 100" min="0"><span class="unit">W</span></div>
+
+    <label>Jam Pemakaian per Hari</label>
+    <div class="range-wrap">
+      <input type="range" id="b-jam" min="0.5" max="24" step="0.5" value="8" oninput="updateJam()">
+      <div class="range-labels"><span>0.5j</span><span id="jam-val">8 jam</span><span>24j</span></div>
+    </div>
+
+    <label>Golongan Tarif PLN</label>
+    <div class="input-wrap">
+      <select id="b-tarif" onchange="updateTarif()">
+        <option value="1352">R-1 900VA – Rp 1.352/kWh</option>
+        <option value="1444" selected>R-1 1300VA – Rp 1.444/kWh</option>
+        <option value="1444">R-1 2200VA – Rp 1.444/kWh</option>
+        <option value="1699">R-2 3500–5500VA – Rp 1.699/kWh</option>
+        <option value="1699">R-3 6600VA+ – Rp 1.699/kWh</option>
+        <option value="custom">Custom</option>
+      </select>
+    </div>
+
+    <div id="custom-tarif" style="display:none">
+      <label>Tarif Custom (Rp/kWh)</label>
+      <div class="input-wrap"><input type="number" id="b-custom" value="1444" min="0"><span class="unit">Rp</span></div>
+    </div>
+
+    <div class="tariff-info" id="tarif-label">Tarif: <span>Rp 1.444/kWh</span></div>
+
+    <button class="btn" onclick="hitungBiaya()">HITUNG BIAYA</button>
+  </div>
+
+  <div class="results" id="res-biaya">
+    <div class="card">
+      <div class="card-title">Estimasi Biaya</div>
+      <div class="result-grid">
+        <div class="result-item highlight">
+          <div class="r-label">Per Bulan (30 hari)</div>
+          <div class="r-val big" id="b-bulan">—</div>
+        </div>
+        <div class="result-item">
+          <div class="r-label">Per Hari</div>
+          <div class="r-val" id="b-hari">—</div>
+        </div>
+        <div class="result-item">
+          <div class="r-label">Per Minggu</div>
+          <div class="r-val" id="b-minggu">—</div>
+        </div>
+        <div class="result-item">
+          <div class="r-label">Konsumsi/bulan</div>
+          <div class="r-val" id="b-kwh">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PANEL 3: ALAT RUMAH -->
+<div class="panel" id="panel-alat">
+  <div class="card">
+    <div class="card-title">Daftar Peralatan</div>
+
+    <div class="add-device">
+      <input type="text" id="d-nama" placeholder="Nama alat" style="background:var(--bg);border:1.5px solid var(--border);color:var(--text);font-family:'Space Mono',monospace;font-size:.85rem;padding:10px 12px;border-radius:10px;outline:none;">
+      <input type="number" id="d-watt" placeholder="Watt" min="0" style="background:var(--bg);border:1.5px solid var(--border);color:var(--text);font-family:'Space Mono',monospace;font-size:.85rem;padding:10px 12px;border-radius:10px;outline:none;width:90px;">
+      <button class="add-btn" onclick="addDevice()">+</button>
+    </div>
+
+    <div class="device-list" id="device-list"></div>
+
+    <div class="divider"></div>
+
+    <label>Jam Pemakaian Rata-rata per Hari</label>
+    <div class="range-wrap">
+      <input type="range" id="a-jam" min="0.5" max="24" step="0.5" value="8" oninput="updateAJam()">
+      <div class="range-labels"><span>0.5j</span><span id="a-jam-val">8 jam</span><span>24j</span></div>
+    </div>
+
+    <label>Golongan Tarif</label>
+    <div class="input-wrap">
+      <select id="a-tarif">
+        <option value="1352">R-1 900VA – Rp 1.352/kWh</option>
+        <option value="1444" selected>R-1 1300–2200VA – Rp 1.444/kWh</option>
+        <option value="1699">R-2/R-3 3500VA+ – Rp 1.699/kWh</option>
+      </select>
+    </div>
+
+    <button class="btn" onclick="hitungAlat()">HITUNG TOTAL</button>
+  </div>
+
+  <div class="results" id="res-alat">
+    <div class="card">
+      <div class="card-title">Total Semua Alat</div>
+      <div class="result-grid">
+        <div class="result-item highlight">
+          <div class="r-label">Total Watt</div>
+          <div class="r-val big" id="a-twatt">—</div>
+        </div>
+        <div class="result-item highlight2">
+          <div class="r-label">Total VA (PF 0.85)</div>
+          <div class="r-val cyan" id="a-tva">—</div>
+        </div>
+        <div class="result-item">
+          <div class="r-label">Biaya/Hari</div>
+          <div class="r-val" id="a-hari">—</div>
+        </div>
+        <div class="result-item">
+          <div class="r-label">Biaya/Bulan</div>
+          <div class="r-val" id="a-bulan">—</div>
+        </div>
+      </div>
+      <div class="tariff-info" id="a-saran">—</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // TABS
+  function switchTab(name) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  // MODE
+  function updateMode() {
+    const m = document.getElementById('mode').value;
+    document.getElementById('inputs-vi').style.display = m === 'v_i' ? 'block' : 'none';
+    document.getElementById('inputs-wpf').style.display = m === 'w_pf' ? 'block' : 'none';
+    document.getElementById('inputs-vapf').style.display = m === 'va_pf' ? 'block' : 'none';
+    document.getElementById('res-watt').classList.remove('show');
+  }
+
+  function hitungWatt() {
+    const m = document.getElementById('mode').value;
+    let watt, va, amp, pf;
+    if (m === 'v_i') {
+      const v = parseFloat(document.getElementById('volt').value) || 0;
+      const i = parseFloat(document.getElementById('ampere').value) || 0;
+      pf = parseFloat(document.getElementById('pf1').value) || 0.85;
+      va = v * i;
+      watt = va * pf;
+      amp = i;
+    } else if (m === 'w_pf') {
+      watt = parseFloat(document.getElementById('watt_in').value) || 0;
+      pf = parseFloat(document.getElementById('pf2').value) || 0.85;
+      va = watt / pf;
+      amp = va / 220;
+    } else {
+      va = parseFloat(document.getElementById('va_in').value) || 0;
+      pf = parseFloat(document.getElementById('pf3').value) || 0.85;
+      watt = va * pf;
+      amp = va / 220;
+    }
+
+    document.getElementById('r-watt').textContent = fmt(watt, 1) + ' W';
+    document.getElementById('r-va').textContent = fmt(va, 1) + ' VA';
+    document.getElementById('r-amp').textContent = fmt(amp, 2) + ' A';
+    document.getElementById('r-pf').textContent = fmt(pf, 2);
+    document.getElementById('r-note').innerHTML = `VA lebih besar dari Watt karena <span>power factor < 1</span>. UPS/genset harus dipilih minimal <span>${fmt(va*1.2,0)} VA</span>.`;
+    document.getElementById('res-watt').classList.add('show');
+  }
+
+  // BIAYA
+  function updateJam() {
+    const v = document.getElementById('b-jam').value;
+    document.getElementById('jam-val').textContent = v + ' jam';
+  }
+
+  function updateTarif() {
+    const v = document.getElementById('b-tarif').value;
+    document.getElementById('custom-tarif').style.display = v === 'custom' ? 'block' : 'none';
+    if (v !== 'custom') document.getElementById('tarif-label').innerHTML = `Tarif: <span>Rp ${parseInt(v).toLocaleString('id')}/kWh</span>`;
+  }
+
+  function hitungBiaya() {
+    const w = parseFloat(document.getElementById('b-watt').value) || 0;
+    const jam = parseFloat(document.getElementById('b-jam').value) || 8;
+    let tarif = document.getElementById('b-tarif').value;
+    tarif = tarif === 'custom' ? parseFloat(document.getElementById('b-custom').value) : parseFloat(tarif);
+
+    const kwhHari = (w * jam) / 1000;
+    const biayaHari = kwhHari * tarif;
+    const biayaMinggu = biayaHari * 7;
+    const biayaBulan = biayaHari * 30;
+    const kwhBulan = kwhHari * 30;
+
+    document.getElementById('b-hari').textContent = 'Rp ' + fmtRp(biayaHari);
+    document.getElementById('b-minggu').textContent = 'Rp ' + fmtRp(biayaMinggu);
+    document.getElementById('b-bulan').textContent = 'Rp ' + fmtRp(biayaBulan);
+    document.getElementById('b-kwh').textContent = fmt(kwhBulan, 2) + ' kWh';
+    document.getElementById('res-biaya').classList.add('show');
+  }
+
+  // ALAT
+  let devices = [
+    { name: 'Lampu LED', watt: 10 },
+    { name: 'TV 32"', watt: 60 },
+    { name: 'Kulkas', watt: 100 },
+    { name: 'AC 1 PK', watt: 900 },
+  ];
+
+  function renderDevices() {
+    const list = document.getElementById('device-list');
+    if (devices.length === 0) { list.innerHTML = '<div style="color:var(--muted);font-size:.8rem;font-family:Space Mono,monospace;text-align:center;padding:12px">Belum ada alat</div>'; return; }
+    list.innerHTML = devices.map((d, i) => `
+      <div class="device-row">
+        <span class="device-name">${d.name}</span>
+        <span class="device-watt">${d.watt}W</span>
+        <button class="device-del" onclick="removeDevice(${i})">✕</button>
+      </div>`).join('');
+  }
+
+  function addDevice() {
+    const nama = document.getElementById('d-nama').value.trim();
+    const watt = parseFloat(document.getElementById('d-watt').value);
+    if (!nama || !watt) return;
+    devices.push({ name: nama, watt });
+    document.getElementById('d-nama').value = '';
+    document.getElementById('d-watt').value = '';
+    renderDevices();
+  }
+
+  function removeDevice(i) {
+    devices.splice(i, 1);
+    renderDevices();
+  }
+
+  function updateAJam() {
+    document.getElementById('a-jam-val').textContent = document.getElementById('a-jam').value + ' jam';
+  }
+
+  function hitungAlat() {
+    const totalW = devices.reduce((s, d) => s + d.watt, 0);
+    const totalVA = totalW / 0.85;
+    const jam = parseFloat(document.getElementById('a-jam').value) || 8;
+    const tarif = parseFloat(document.getElementById('a-tarif').value);
+    const kwhHari = (totalW * jam) / 1000;
+    const biayaHari = kwhHari * tarif;
+    const biayaBulan = biayaHari * 30;
+
+    document.getElementById('a-twatt').textContent = fmt(totalW, 0) + ' W';
+    document.getElementById('a-tva').textContent = fmt(totalVA, 0) + ' VA';
+    document.getElementById('a-hari').textContent = 'Rp ' + fmtRp(biayaHari);
+    document.getElementById('a-bulan').textContent = 'Rp ' + fmtRp(biayaBulan);
+
+    let saran = '';
+    if (totalW < 450) saran = `Total daya <span>${fmt(totalW,0)}W</span> — cocok untuk daya <span>900VA</span>.`;
+    else if (totalW < 1100) saran = `Total daya <span>${fmt(totalW,0)}W</span> — disarankan minimal daya <span>1300VA</span>.`;
+    else if (totalW < 1900) saran = `Total daya <span>${fmt(totalW,0)}W</span> — disarankan minimal daya <span>2200VA</span>.`;
+    else saran = `Total daya <span>${fmt(totalW,0)}W</span> — disarankan daya <span>3500VA+</span>.`;
+    document.getElementById('a-saran').innerHTML = saran;
+    document.getElementById('res-alat').classList.add('show');
+  }
+
+  // HELPERS
+  function fmt(n, dec) { return isNaN(n) ? '0' : n.toFixed(dec); }
+  function fmtRp(n) { return Math.round(n).toLocaleString('id'); }
+
+  // Init
+  renderDevices();
+</script>
+</body>
+</html>
