@@ -2,185 +2,179 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>SiliconFlow API Key Checker</title>
+    <title>SiliconFlow API Key Checker (Fix)</title>
 </head>
-<body style="margin:20px; font-family:system-ui, 'Segoe UI', monospace; background:#fefefe; color:#111;">
-
+<body style="margin:20px; font-family:monospace; background:white; color:black;">
     <h1>🔑 SiliconFlow API Key Checker</h1>
-    <p>Masukkan API Key Anda untuk memeriksa validitas terhadap <strong>SiliconFlow API</strong> (v1).</p>
+    <p>Cek validitas API Key <strong>SiliconFlow</strong> via endpoint <code>/v1/models</code></p>
     
-    <!-- Form sederhana tanpa styling rumit -->
-    <form id="apiForm" style="margin: 24px 0 16px 0;">
-        <label for="apiKeyInput" style="font-weight:600;">API Key :</label>
-        <br>
-        <input type="password" id="apiKeyInput" name="apikey" placeholder="sk-xxxxxxxxxxxxxxxxxxxx" 
-               style="width:100%; max-width:500px; padding:8px; margin-top:6px; margin-bottom:12px; border:1px solid #888; background:#fff; font-family:monospace; font-size:1rem;">
-        <br>
-        <button type="submit" style="padding:8px 20px; background:#e0e0e0; border:1px solid #6c6c6c; cursor:pointer; font-weight:bold;">✔️ Periksa API Key</button>
-        <button type="button" id="clearBtn" style="margin-left:8px; padding:8px 20px; background:#f0f0f0; border:1px solid #aaa; cursor:pointer;">🗑️ Clear</button>
+    <form id="apiForm">
+        <label><strong>API Key:</strong></label><br>
+        <input type="password" id="apiKey" 
+               style="width:100%; max-width:500px; padding:6px; border:1px solid gray; background:white;"
+               placeholder="sk-xxxxxxxxxxxxxxxxxxxx"><br><br>
+        
+        <button type="submit" style="padding:6px 16px;">✅ Cek Key</button>
+        <button type="button" id="clearBtn" style="margin-left:8px; padding:6px 16px;">🗑 Clear</button>
     </form>
     
-    <!-- Area hasil pengecekan -->
-    <div id="resultArea" style="border-left: 4px solid #ccc; padding:12px 16px; margin-top:20px; background:#f9f9f9; font-family:monospace; white-space:pre-wrap; word-break:break-word;">
-        <span id="resultMessage">✨ Belum ada pengecekan. Masukkan API Key dan klik tombol di atas.</span>
+    <div id="result" style="margin-top:20px; padding:10px; border-left:4px solid #aaa; background:#f7f7f7;">
+        💡 Masukkan API Key lalu klik "Cek Key"
     </div>
     
-    <hr style="margin:28px 0 12px 0; border:0; border-top:1px solid #ddd;">
-    <details style="font-size:0.85rem; color:#444;">
-        <summary>📘 Informasi cara kerja</summary>
-        <p>Checker ini mengirim request <code>GET</code> ke endpoint <strong>https://api.siliconflow.cn/v1/models</strong><br>
-        dengan header <code>Authorization: Bearer {API_KEY}</code>. Jika response status 200, maka API Key valid (dan dapat digunakan).<br>
-        Jika status 401 → Unauthorized (API Key tidak valid / salah). Status lainnya (429, 500, dsb) akan ditampilkan sesuai error.<br>
-        <strong>Catatan:</strong> Tidak ada data yang disimpan. Semua pengecekan dilakukan secara langsung dari browser Anda.</p>
+    <hr>
+    <details>
+        <summary>📘 Catatan teknis</summary>
+        <p>- Header <code>Authorization: Bearer {KEY}</code> HARUS ASCII murni.<br>
+        - Error "Cannot convert value ... to ByteString" terjadi jika ada karakter di luar ASCII (misal: spasi aneh, karakter Unicode, atau line break).<br>
+        - Form ini akan membersihkan karakter tidak valid sebelum request.<br>
+        - Status 200 = KEY VALID ✅<br>
+        - Status 401 = KEY INVALID ❌
+        </p>
     </details>
-    
+
     <script>
-        // Pure JavaScript, tanpa framework, tanpa CSS gemerlap
-        // Fungsi utama: validasi silikonflow API key via endpoint models
-        
-        const form = document.getElementById('apiForm');
-        const apiKeyInput = document.getElementById('apiKeyInput');
-        const resultMsgSpan = document.getElementById('resultMessage');
-        const clearBtn = document.getElementById('clearBtn');
-        
-        function setResult(isOk, message, details = '') {
-            let statusText = '';
-            let fullMsg = '';
-            if (isOk === true) {
-                statusText = '✅ VALID';
-                fullMsg = `${statusText} : ${message}`;
-            } else if (isOk === false) {
-                statusText = '❌ INVALID';
-                fullMsg = `${statusText} : ${message}`;
-            } else {
-                // netral / info
-                fullMsg = message;
-            }
-            if (details) {
-                fullMsg += `\n📎 Detail: ${details}`;
-            }
-            resultMsgSpan.innerText = fullMsg;
-        }
-        
-        // Fungsi reset / clear input dan result
-        function resetChecker() {
-            apiKeyInput.value = '';
-            setResult(null, '✨ Input kosong. Masukkan API Key dan klik periksa.');
-            apiKeyInput.focus();
-        }
-        
-        // Fungsi utama check API Key ke SiliconFlow
-        async function checkSiliconFlowApiKey(apiKey) {
-            // Dasar: validasi input tidak kosong
-            if (!apiKey || apiKey.trim() === '') {
-                setResult(false, 'API Key tidak boleh kosong.', 'Harap masukkan key yang valid dimulai dengan "sk-"');
-                return;
-            }
-            
-            const trimmedKey = apiKey.trim();
-            // Tampilkan status loading
-            setResult(null, '⏳ Mengecek koneksi ke SiliconFlow API... Mohon tunggu sebentar.');
-            
-            // Endpoint models: hanya memerlukan akses GET (ringan untuk validasi kredensial)
-            const endpoint = 'https://api.siliconflow.cn/v1/models';
-            
-            try {
-                const controller = new AbortController();
-                // timeout 15 detik untuk menghindari menggantung terlalu lama
-                const timeoutId = setTimeout(() => controller.abort(), 15000);
-                
-                const response = await fetch(endpoint, {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${trimmedKey}`,
-                        'Content-Type': 'application/json'
-                    },
-                    signal: controller.signal
-                });
-                
-                clearTimeout(timeoutId);
-                
-                // Analisis status code
-                if (response.status === 200) {
-                    // Key valid! Ambil sedikit informasi jumlah model untuk konfirmasi (optional)
-                    let modelCount = 'unknown';
-                    try {
-                        const data = await response.json();
-                        if (data && data.data && Array.isArray(data.data)) {
-                            modelCount = data.data.length;
-                        } else if (data && data.models && Array.isArray(data.models)) {
-                            modelCount = data.models.length;
-                        } else {
-                            modelCount = 'berhasil (data terstruktur)';
-                        }
-                    } catch (jsonErr) {
-                        modelCount = 'respon sukses (tapi parsing model gagal, namun status 200 menandakan key valid)';
+        (function() {
+            const form = document.getElementById('apiForm');
+            const inputKey = document.getElementById('apiKey');
+            const resultDiv = document.getElementById('result');
+            const clearBtn = document.getElementById('clearBtn');
+
+            // Fungsi untuk membersihkan API Key: hanya ASCII printable & hapus karakter aneh
+            function sanitizeAsciiOnly(raw) {
+                if (!raw) return '';
+                // Hanya ambil karakter ASCII range 32-126 (printable) + tab, newline tidak dibutuhkan
+                let ascii = '';
+                for (let i = 0; i < raw.length; i++) {
+                    const code = raw.charCodeAt(i);
+                    if (code >= 32 && code <= 126) {
+                        ascii += raw[i];
                     }
-                    setResult(true, `API Key VALID! Endpoint models mengembalikan status 200.`, `Jumlah model tersedia: ${modelCount}. Key dapat digunakan untuk request API SiliconFlow.`);
-                } 
-                else if (response.status === 401) {
-                    // Unauthorized -> Key tidak valid / kadaluarsa
-                    let errorDetail = 'Token tidak dikenali atau tidak sah. Periksa kembali API Key Anda.';
-                    try {
-                        const errJson = await response.json();
-                        if (errJson && errJson.error && errJson.error.message) {
-                            errorDetail = errJson.error.message;
-                        } else if (errJson && errJson.message) {
-                            errorDetail = errJson.message;
-                        }
-                    } catch(e) { /* jika body bukan json, abaikan */ }
-                    setResult(false, 'API Key TIDAK VALID (status 401 Unauthorized).', errorDetail);
+                    // biarkan \r \n \t tidak kita masukkan karena API Key tidak butuh itu
                 }
-                else if (response.status === 403) {
-                    setResult(false, 'Akses ditolak (403 Forbidden). Mungkin API Key tidak memiliki izin akses models.', 'Periksa apakah key memiliki hak akses yang sesuai.');
-                }
-                else if (response.status === 429) {
-                    setResult(false, 'Terlalu banyak permintaan (429 Too Many Requests). Bukan berarti key invalid, namun rate limit.', 'Coba lagi nanti, tapi pastikan key benar.');
-                }
-                else if (response.status >= 500 && response.status < 600) {
-                    setResult(false, `Error server SiliconFlow (${response.status}) - Silakan coba lagi nanti.`, 'Server sibuk atau masalah internal.');
-                }
-                else {
-                    // status lain seperti 400, 404, dll.
-                    let extraMsg = `Kode status: ${response.status}`;
-                    try {
-                        const textBody = await response.text();
-                        if (textBody && textBody.length < 300) extraMsg += ` - ${textBody.substring(0, 200)}`;
-                    } catch(e) {}
-                    setResult(false, `Respons tidak terduga dari server.`, extraMsg);
-                }
-            } catch (error) {
-                // Error network / abort / cors / timeout
-                let errorMsg = error.message;
-                if (error.name === 'AbortError') {
-                    setResult(false, 'Permintaan timeout (15 detik). Periksa koneksi internet atau server SiliconFlow sedang lambat.', 'Coba lagi nanti.');
-                } else if (errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
-                    setResult(false, 'Gagal terhubung ke API SiliconFlow. Cek koneksi internet atau CORS?', 'Pastikan Anda tidak diblokir oleh jaringan dan endpoint https://api.siliconflow.cn dapat diakses.');
-                } else {
-                    setResult(false, `Kesalahan saat pengecekan: ${errorMsg}`, 'Periksa konsol browser untuk detail lebih lanjut.');
-                }
-                console.error('SiliconFlow checker error:', error);
+                return ascii;
             }
-        }
-        
-        // Event listener form submit
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const rawKey = apiKeyInput.value;
-            checkSiliconFlowApiKey(rawKey);
-        });
-        
-        // Event listener untuk tombol clear
-        clearBtn.addEventListener('click', () => {
-            resetChecker();
-        });
-        
-        // Opsional: jika ingin cek contoh saat load? tidak perlu, cukup beri pesan default.
-        window.addEventListener('load', () => {
-            apiKeyInput.focus();
-            setResult(null, '✨ Siap memeriksa. Masukkan API Key SiliconFlow Anda.');
-        });
+
+            function setResult(isValid, message, detail = '') {
+                let prefix = '';
+                if (isValid === true) prefix = '✅ VALID: ';
+                else if (isValid === false) prefix = '❌ INVALID: ';
+                else prefix = 'ℹ️ INFO: ';
+                
+                let fullMsg = prefix + message;
+                if (detail) fullMsg += '\n📎 ' + detail;
+                resultDiv.innerText = fullMsg;
+                // optional: simpan juga di console biar jelas
+                console.log('[SiliconFlow Checker]', message, detail);
+            }
+            
+            async function checkSiliconFlow(apiKeyRaw) {
+                // Step 1: bersihkan dari karakter aneh
+                const cleanedKey = sanitizeAsciiOnly(apiKeyRaw);
+                
+                if (!cleanedKey || cleanedKey.length < 10) {
+                    setResult(false, 'API Key kosong atau terlalu pendek setelah pembersihan karakter.', 'Pastikan key dimulai dengan "sk-" dan tanpa karakter aneh.');
+                    return false;
+                }
+                
+                // validasi awal: apakah berubah drastis? (opsional kasih warning)
+                if (cleanedKey !== apiKeyRaw && apiKeyRaw.length > 0) {
+                    console.warn('Ada karakter non-ASCII / aneh di key, sudah dibersihkan.');
+                    setResult(null, '⚠️ Karakter tidak valid terdeteksi (Unicode / special). Key sudah dibersihkan, mencoba dengan versi ASCII...', '');
+                }
+                
+                setResult(null, '⏳ Mengecek ke SiliconFlow API...');
+                
+                const endpoint = 'https://api.siliconflow.cn/v1/models';
+                
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 10000);
+                    
+                    const response = await fetch(endpoint, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': `Bearer ${cleanedKey}`,
+                            'Content-Type': 'application/json'
+                        },
+                        signal: controller.signal
+                    });
+                    
+                    clearTimeout(timeoutId);
+                    
+                    if (response.status === 200) {
+                        let modelInfo = '';
+                        try {
+                            const data = await response.json();
+                            if (data && data.data && Array.isArray(data.data)) {
+                                modelInfo = ` (jumlah model: ${data.data.length})`;
+                            }
+                        } catch(e) { modelInfo = ' (response OK)'; }
+                        setResult(true, `API Key VALID! Status 200 dari models endpoint.${modelInfo}`, 'Key siap digunakan.');
+                        return true;
+                    } 
+                    else if (response.status === 401) {
+                        let errDetail = '';
+                        try {
+                            const errJson = await response.json();
+                            errDetail = errJson.error?.message || errJson.message || 'Unauthorized';
+                        } catch(e) { errDetail = 'Token tidak dikenali'; }
+                        setResult(false, 'API Key TIDAK VALID (status 401 Unauthorized)', errDetail);
+                        return false;
+                    }
+                    else if (response.status === 403) {
+                        setResult(false, 'Akses ditolak (403 Forbidden)', 'Key mungkin tidak punya izin ke models.');
+                    }
+                    else if (response.status === 429) {
+                        setResult(false, 'Rate limit (429) - Bukan berarti key salah, tapi coba lagi nanti.', 'Key mungkin valid, namun terlalu banyak request.');
+                    }
+                    else {
+                        let errText = '';
+                        try {
+                            errText = await response.text();
+                            if (errText.length > 100) errText = errText.substring(0, 100);
+                        } catch(e) {}
+                        setResult(false, `Server merespon status ${response.status}`, errText || 'Tidak ada detail error');
+                    }
+                } catch (err) {
+                    let errorMsg = err.message || String(err);
+                    
+                    // Tangani error "Cannot convert value ... ByteString" (walaupun sudah disanitasi, tetap amankan)
+                    if (errorMsg.includes('ByteString') || errorMsg.includes('character at index')) {
+                        setResult(false, 'Gagal mengirim request karena karakter tidak valid di header Authorization.', 'Pastikan API Key hanya berisi huruf, angka, strip (-), underscore (_) tanpa karakter aneh atau emoji.');
+                    } 
+                    else if (err.name === 'AbortError') {
+                        setResult(false, 'Request timeout (10 detik). Cek koneksi internet atau server SiliconFlow lambat.', 'Coba lagi nanti');
+                    }
+                    else if (errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
+                        setResult(false, 'Gagal terhubung ke SiliconFlow API. Cek internet / CORS / firewall.', 'Pastikan api.siliconflow.cn bisa diakses.');
+                    }
+                    else {
+                        setResult(false, `Kesalahan: ${errorMsg}`, 'Lihat console browser (F12) untuk detail.');
+                    }
+                    console.error('Fetch error detail:', err);
+                }
+            }
+            
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const rawValue = inputKey.value;
+                if (!rawValue.trim()) {
+                    setResult(false, 'API Key kosong', 'Masukkan key terlebih dahulu.');
+                    return;
+                }
+                checkSiliconFlow(rawValue);
+            });
+            
+            clearBtn.addEventListener('click', () => {
+                inputKey.value = '';
+                setResult(null, 'Input sudah dibersihkan. Masukkan API Key SiliconFlow.', '');
+                inputKey.focus();
+            });
+            
+            // Pengecekan awal: tidak otomatis cek, hanya info
+            setResult(null, 'Siap memeriksa API Key SiliconFlow (tanpa CSS alay).', '');
+        })();
     </script>
 </body>
-</html>
+</>
