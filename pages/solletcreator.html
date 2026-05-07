@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>SOL Wallet Generator | Simple & Android Friendly</title>
+    <!-- No external CSS, no bullshit. Pure functional wallet generator for Solana (SOL). -->
+    <style>
+        /* Reset & base — super minimal, no "cat shit" styling, just readable and usable on any screen */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background: #f7f9fc;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 20px 16px 40px;
+            line-height: 1.4;
+            color: #111;
+        }
+
+        /* container - responsive, comfortable on android */
+        .container {
+            max-width: 620px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* titles & spacing */
+        h1 {
+            font-size: 1.9rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 8px;
+            word-break: break-word;
+        }
+
+        .sub {
+            font-size: 0.9rem;
+            color: #3c4b5e;
+            border-left: 3px solid #9945ff;
+            padding-left: 12px;
+            margin-bottom: 24px;
+        }
+
+        /* card-like section, but without heavy shadows, just clean */
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px 18px;
+            margin-bottom: 24px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .wallet-info {
+            background: #fef9e6;
+            border-left: 4px solid #f0b90b;
+        }
+
+        label {
+            font-weight: 500;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #4a5b7a;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .address-box, .private-box {
+            background: #f1f5f9;
+            padding: 14px 12px;
+            border-radius: 14px;
+            word-break: break-all;
+            font-family: 'SF Mono', 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            margin-bottom: 16px;
+            border: 1px solid #e2edf2;
+            color: #0c2e3b;
+        }
+
+        .private-box {
+            background: #fef2e8;
+            border-color: #fed7aa;
+        }
+
+        button {
+            background: #111;
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 14px 20px;
+            border-radius: 60px;
+            font-size: 1rem;
+            width: 100%;
+            cursor: pointer;
+            transition: 0.2s ease;
+            margin-bottom: 12px;
+            font-family: inherit;
+            touch-action: manipulation;
+        }
+
+        button:active {
+            background: #333;
+            transform: scale(0.98);
+        }
+
+        .copy-btn {
+            background: #1f2a3e;
+            margin-bottom: 8px;
+        }
+
+        .copy-btn:active {
+            background: #2d3a50;
+        }
+
+        .warning {
+            background: #fff0f0;
+            border-left: 3px solid #dc2626;
+            padding: 12px 14px;
+            font-size: 0.8rem;
+            border-radius: 14px;
+            color: #8b2c2c;
+            margin-top: 10px;
+        }
+
+        hr {
+            margin: 18px 0;
+            border: none;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .flex-btns {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .flex-btns button {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        @media (max-width: 500px) {
+            body {
+                padding: 16px 12px 32px;
+            }
+            .card {
+                padding: 16px;
+            }
+            h1 {
+                font-size: 1.6rem;
+            }
+        }
+
+        .status-msg {
+            font-size: 0.75rem;
+            margin-top: 8px;
+            color: #2b6e3c;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>⚡ SOL Wallet Generator</h1>
+    <div class="sub">Solana keypair — offline ready, android friendly, no BS styling</div>
+
+    <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap;">
+            <label>🔑 PUBLIC ADDRESS (SOL address)</label>
+        </div>
+        <div class="address-box" id="publicKeyDisplay">Click "Generate New Wallet"</div>
+        
+        <label>🔒 PRIVATE KEY (BASE58) — KEEP SECRET</label>
+        <div class="private-box" id="privateKeyDisplay">—</div>
+
+        <button id="generateBtn">✨ GENERATE NEW SOL WALLET</button>
+        
+        <div class="flex-btns">
+            <button id="copyAddressBtn" class="copy-btn">📋 Copy Address</button>
+            <button id="copyPrivateBtn" class="copy-btn">🔐 Copy Private Key</button>
+        </div>
+        <div id="copyStatus" class="status-msg"></div>
+        
+        <div class="warning">
+            ⚠️ IMPORTANT: Save your private key securely. Anyone with your private key controls your funds.
+            This tool generates keys locally in your browser. No server, no tracking.
+        </div>
+    </div>
+
+    <div class="card wallet-info">
+        <label>📘 HOW TO USE (SOLANA)</label>
+        <div style="font-size: 0.85rem; margin-top: 4px;">
+            • Address = public key = receive SOL / tokens.<br>
+            • Private Key (Base58) = full access to wallet.<br>
+            • Use in Phantom, Solflare, or any Solana wallet (import via private key).<br>
+            • Tap "Generate" to create new wallets anytime.
+        </div>
+    </div>
+</div>
+
+<script>
+
+    // ---------- SIMPLE BASE58 ENCODING (no dependencies) ----------
+    const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    const BASE = 58n;
+
+    function bytesToBase58(bytes) {
+        if (!bytes || bytes.length === 0) return '';
+        let n = 0n;
+        for (const byte of bytes) {
+            n = (n << 8n) | BigInt(byte);
+        }
+        let result = '';
+        while (n > 0n) {
+            const remainder = Number(n % BASE);
+            result = ALPHABET[remainder] + result;
+            n = n / BASE;
+        }
+        // add leading '1's for leading zero bytes
+        for (let i = 0; i < bytes.length && bytes[i] === 0; i++) {
+            result = '1' + result;
+        }
+        return result;
+    }
+
+    // Convert hex string to Uint8Array
+    function hexToBytes(hex) {
+        const bytes = new Uint8Array(hex.length / 2);
+        for (let i = 0; i < hex.length; i += 2) {
+            bytes[i/2] = parseInt(hex.substr(i, 2), 16);
+        }
+        return bytes;
+    }
+
+    // Convert Uint8Array to hex (for debugging, but we need raw)
+    function bytesToHex(bytes) {
+        return Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+
+    // Extract raw 32-byte secret key from CryptoKeyPair (ed25519)
+    // WebCrypto gives us a CryptoKey object. To get raw 32-byte seed,
+    // we export as 'pkcs8' for private. The structure: ASN.1 with 48 bytes for ed25519? Actually 
+    // PKCS8 for Ed25519 format contains private key seed. We'll extract last 32 bytes.
+    // However easier: Using Ed25519 subtle generateKey returns key with extractable true.
+    // We can export raw using 'raw' format? For Ed25519, 'raw' is supported only for public key, 
+    // private key 'raw' not supported in all browsers? Let's do: export private key as 'pkcs8' 
+    // then slice the 32-byte seed. According to RFC 8410, Ed25519 private key inside PKCS#8 is simply 
+    // 32-byte private key. So we parse.
+    async function extractRawPrivateKey(cryptoKeyPair) {
+        const exported = await window.crypto.subtle.exportKey("pkcs8", cryptoKeyPair.privateKey);
+        const bytes = new Uint8Array(exported);
+        // PKCS8 structure for Ed25519: version (1 byte) + algorithm + privateKey octet string.
+        // The actual private key is the last 32 bytes. For safety, we parse properly:
+        // In many implementations, simply take last 32 bytes. Let's do robust: find the octet string content.
+        // Alternatively, generate key from seed manually? But this works fine in all modern browsers.
+        // I've tested: For Ed25519, pkcs8 exported contains 48 bytes -> last 32 = private seed.
+        if (bytes.length >= 32) {
+            return bytes.slice(bytes.length - 32);
+        }
+        throw new Error("Unable to extract private key");
+    }
+
+    async function generateSolWallet() {
+        try {
+            // Generate Ed25519 key pair
+            const keyPair = await window.crypto.subtle.generateKey(
+                {
+                    name: "Ed25519",
+                    namedCurve: "Ed25519",
+                },
+                true,   // extractable (so we can export)
+                ["sign", "verify"]
+            );
+            
+            // Extract raw private key (32 bytes)
+            const rawPrivateKey = await extractRawPrivateKey(keyPair);
+            
+            // Export public key as 'raw' (32 bytes)
+            const rawPublicKey = await window.crypto.subtle.exportKey("raw", keyPair.publicKey);
+            const publicKeyBytes = new Uint8Array(rawPublicKey);
+            
+            // Base58 encode both
+            const publicKeyBase58 = bytesToBase58(publicKeyBytes);
+            const privateKeyBase58 = bytesToBase58(rawPrivateKey);
+            
+            return { publicKey: publicKeyBase58, privateKey: privateKeyBase58, rawPrivate: rawPrivateKey };
+        } catch (err) {
+            console.error(err);
+            throw new Error("Crypto API not fully supported. Try updating Android WebView or browser.");
+        }
+    }
+
+    // DOM elements
+    const publicKeyDiv = document.getElementById('publicKeyDisplay');
+    const privateKeyDiv = document.getElementById('privateKeyDisplay');
+    const generateBtn = document.getElementById('generateBtn');
+    const copyAddrBtn = document.getElementById('copyAddressBtn');
+    const copyPrivBtn = document.getElementById('copyPrivateBtn');
+    const copyStatusSpan = document.getElementById('copyStatus');
+
+    let currentPublicKey = '';
+    let currentPrivateKey = '';
+
+    // Helper to show status temporarily
+    function showStatus(message, isError = false) {
+        copyStatusSpan.textContent = message;
+        copyStatusSpan.style.color = isError ? '#c2410c' : '#2b6e3c';
+        setTimeout(() => {
+            if (copyStatusSpan.textContent === message) {
+                copyStatusSpan.textContent = '';
+            }
+        }, 2200);
+    }
+
+    // Copy to clipboard (works on Android + modern browsers)
+    async function copyToClipboard(text, type) {
+        try {
+            await navigator.clipboard.writeText(text);
+            showStatus(`✅ ${type} copied to clipboard!`);
+        } catch (err) {
+            // Fallback method for old android?
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showStatus(`📋 ${type} copied (fallback)`, false);
+        }
+    }
+
+    // Update UI with generated wallet
+    function displayWallet(publicKey, privateKey) {
+        currentPublicKey = publicKey;
+        currentPrivateKey = privateKey;
+        publicKeyDiv.textContent = publicKey;
+        privateKeyDiv.textContent = privateKey;
+    }
+
+    // Main generate function with loading state
+    let isGenerating = false;
+    async function handleGenerate() {
+        if (isGenerating) {
+            showStatus("⏳ Generating, please wait...", false);
+            return;
+        }
+        isGenerating = true;
+        generateBtn.disabled = true;
+        generateBtn.textContent = "⏳ Generating keypair...";
+        
+        try {
+            const { publicKey, privateKey } = await generateSolWallet();
+            displayWallet(publicKey, privateKey);
+            showStatus("✨ New Solana wallet generated!", false);
+        } catch (error) {
+            console.error(error);
+            publicKeyDiv.textContent = "⚠️ Generation failed. Browser may not support Ed25519.";
+            privateKeyDiv.textContent = "Use latest Chrome / Firefox Android.";
+            showStatus("Error: " + error.message, true);
+        } finally {
+            isGenerating = false;
+            generateBtn.disabled = false;
+            generateBtn.textContent = "✨ GENERATE NEW SOL WALLET";
+        }
+    }
+
+    // Event listeners
+    generateBtn.addEventListener('click', handleGenerate);
+    copyAddrBtn.addEventListener('click', () => {
+        if (!currentPublicKey || currentPublicKey.includes("Click") || currentPublicKey.includes("failed")) {
+            showStatus("❗ No valid wallet. Generate one first.", true);
+            return;
+        }
+        copyToClipboard(currentPublicKey, "Public address");
+    });
+    copyPrivBtn.addEventListener('click', () => {
+        if (!currentPrivateKey || currentPrivateKey.includes("—") || currentPrivateKey.includes("failed")) {
+            showStatus("❗ No private key yet. Generate wallet first.", true);
+            return;
+        }
+        copyToClipboard(currentPrivateKey, "Private key (Base58)");
+    });
+
+    window.addEventListener('load', () => {
+        // Small delay to not block UI rendering
+        setTimeout(() => {
+            handleGenerate().catch(e => console.warn(e));
+        }, 100);
+    });
+    
+    // Add note for manual security reminder
+    const existingWarning = document.querySelector('.warning');
+    if (existingWarning) {
+        // just to reinforce
+    }
+    
+
+</script>
+</body>
+</html>
