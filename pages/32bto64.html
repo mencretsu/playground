@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>32-byte Seed → Phantom JSON</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{background:#0b0f18;font-family:system-ui,sans-serif;padding:20px 16px;color:#eef2ff;}
+        .container{max-width:620px;margin:0 auto;}
+        .card{background:#11161f;border-radius:20px;padding:20px;margin-bottom:20px;border:1px solid #2d3748;}
+        label{font-size:0.7rem;text-transform:uppercase;color:#8b9dc3;display:block;margin-bottom:8px;}
+        textarea{
+            width:100%;background:#0a0e14;border:1px solid #2d3748;color:#fff;padding:14px;
+            border-radius:14px;font-family:monospace;font-size:0.8rem;margin-bottom:16px;
+        }
+        .result-box{
+            background:#0a0e14;padding:14px;border-radius:14px;word-break:break-all;
+            font-family:monospace;font-size:0.7rem;margin-bottom:16px;border:1px solid #2a3748;
+            max-height:180px;overflow-y:auto;
+        }
+        .json-box{background:#1a1410;border-color:#b45309;color:#ffcd94;}
+        button{
+            background:#9945ff;border:none;color:white;font-weight:bold;padding:14px;
+            border-radius:40px;width:100%;font-size:1rem;margin-bottom:12px;cursor:pointer;
+        }
+        button:active{background:#7a36cc;transform:scale(0.98);}
+        .copy-btn{background:#2d3748;}
+        .flex-btns{display:flex;gap:12px;}
+        .flex-btns button{flex:1;margin-bottom:0;}
+        .status{font-size:0.7rem;margin-top:8px;text-align:center;color:#6ee7b7;}
+        .warning{background:#1e1a1a;border-left:3px solid #f97316;padding:12px;font-size:0.7rem;border-radius:14px;margin-top:14px;}
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="card">
+        <label>📥 SEED 32-BYTE (BASE58)</label>
+        <textarea id="seedInput" rows="2" placeholder="Paste seed 32-byte lo disini"></textarea>
+        <button id="convertBtn">✨ CONVERT KE JSON (64-BYTE)</button>
+
+        <label>🏦 PUBLIC ADDRESS</label>
+        <div class="result-box" id="pubResult">—</div>
+
+        <label>🔐 PRIVATE KEY JSON - COPY KE PHANTOM</label>
+        <div class="result-box json-box" id="jsonResult">—</div>
+
+        <div class="flex-btns">
+            <button id="copyAddrBtn" class="copy-btn">📋 Copy Address</button>
+            <button id="copyJsonBtn" class="copy-btn">🔑 Copy JSON</button>
+        </div>
+        <div id="statusMsg" class="status"></div>
+        <div class="warning">
+            ⚠️ Paste seed lo → Convert → Copy JSON → Import ke Phantom (Settings → Add Wallet → Import Private Key)
+        </div>
+    </div>
+</div>
+
+<script>
+const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+const BASE = 58n;
+
+function base58Decode(s){
+    let n=0n;
+    for(let c of s){
+        let i=ALPHABET.indexOf(c);
+        if(i==-1) return null;
+        n=n*BASE+BigInt(i);
+    }
+    let bytes=[];
+    while(n>0n){bytes.unshift(Number(n&0xFFn)); n>>=8n;}
+    for(let i=0;i<s.length && s[i]=='1';i++) bytes.unshift(0);
+    return new Uint8Array(bytes);
+}
+
+function bytesToBase58(b){
+    let n=0n;
+    for(let byte of b) n=(n<<8n)|BigInt(byte);
+    let r='';
+    while(n>0n){r=ALPHABET[Number(n%BASE)]+r; n/=BASE;}
+    for(let i=0;i<b.length && b[i]==0;i++) r='1'+r;
+    return r;
+}
+
+async function seedToJson(seed58){
+    let seed=base58Decode(seed58);
+    if(!seed) throw new Error("Base58 decode gagal");
+    if(seed.length!==32) throw new Error(`Harus 32 byte, sekarang ${seed.length} byte`);
+    
+    const prefix=new Uint8Array([0x30,0x2e,0x02,0x01,0x00,0x30,0x05,0x06,0x03,0x2b,0x65,0x70,0x04,0x22,0x04,0x20]);
+    const suffix=new Uint8Array([0xa0,0x03,0x02,0x01,0x01]);
+    const pkcs8=new Uint8Array(prefix.length+32+suffix.length);
+    pkcs8.set(prefix,0);
+    pkcs8.set(seed,prefix.length);
+    pkcs8.set(suffix,prefix.length+32);
+    
+    let privKey=await crypto.subtle.importKey("pkcs8",pkcs8,{name:"Ed25519",namedCurve:"Ed25519"},true,["sign"]);
+    let pubRaw=await crypto.subtle.exportKey("raw",privKey);
+    let pubBytes=new Uint8Array(pubRaw);
+    
+    let full64=new Uint8Array(64);
+    full64.set(seed,0);
+    full64.set(pubBytes,32);
+    
+    return {
+        pubKey: bytesToBase58(pubBytes),
+        json: JSON.stringify(Array.from(full64))
+    };
+}
+
+const seedInp=document.getElementById('seedInput');
+const convertBtn=document.getElementById('convertBtn');
+const pubResult=document.getElementById('pubResult');
+const jsonResult=document.getElementById('jsonResult');
+const copyAddrBtn=document.getElementById('copyAddrBtn');
+const copyJsonBtn=document.getElementById('copyJsonBtn');
+const statusMsg=document.getElementById('statusMsg');
+
+let currentPub='', currentJson='';
+
+function showStatus(msg,err=false){
+    statusMsg.textContent=msg;
+    statusMsg.style.color=err?'#f97316':'#6ee7b7';
+    setTimeout(()=>{if(statusMsg.textContent===msg)statusMsg.textContent='';},2000);
+}
+
+async function copy(txt,label){
+    try{
+        await navigator.clipboard.writeText(txt);
+        showStatus(`✅ ${label} copied`);
+    }catch{
+        let ta=document.createElement('textarea');
+        ta.value=txt;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showStatus(`📋 ${label} copied`);
+    }
+}
+
+convertBtn.onclick=async()=>{
+    let seed=seedInp.value.trim();
+    if(!seed){showStatus("Masukkan seed dulu!",true); return;}
+    convertBtn.disabled=true;
+    convertBtn.textContent="⏳ Processing...";
+    try{
+        let res=await seedToJson(seed);
+        currentPub=res.pubKey;
+        currentJson=res.json;
+        pubResult.textContent=res.pubKey;
+        jsonResult.textContent=res.json;
+        showStatus("✅ Siap! Copy JSON ke Phantom");
+    }catch(e){
+        pubResult.textContent="❌ Error";
+        jsonResult.textContent=e.message;
+        showStatus(e.message,true);
+    }finally{
+        convertBtn.disabled=false;
+        convertBtn.textContent="✨ CONVERT KE JSON (64-BYTE)";
+    }
+};
+
+copyAddrBtn.onclick=()=>{if(currentPub) copy(currentPub,"Address"); else showStatus("Convert dulu!",true);};
+copyJsonBtn.onclick=()=>{if(currentJson) copy(currentJson,"JSON"); else showStatus("Convert dulu!",true);};
+</script>
+</body>
+</html>
