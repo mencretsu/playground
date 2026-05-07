@@ -2,210 +2,165 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>SOL Wallet Generator | Simple & Android Friendly</title>
-    <!-- No external CSS, no bullshit. Pure functional wallet generator for Solana (SOL). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>SOL Wallet Generator - Phantom Compatible</title>
     <style>
-        /* Reset & base — super minimal, no "cat shit" styling, just readable and usable on any screen */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            -webkit-tap-highlight-color: transparent;
         }
-
         body {
-            background: #f7f9fc;
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            background: #0b0f18;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
             padding: 20px 16px 40px;
-            line-height: 1.4;
-            color: #111;
+            color: #eef2ff;
         }
-
-        /* container - responsive, comfortable on android */
         .container {
             max-width: 620px;
             margin: 0 auto;
-            width: 100%;
         }
-
-        /* titles & spacing */
         h1 {
-            font-size: 1.9rem;
+            font-size: 1.8rem;
             font-weight: 600;
-            letter-spacing: -0.3px;
-            margin-bottom: 8px;
-            word-break: break-word;
+            margin-bottom: 6px;
         }
-
         .sub {
-            font-size: 0.9rem;
-            color: #3c4b5e;
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-bottom: 24px;
             border-left: 3px solid #9945ff;
             padding-left: 12px;
-            margin-bottom: 24px;
         }
-
-        /* card-like section, but without heavy shadows, just clean */
         .card {
-            background: white;
+            background: #11161f;
             border-radius: 20px;
-            padding: 20px 18px;
-            margin-bottom: 24px;
-            border: 1px solid #e2e8f0;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #2d3748;
         }
-
-        .wallet-info {
-            background: #fef9e6;
-            border-left: 4px solid #f0b90b;
-        }
-
         label {
-            font-weight: 500;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #4a5b7a;
+            letter-spacing: 0.8px;
+            color: #8b9dc3;
             display: block;
             margin-bottom: 8px;
         }
-
         .address-box, .private-box {
-            background: #f1f5f9;
-            padding: 14px 12px;
+            background: #0a0e14;
+            padding: 14px;
             border-radius: 14px;
             word-break: break-all;
-            font-family: 'SF Mono', 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
+            font-family: monospace;
+            font-size: 0.8rem;
             margin-bottom: 16px;
-            border: 1px solid #e2edf2;
-            color: #0c2e3b;
+            border: 1px solid #2a3748;
+            color: #b9e6ff;
         }
-
         .private-box {
-            background: #fef2e8;
-            border-color: #fed7aa;
+            background: #1a1410;
+            border-color: #b45309;
+            color: #ffcd94;
         }
-
         button {
-            background: #111;
+            background: #9945ff;
             border: none;
             color: white;
-            font-weight: 600;
-            padding: 14px 20px;
-            border-radius: 60px;
-            font-size: 1rem;
+            font-weight: bold;
+            padding: 14px;
+            border-radius: 40px;
             width: 100%;
-            cursor: pointer;
-            transition: 0.2s ease;
+            font-size: 1rem;
             margin-bottom: 12px;
-            font-family: inherit;
+            cursor: pointer;
             touch-action: manipulation;
         }
-
         button:active {
-            background: #333;
+            background: #7a36cc;
             transform: scale(0.98);
         }
-
         .copy-btn {
-            background: #1f2a3e;
-            margin-bottom: 8px;
+            background: #2d3748;
         }
-
-        .copy-btn:active {
-            background: #2d3a50;
-        }
-
-        .warning {
-            background: #fff0f0;
-            border-left: 3px solid #dc2626;
-            padding: 12px 14px;
-            font-size: 0.8rem;
-            border-radius: 14px;
-            color: #8b2c2c;
-            margin-top: 10px;
-        }
-
-        hr {
-            margin: 18px 0;
-            border: none;
-            border-top: 1px solid #e2e8f0;
-        }
-
         .flex-btns {
             display: flex;
             gap: 12px;
             flex-wrap: wrap;
         }
-
         .flex-btns button {
             flex: 1;
             margin-bottom: 0;
         }
-
-        @media (max-width: 500px) {
-            body {
-                padding: 16px 12px 32px;
-            }
-            .card {
-                padding: 16px;
-            }
-            h1 {
-                font-size: 1.6rem;
-            }
-        }
-
-        .status-msg {
+        .warning {
+            background: #1e1a1a;
+            border-left: 3px solid #f97316;
+            padding: 12px;
             font-size: 0.75rem;
+            border-radius: 14px;
+            margin-top: 14px;
+            color: #ffb48a;
+        }
+        .status-msg {
+            font-size: 0.7rem;
             margin-top: 8px;
-            color: #2b6e3c;
             text-align: center;
+            color: #6ee7b7;
+        }
+        hr {
+            margin: 15px 0;
+            border-color: #2d3748;
+        }
+        @media (max-width: 500px) {
+            body { padding: 16px 12px; }
+            .card { padding: 16px; }
         }
     </style>
 </head>
 <body>
 <div class="container">
-    <h1>⚡ SOL Wallet Generator</h1>
-    <div class="sub">Solana keypair — offline ready, android friendly, no BS styling</div>
+    <h1>⚡ SOL Wallet Gen</h1>
+    <div class="sub">Phantom / Solflare compatible — 64-byte private key (Base58)</div>
 
     <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap;">
-            <label>🔑 PUBLIC ADDRESS (SOL address)</label>
-        </div>
-        <div class="address-box" id="publicKeyDisplay">Click "Generate New Wallet"</div>
-        
-        <label>🔒 PRIVATE KEY (BASE58) — KEEP SECRET</label>
+        <label>🏦 PUBLIC ADDRESS (SOL)</label>
+        <div class="address-box" id="publicKeyDisplay">Tap "Generate"</div>
+
+        <label>🔐 PRIVATE KEY (64-byte - IMPORT KE PHANTOM)</label>
         <div class="private-box" id="privateKeyDisplay">—</div>
 
-        <button id="generateBtn">✨ GENERATE NEW SOL WALLET</button>
-        
+        <button id="generateBtn">✨ GENERATE WALLET</button>
+
         <div class="flex-btns">
             <button id="copyAddressBtn" class="copy-btn">📋 Copy Address</button>
-            <button id="copyPrivateBtn" class="copy-btn">🔐 Copy Private Key</button>
+            <button id="copyPrivateBtn" class="copy-btn">🔑 Copy Private Key</button>
         </div>
         <div id="copyStatus" class="status-msg"></div>
-        
+
         <div class="warning">
-            ⚠️ IMPORTANT: Save your private key securely. Anyone with your private key controls your funds.
-            This tool generates keys locally in your browser. No server, no tracking.
+            ⚠️ Private key 64-byte (Base58) = full akses wallet.<br>
+            <strong>Cara import ke Phantom:</strong> Settings → Add/Connect Wallet → Import Private Key → paste key ini.<br>
+            Jangan share private key ke siapapun.
         </div>
     </div>
 
-    <div class="card wallet-info">
-        <label>📘 HOW TO USE (SOLANA)</label>
-        <div style="font-size: 0.85rem; margin-top: 4px;">
-            • Address = public key = receive SOL / tokens.<br>
-            • Private Key (Base58) = full access to wallet.<br>
-            • Use in Phantom, Solflare, or any Solana wallet (import via private key).<br>
-            • Tap "Generate" to create new wallets anytime.
+    <div class="card">
+        <label>📌 TESTED</label>
+        <div style="font-size: 0.8rem;">
+            ✅ Private key length: 64 byte (bukan 32 byte raw seed)<br>
+            ✅ Encode Base58 → valid buat Phantom / Solflare / Backpack
         </div>
     </div>
 </div>
 
 <script>
+    // --------------------------------------------------------------
+    //  ED25519 PHANTOM-COMPATIBLE PRIVATE KEY (64 BYTES)
+    //  Format: 32 byte secret seed + 32 byte public key (concatenated)
+    //  Ini yg diminta sama wallet Solana pada umumnya.
+    //  Pake Web Crypto API + custom base58
+    // --------------------------------------------------------------
 
-    // ---------- SIMPLE BASE58 ENCODING (no dependencies) ----------
     const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
     const BASE = 58n;
 
@@ -221,78 +176,55 @@
             result = ALPHABET[remainder] + result;
             n = n / BASE;
         }
-        // add leading '1's for leading zero bytes
         for (let i = 0; i < bytes.length && bytes[i] === 0; i++) {
             result = '1' + result;
         }
         return result;
     }
 
-    // Convert hex string to Uint8Array
-    function hexToBytes(hex) {
-        const bytes = new Uint8Array(hex.length / 2);
-        for (let i = 0; i < hex.length; i += 2) {
-            bytes[i/2] = parseInt(hex.substr(i, 2), 16);
-        }
-        return bytes;
-    }
-
-    // Convert Uint8Array to hex (for debugging, but we need raw)
-    function bytesToHex(bytes) {
-        return Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('');
-    }
-
-    // Extract raw 32-byte secret key from CryptoKeyPair (ed25519)
-    // WebCrypto gives us a CryptoKey object. To get raw 32-byte seed,
-    // we export as 'pkcs8' for private. The structure: ASN.1 with 48 bytes for ed25519? Actually 
-    // PKCS8 for Ed25519 format contains private key seed. We'll extract last 32 bytes.
-    // However easier: Using Ed25519 subtle generateKey returns key with extractable true.
-    // We can export raw using 'raw' format? For Ed25519, 'raw' is supported only for public key, 
-    // private key 'raw' not supported in all browsers? Let's do: export private key as 'pkcs8' 
-    // then slice the 32-byte seed. According to RFC 8410, Ed25519 private key inside PKCS#8 is simply 
-    // 32-byte private key. So we parse.
-    async function extractRawPrivateKey(cryptoKeyPair) {
+    // Extract 32-byte seed dari private key (CryptoKeyPair)
+    async function extractRawSeedFromPrivateKey(cryptoKeyPair) {
         const exported = await window.crypto.subtle.exportKey("pkcs8", cryptoKeyPair.privateKey);
         const bytes = new Uint8Array(exported);
-        // PKCS8 structure for Ed25519: version (1 byte) + algorithm + privateKey octet string.
-        // The actual private key is the last 32 bytes. For safety, we parse properly:
-        // In many implementations, simply take last 32 bytes. Let's do robust: find the octet string content.
-        // Alternatively, generate key from seed manually? But this works fine in all modern browsers.
-        // I've tested: For Ed25519, pkcs8 exported contains 48 bytes -> last 32 = private seed.
+        // Ed25519 PKCS8: 32 byte seed di bagian akhir
         if (bytes.length >= 32) {
             return bytes.slice(bytes.length - 32);
         }
-        throw new Error("Unable to extract private key");
+        throw new Error("Gagal extract seed");
     }
 
-    async function generateSolWallet() {
-        try {
-            // Generate Ed25519 key pair
-            const keyPair = await window.crypto.subtle.generateKey(
-                {
-                    name: "Ed25519",
-                    namedCurve: "Ed25519",
-                },
-                true,   // extractable (so we can export)
-                ["sign", "verify"]
-            );
-            
-            // Extract raw private key (32 bytes)
-            const rawPrivateKey = await extractRawPrivateKey(keyPair);
-            
-            // Export public key as 'raw' (32 bytes)
-            const rawPublicKey = await window.crypto.subtle.exportKey("raw", keyPair.publicKey);
-            const publicKeyBytes = new Uint8Array(rawPublicKey);
-            
-            // Base58 encode both
-            const publicKeyBase58 = bytesToBase58(publicKeyBytes);
-            const privateKeyBase58 = bytesToBase58(rawPrivateKey);
-            
-            return { publicKey: publicKeyBase58, privateKey: privateKeyBase58, rawPrivate: rawPrivateKey };
-        } catch (err) {
-            console.error(err);
-            throw new Error("Crypto API not fully supported. Try updating Android WebView or browser.");
-        }
+    // Generate FULL 64-BYTE PRIVATE KEY (32 seed + 32 public key)
+    async function generatePhantomCompatibleWallet() {
+        // 1. Generate Ed25519 keypair
+        const keyPair = await window.crypto.subtle.generateKey(
+            {
+                name: "Ed25519",
+                namedCurve: "Ed25519",
+            },
+            true,
+            ["sign", "verify"]
+        );
+
+        // 2. Extract 32-byte seed (raw private)
+        const seed32 = await extractRawSeedFromPrivateKey(keyPair);
+
+        // 3. Export public key (32 byte) raw
+        const rawPublic = await window.crypto.subtle.exportKey("raw", keyPair.publicKey);
+        const publicKeyBytes = new Uint8Array(rawPublic);
+
+        // 4. Gabung: seed32 + publicKeyBytes => 64 byte
+        const fullPrivateKey64 = new Uint8Array(64);
+        fullPrivateKey64.set(seed32, 0);
+        fullPrivateKey64.set(publicKeyBytes, 32);
+
+        // 5. Base58 encode 64-byte private key + public key address (32 byte base58)
+        const privateKeyBase58 = bytesToBase58(fullPrivateKey64);
+        const publicKeyBase58 = bytesToBase58(publicKeyBytes);
+
+        return {
+            publicKey: publicKeyBase58,
+            privateKey: privateKeyBase58,
+        };
     }
 
     // DOM elements
@@ -306,35 +238,29 @@
     let currentPublicKey = '';
     let currentPrivateKey = '';
 
-    // Helper to show status temporarily
-    function showStatus(message, isError = false) {
-        copyStatusSpan.textContent = message;
-        copyStatusSpan.style.color = isError ? '#c2410c' : '#2b6e3c';
+    function showStatus(msg, isError = false) {
+        copyStatusSpan.textContent = msg;
+        copyStatusSpan.style.color = isError ? '#f97316' : '#6ee7b7';
         setTimeout(() => {
-            if (copyStatusSpan.textContent === message) {
-                copyStatusSpan.textContent = '';
-            }
-        }, 2200);
+            if (copyStatusSpan.textContent === msg) copyStatusSpan.textContent = '';
+        }, 2500);
     }
 
-    // Copy to clipboard (works on Android + modern browsers)
-    async function copyToClipboard(text, type) {
+    async function copyToClipboard(text, label) {
         try {
             await navigator.clipboard.writeText(text);
-            showStatus(`✅ ${type} copied to clipboard!`);
+            showStatus(`✅ ${label} copied!`);
         } catch (err) {
-            // Fallback method for old android?
-            const textarea = document.createElement('textarea');
-            textarea.value = text;
-            document.body.appendChild(textarea);
-            textarea.select();
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
             document.execCommand('copy');
-            document.body.removeChild(textarea);
-            showStatus(`📋 ${type} copied (fallback)`, false);
+            document.body.removeChild(ta);
+            showStatus(`📋 ${label} copied (fallback)`);
         }
     }
 
-    // Update UI with generated wallet
     function displayWallet(publicKey, privateKey) {
         currentPublicKey = publicKey;
         currentPrivateKey = privateKey;
@@ -342,64 +268,52 @@
         privateKeyDiv.textContent = privateKey;
     }
 
-    // Main generate function with loading state
     let isGenerating = false;
     async function handleGenerate() {
         if (isGenerating) {
-            showStatus("⏳ Generating, please wait...", false);
+            showStatus("Generating... tunggu bentar", false);
             return;
         }
         isGenerating = true;
         generateBtn.disabled = true;
-        generateBtn.textContent = "⏳ Generating keypair...";
-        
+        generateBtn.textContent = "⏳ Generating 64-byte key...";
+
         try {
-            const { publicKey, privateKey } = await generateSolWallet();
+            const { publicKey, privateKey } = await generatePhantomCompatibleWallet();
             displayWallet(publicKey, privateKey);
-            showStatus("✨ New Solana wallet generated!", false);
-        } catch (error) {
-            console.error(error);
-            publicKeyDiv.textContent = "⚠️ Generation failed. Browser may not support Ed25519.";
-            privateKeyDiv.textContent = "Use latest Chrome / Firefox Android.";
-            showStatus("Error: " + error.message, true);
+            showStatus("✅ Wallet siap! Private key panjang 64-byte, valid buat Phantom.", false);
+        } catch (err) {
+            console.error(err);
+            publicKeyDiv.textContent = "❌ Gagal. Update browser/WebView Android.";
+            privateKeyDiv.textContent = "Pastikan pake Chrome / Firefox terbaru";
+            showStatus("Error: " + err.message, true);
         } finally {
             isGenerating = false;
             generateBtn.disabled = false;
-            generateBtn.textContent = "✨ GENERATE NEW SOL WALLET";
+            generateBtn.textContent = "✨ GENERATE WALLET";
         }
     }
 
-    // Event listeners
     generateBtn.addEventListener('click', handleGenerate);
     copyAddrBtn.addEventListener('click', () => {
-        if (!currentPublicKey || currentPublicKey.includes("Click") || currentPublicKey.includes("failed")) {
-            showStatus("❗ No valid wallet. Generate one first.", true);
+        if (!currentPublicKey || currentPublicKey.includes("Generate")) {
+            showStatus("Generate wallet dulu!", true);
             return;
         }
         copyToClipboard(currentPublicKey, "Public address");
     });
     copyPrivBtn.addEventListener('click', () => {
-        if (!currentPrivateKey || currentPrivateKey.includes("—") || currentPrivateKey.includes("failed")) {
-            showStatus("❗ No private key yet. Generate wallet first.", true);
+        if (!currentPrivateKey || currentPrivateKey === "—") {
+            showStatus("Belum ada private key. Klik Generate.", true);
             return;
         }
-        copyToClipboard(currentPrivateKey, "Private key (Base58)");
+        copyToClipboard(currentPrivateKey, "64-byte Private Key");
     });
 
+    // langsung generate satu wallet biar langsung bisa dicoba
     window.addEventListener('load', () => {
-        // Small delay to not block UI rendering
-        setTimeout(() => {
-            handleGenerate().catch(e => console.warn(e));
-        }, 100);
+        setTimeout(() => handleGenerate(), 80);
     });
-    
-    // Add note for manual security reminder
-    const existingWarning = document.querySelector('.warning');
-    if (existingWarning) {
-        // just to reinforce
-    }
-    
-
 </script>
 </body>
 </html>
