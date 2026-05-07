@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Base58 to JSON Converter - Phantom Ready</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0b0f18;
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px 16px 40px;
+            color: #eef2ff;
+        }
+        .container { max-width: 620px; margin: 0 auto; }
+        h1 { font-size: 1.8rem; margin-bottom: 6px; }
+        .sub { font-size: 0.85rem; color: #94a3b8; margin-bottom: 24px; border-left: 3px solid #f97316; padding-left: 12px; }
+        .card { background: #11161f; border-radius: 20px; padding: 20px; margin-bottom: 20px; border: 1px solid #2d3748; }
+        label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: #8b9dc3; display: block; margin-bottom: 8px; }
+        input, textarea {
+            width: 100%;
+            background: #0a0e14;
+            border: 1px solid #2d3748;
+            color: #e2e8f0;
+            padding: 14px;
+            border-radius: 14px;
+            font-family: monospace;
+            font-size: 0.8rem;
+            margin-bottom: 16px;
+            resize: vertical;
+        }
+        input:focus, textarea:focus { outline: none; border-color: #9945ff; }
+        .result-box {
+            background: #0a0e14;
+            padding: 14px;
+            border-radius: 14px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 0.75rem;
+            margin-bottom: 16px;
+            border: 1px solid #2a3748;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .result-json {
+            background: #1a1410;
+            border-color: #b45309;
+            color: #ffcd94;
+            font-size: 0.7rem;
+        }
+        button {
+            background: #9945ff;
+            border: none;
+            color: white;
+            font-weight: bold;
+            padding: 14px;
+            border-radius: 40px;
+            width: 100%;
+            font-size: 1rem;
+            margin-bottom: 12px;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        button:active { background: #7a36cc; transform: scale(0.98); }
+        .copy-btn { background: #2d3748; }
+        .flex-btns { display: flex; gap: 12px; flex-wrap: wrap; }
+        .flex-btns button { flex: 1; margin-bottom: 0; }
+        .warning { background: #1e1a1a; border-left: 3px solid #f97316; padding: 12px; font-size: 0.75rem; border-radius: 14px; margin-top: 14px; }
+        .status-msg { font-size: 0.7rem; margin-top: 8px; text-align: center; color: #6ee7b7; }
+        .note { font-size: 0.7rem; color: #94a3b8; margin-top: 8px; }
+        hr { margin: 15px 0; border-color: #2d3748; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔄 Base58 → JSON Converter</h1>
+    <div class="sub">Convert Private Key Base58 (64-byte) ke format yang diterima Phantom</div>
+
+    <div class="card">
+        <label>📥 MASUKKAN PRIVATE KEY BASE58 (64-BYTE)</label>
+        <textarea id="base58Input" rows="2" placeholder="Contoh: 5yYeHuwyyy4qAqJtvkkA2SDsujQorZD8SvJ3v6YevYEpaVtq5M2vSpSr3Ts8Mzm2gAwKtPqvozpxLejUxgkbpa5a"></textarea>
+
+        <button id="convertBtn">🔄 CONVERT KE JSON</button>
+
+        <label>🏦 PUBLIC ADDRESS (SOL)</label>
+        <div class="result-box" id="publicKeyResult">—</div>
+
+        <label>🔐 PRIVATE KEY (JSON ARRAY) - COPY PASTE KE PHANTOM</label>
+        <div class="result-box result-json" id="jsonResult">—</div>
+
+        <div class="flex-btns">
+            <button id="copyAddressBtn" class="copy-btn">📋 Copy Address</button>
+            <button id="copyJsonBtn" class="copy-btn">🔑 Copy JSON Private Key</button>
+        </div>
+        <div id="copyStatus" class="status-msg"></div>
+
+        <div class="warning">
+            ⚠️ <strong>CARA PAKE:</strong><br>
+            1. Paste private key Base58 (64-byte) dari generator lama lo<br>
+            2. Klik Convert<br>
+            3. Copy JSON array yang keluar<br>
+            4. Import ke Phantom: Settings → Add Wallet → Import Private Key → Paste JSON
+        </div>
+        <hr>
+        <div class="note">
+            💡 <strong>Catatan:</strong> Converter ini butuh private key <strong>64-byte dalam Base58</strong> (panjang ~88 karakter).<br>
+            Kalo private key lo cuma 44 karakter (32-byte seed), convertnya bakal gagal.
+        </div>
+    </div>
+</div>
+
+<script>
+    // --------------------------------------------------------------
+    //  BASE58 DECODER + ED25519 PUBLIC KEY DERIVATION
+    //  Convert Base58 64-byte private key → JSON array + Public key
+    //  LALU bisa langsung import ke Phantom
+    // --------------------------------------------------------------
+
+    const ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
+    const BASE = 58n;
+
+    // Base58 decode ke Uint8Array
+    function base58Decode(base58) {
+        if (!base58 || base58.length === 0) return null;
+        
+        let n = 0n;
+        for (const char of base58) {
+            const idx = ALPHABET.indexOf(char);
+            if (idx === -1) return null;
+            n = n * BASE + BigInt(idx);
+        }
+        
+        // Convert BigInt ke bytes
+        let bytes = [];
+        while (n > 0n) {
+            bytes.unshift(Number(n & 0xFFn));
+            n >>= 8n;
+        }
+        
+        // Handle leading '1's (nilai 0)
+        for (let i = 0; i < base58.length && base58[i] === '1'; i++) {
+            bytes.unshift(0);
+        }
+        
+        return new Uint8Array(bytes);
+    }
+
+    // Base58 encode
+    function bytesToBase58(bytes) {
+        if (!bytes || bytes.length === 0) return '';
+        let n = 0n;
+        for (const byte of bytes) {
+            n = (n << 8n) | BigInt(byte);
+        }
+        let result = '';
+        while (n > 0n) {
+            const remainder = Number(n % BASE);
+            result = ALPHABET[remainder] + result;
+            n = n / BASE;
+        }
+        for (let i = 0; i < bytes.length && bytes[i] === 0; i++) {
+            result = '1' + result;
+        }
+        return result;
+    }
+
+    // Derive public key dari 64-byte private key (ed25519)
+    // Pake Web Crypto API buat dapetin public key dari seed
+    async function derivePublicKeyFromPrivateKey(full64Bytes) {
+        // Extract 32-byte seed (first 32 bytes)
+        const seed = full64Bytes.slice(0, 32);
+        
+        // Import seed sebagai private key ed25519
+        // Web Crypto butuh format pkcs8, jadi kita harus bikin key dari seed
+        // Caranya: generate temp keypair, tapi ga bisa langsung dari seed.
+        // Alternatif: pake crypto.subtle.importKey raw? Ed25519 ga support raw import.
+        
+        // Better approach: pake library internal? Tapi kita ga bisa.
+        // Solusi: kita asumsikan full64Bytes itu [seed + pubkey], 
+        // jadi public key nya udah ada di byte ke 32-64
+        if (full64Bytes.length === 64) {
+            const publicKeyFromPrivate = full64Bytes.slice(32, 64);
+            return publicKeyFromPrivate;
+        }
+        throw new Error("Private key harus 64 bytes");
+    }
+
+    // Validasi: 64-byte private key harus bisa di-decode dari Base58
+    async function convertBase58ToJSON(base58Key) {
+        // Decode Base58 ke bytes
+        const decoded = base58Decode(base58Key);
+        if (!decoded) {
+            throw new Error("Base58 decode gagal. Cek format private key.");
+        }
+        
+        if (decoded.length !== 64) {
+            throw new Error(`Private key harus 64 byte. Panjang sekarang: ${decoded.length} byte.`);
+        }
+        
+        // Extract public key (byte 32-64)
+        const publicKeyBytes = decoded.slice(32, 64);
+        
+        // Convert public key ke Base58 buat display
+        const publicKeyBase58 = bytesToBase58(publicKeyBytes);
+        
+        // Private key dalam bentuk JSON array
+        const privateKeyJSON = JSON.stringify(Array.from(decoded));
+        
+        return {
+            publicKey: publicKeyBase58,
+            privateKeyJSON: privateKeyJSON,
+            isValid: true
+        };
+    }
+
+    // DOM elements
+    const base58Input = document.getElementById('base58Input');
+    const convertBtn = document.getElementById('convertBtn');
+    const publicKeyResult = document.getElementById('publicKeyResult');
+    const jsonResult = document.getElementById('jsonResult');
+    const copyAddressBtn = document.getElementById('copyAddressBtn');
+    const copyJsonBtn = document.getElementById('copyJsonBtn');
+    const copyStatusSpan = document.getElementById('copyStatus');
+
+    let currentPublicKey = '';
+    let currentPrivateKeyJSON = '';
+
+    function showStatus(msg, isError = false) {
+        copyStatusSpan.textContent = msg;
+        copyStatusSpan.style.color = isError ? '#f97316' : '#6ee7b7';
+        setTimeout(() => {
+            if (copyStatusSpan.textContent === msg) copyStatusSpan.textContent = '';
+        }, 2500);
+    }
+
+    async function copyToClipboard(text, label) {
+        try {
+            await navigator.clipboard.writeText(text);
+            showStatus(`✅ ${label} copied!`);
+        } catch (err) {
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            showStatus(`📋 ${label} copied (fallback)`);
+        }
+    }
+
+    async function handleConvert() {
+        const base58Key = base58Input.value.trim();
+        
+        if (!base58Key) {
+            showStatus("❌ Masukkan private key Base58 dulu!", true);
+            return;
+        }
+        
+        convertBtn.disabled = true;
+        convertBtn.textContent = "⏳ Converting...";
+        
+        try {
+            const result = await convertBase58ToJSON(base58Key);
+            currentPublicKey = result.publicKey;
+            currentPrivateKeyJSON = result.privateKeyJSON;
+            
+            publicKeyResult.textContent = result.publicKey;
+            jsonResult.textContent = result.privateKeyJSON;
+            
+            showStatus("✅ Convert berhasil! Copy JSON ke Phantom.", false);
+        } catch (err) {
+            publicKeyResult.textContent = "❌ Error";
+            jsonResult.textContent = err.message;
+            showStatus("Error: " + err.message, true);
+            currentPublicKey = '';
+            currentPrivateKeyJSON = '';
+        } finally {
+            convertBtn.disabled = false;
+            convertBtn.textContent = "🔄 CONVERT KE JSON";
+        }
+    }
+
+    convertBtn.addEventListener('click', handleConvert);
+    
+    copyAddressBtn.addEventListener('click', () => {
+        if (!currentPublicKey) { showStatus("Convert dulu!", true); return; }
+        copyToClipboard(currentPublicKey, "Public address");
+    });
+    
+    copyJsonBtn.addEventListener('click', () => {
+        if (!currentPrivateKeyJSON) { showStatus("Convert dulu!", true); return; }
+        copyToClipboard(currentPrivateKeyJSON, "JSON private key");
+    });
+    
+    // Example input biar gampang test
+    // Biarin kosong, user isi sendiri
+</script>
+</body>
+</html>
