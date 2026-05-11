@@ -66,5 +66,23 @@
     <li><a href="pages/smali_translator.html">smali translator</a></li>
   </ul>
 <br><br><br><br><br>
+    <script>
+    const ul = document.getElementById('menu');
+    const items = Array.from(ul.querySelectorAll('li'));
+
+    // Pisahin item "-" dari list utama
+    const pinned = items.filter(li => li.textContent.trim() === '-');
+    const sortable = items.filter(li => li.textContent.trim() !== '-');
+
+    // Sort A-Z case-insensitive
+    sortable.sort((a, b) =>
+      a.textContent.trim().toLowerCase().localeCompare(b.textContent.trim().toLowerCase())
+    );
+
+    // Render ulang: pinned dulu, baru yang sorted
+    ul.innerHTML = '';
+    pinned.forEach(li => ul.appendChild(li));
+    sortable.forEach(li => ul.appendChild(li));
+  </script>
 </body>
 </html>
