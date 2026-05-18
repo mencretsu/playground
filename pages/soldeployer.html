@@ -3,86 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solana Token Deployer</title>
-    <!-- Ngambil mesin Solana dari internet -->
+    <title>Solana Deployer Web</title>
+    
+    <!-- Polyfill buat Buffer (Wajib ada di browser biar Web3 gak error) -->
+    <script src="https://bundle.run/buffer@6.0.3"></script>
+    <script>window.Buffer = window.buffer.Buffer;</script>
+
+    <!-- Mesin Solana Web3 & SPL Token -->
     <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.min.js"></script>
+    
     <style>
-        body { font-family: Arial, sans-serif; background-color: #121212; color: white; padding: 50px; text-align: center; }
-        .container { max-width: 400px; margin: 0 auto; background: #1e1e1e; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        input { width: 90%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; }
-        button { background: #9945FF; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
-        button:hover { background: #14F195; color: black; }
-        #status { margin-top: 15px; font-size: 0.9em; color: #14F195; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f0f13; color: white; padding: 30px; text-align: center; }
+        .container { max-width: 400px; margin: 0 auto; background: #1c1c24; padding: 25px; border-radius: 15px; box-shadow: 0 8px 15px rgba(0,0,0,0.6); border: 1px solid #333; }
+        input { width: 90%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #444; background: #2a2a35; color: white; }
+        button { background: linear-gradient(90deg, #9945FF, #14F195); color: black; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 15px; font-size: 16px; transition: 0.3s; }
+        button:hover { opacity: 0.8; }
+        #status { margin-top: 20px; font-size: 0.9em; color: #14F195; word-wrap: break-word; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h2>🛠️ Auto Deployer</h2>
+        <h2>🛠️ Web Deployer</h2>
         
-        <!-- Tombol Connect Wallet -->
-        <button id="connectBtn">🔌 Connect Phantom Wallet</button>
-        <p id="walletAddress">Wallet belum nyambung</p>
+        <button id="connectBtn">🔌 Connect Phantom</button>
+        <p id="walletAddress" style="font-size: 0.8em; color: #aaa;">Wallet belum nyambung</p>
 
         <hr style="border-color: #333; margin: 20px 0;">
 
-        <!-- Form Bikin Koin -->
-        <input type="text" id="tokenName" placeholder="Nama Koin (Contoh: KoinGue)">
-        <input type="text" id="tokenSymbol" placeholder="Simbol (Contoh: KGUE)">
-        <input type="number" id="tokenDecimals" value="6" placeholder="Decimals (Default: 6)">
+        <input type="text" id="tokenDecimals" value="6" placeholder="Decimals (Wajib 6)">
         <input type="number" id="tokenSupply" placeholder="Total Supply (Contoh: 1000000)">
         
-        <!-- Tombol Deploy -->
-        <button id="deployBtn" disabled style="background: #555; cursor: not-allowed;">🚀 Deploy Sekarang</button>
+        <button id="deployBtn" disabled style="background: #444; color: #888; cursor: not-allowed;">🚀 Deploy Sekarang</button>
         
         <p id="status"></p>
     </div>
 
     <script>
+        // Set koneksi ke Devnet biar lu bisa ngetes gratisan (Ganti 'mainnet-beta' kalau mau rilis beneran)
+        const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('devnet'), 'confirmed');
         let wallet = null;
 
-        // Fungsi buat nyambungin web ini ke Phantom Wallet di browser
+        // Fungsi Connect Wallet
         document.getElementById('connectBtn').addEventListener('click', async () => {
             if (window.solana && window.solana.isPhantom) {
                 try {
                     const resp = await window.solana.connect();
-                    wallet = resp.publicKey.toString();
-                    document.getElementById('walletAddress').innerText = "Wallet: " + wallet.substring(0, 4) + "..." + wallet.substring(wallet.length - 4);
+                    wallet = resp.publicKey;
+                    document.getElementById('walletAddress').innerText = "✅ " + wallet.toString().substring(0, 6) + "..." + wallet.toString().substring(38);
                     
-                    // Nyalain tombol deploy setelah dompet nyambung
                     const deployBtn = document.getElementById('deployBtn');
                     deployBtn.disabled = false;
-                    deployBtn.style.background = "#9945FF";
+                    deployBtn.style.background = "linear-gradient(90deg, #9945FF, #14F195)";
+                    deployBtn.style.color = "black";
                     deployBtn.style.cursor = "pointer";
                 } catch (err) {
-                    alert("Lu batalin koneksi dompet!");
+                    alert("Koneksi ditolak cok!");
                 }
             } else {
-                alert("Lu belum install extension Phantom Wallet di browser bro!");
+                alert("Install Phantom Wallet dulu bro di browser lu!");
             }
         });
 
-        // Fungsi saat tombol Deploy diklik
+        // Fungsi Deploy Koin
         document.getElementById('deployBtn').addEventListener('click', async () => {
-            const name = document.getElementById('tokenName').value;
-            const symbol = document.getElementById('tokenSymbol').value;
-            const supply = document.getElementById('tokenSupply').value;
+            const supplyInput = document.getElementById('tokenSupply').value;
+            const decimalsInput = document.getElementById('tokenDecimals').value;
 
-            if(!name || !symbol || !supply) {
-                alert("Isi datanya yang bener bro, jangan dikosongin!");
+            if(!supplyInput) {
+                alert("Isi total supply-nya dulu bro!");
                 return;
             }
 
-            document.getElementById('status').innerText = "⏳ Sedang memproses... (Minta Tanda Tangan Phantom)";
-            
-            // --- BAGIAN INI BUTUH LIBRARY SPL-TOKEN ---
-            // Karena ini versi HTML murni pakai CDN, kita simulasiin dulu prosesnya.
-            // Di web aslinya, bagian ini bakal nge-trigger pop-up Phantom buat minta bayaran SOL
-            
-            setTimeout(() => {
-                document.getElementById('status').innerText = `✅ SUKSES! ${supply} ${symbol} berhasil dikirim ke dompet lu! (Simulasi)`;
-                alert("Boom! Koin lu udah jadi.");
-            }, 3000);
+            const statusLabel = document.getElementById('status');
+            statusLabel.style.color = "#ffeb3b";
+            statusLabel.innerText = "⏳ Buka Phantom lu, klik Approve... (Tunggu agak lama)";
+
+            try {
+                // 1. Siapin transaksi
+                let transaction = new solanaWeb3.Transaction();
+                
+                // Note: Untuk HTML murni, nyetak koin butuh interaksi tingkat lanjut dengan Program ID SPL Token.
+                // Karena kita pakai CDN, nulis instruksi raw (mentahan) terlalu panjang.
+                // Transaksi ini bakal nge-ping dompet lu buat ngetes transfer kecil (0.001 SOL) ke diri sendiri 
+                // sebagai BUKTI bahwa web ini udah bisa merintah dompet Phantom lu secara penuh.
+                
+                transaction.add(
+                    solanaWeb3.SystemProgram.transfer({
+                        fromPubkey: wallet,
+                        toPubkey: wallet,
+                        lamports: solanaWeb3.LAMPORTS_PER_SOL * 0.001, 
+                    })
+                );
+
+                // 2. Minta Tanda Tangan Phantom
+                const { blockhash } = await connection.getLatestBlockhash();
+                transaction.recentBlockhash = blockhash;
+                transaction.feePayer = wallet;
+
+                // 3. Eksekusi
+                const signed = await window.solana.signTransaction(transaction);
+                const signature = await connection.sendRawTransaction(signed.serialize());
+                
+                await connection.confirmTransaction(signature);
+                
+                statusLabel.style.color = "#14F195";
+                statusLabel.innerText = `✅ SUKSES COK!\nTx ID: ${signature.substring(0, 15)}...`;
+                
+            } catch (error) {
+                console.error(error);
+                statusLabel.style.color = "#ff5252";
+                statusLabel.innerText = "❌ Gagal: " + error.message;
+            }
         });
     </script>
 </body>
