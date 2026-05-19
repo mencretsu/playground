@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XLSX Opener</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  body { font-family: sans-serif; margin: 10px; font-size: 14px; }
+  input[type=file] { width: 100%; padding: 10px; box-sizing: border-box; margin-bottom: 8px; }
+  #sheets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  #sheets button { padding: 6px 12px; border: 1px solid #999; background: #eee; cursor: pointer; border-radius: 4px; }
+  #sheets button.active { background: #0066cc; color: white; border-color: #0066cc; }
+  #info { font-size: 12px; color: #555; margin-bottom: 6px; }
+  #search { width: 100%; padding: 8px; box-sizing: border-box; margin-bottom: 8px; border: 1px solid #ccc; border-radius: 4px; }
+  .wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  table { border-collapse: collapse; min-width: 100%; white-space: nowrap; font-size: 13px; }
+  th { background: #0066cc; color: white; padding: 6px 8px; text-align: left; position: sticky; top: 0; }
+  td { padding: 5px 8px; border-bottom: 1px solid #ddd; }
+  tr:nth-child(even) td { background: #f5f5f5; }
+  tr.highlight td { background: #fff3cd !important; }
+  #status { color: #cc0000; font-size: 13px; margin: 4px 0; }
+  #export { padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 8px; display: none; }
+</style>
+</head>
+<body>
+
+<h3 style="margin:0 0 10px">📊 XLSX Opener</h3>
+<input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.ods">
+<div id="status"></div>
+<div id="sheets"></div>
+<div id="info"></div>
+<input type="text" id="search" placeholder="🔍 Cari di tabel..." style="display:none">
+<div class="wrap"><div id="out"></div></div>
+<button id="export" onclick="exportCSV()">⬇️ Export Sheet ke CSV</button>
+
+<script>
+let wb = null;
+let currentSheet = null;
+let currentData = [];
+
+document.getElementById('fileInput').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const status = document.getElementById('status');
+  status.textContent = 'Loading...';
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      wb = XLSX.read(ev.target.result, { type: 'array', cellDates: true });
+      renderSheetButtons();
+      loadSheet(wb.SheetNames[0]);
+      status.textContent = '';
+      document.getElementById('search').style.display = '';
+      document.getElementById('export').style.display = '';
+    } catch(err) {
+      status.textContent = 'Gagal buka file: ' + err.message;
+    }
+  };
+  reader.onerror = () => status.textContent = 'Gagal baca file.';
+  reader.readAsArrayBuffer(file);
+});
+
+function renderSheetButtons() {
+  const div = document.getElementById('sheets');
+  div.innerHTML = '';
+  wb.SheetNames.forEach(name => {
+    const btn = document.createElement('button');
+    btn.textContent = name;
+    btn.onclick = () => loadSheet(name);
+    div.appendChild(btn);
+  });
+}
+
+function loadSheet(name) {
+  currentSheet = name;
+  // update active button
+  document.querySelectorAll('#sheets button').forEach(b => {
+    b.className = b.textContent === name ? 'active' : '';
+  });
+  const ws = wb.Sheets[name];
+  const json = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  currentData = json;
+  renderTable(json);
+  document.getElementById('search').value = '';
+}
+
+function renderTable(data) {
+  const info = document.getElementById('info');
+  if (!data || data.length === 0) {
+    document.getElementById('out').innerHTML = '<i>Sheet kosong.</i>';
+    info.textContent = '';
+    return;
+  }
+  const rows = data.length;
+  const cols = Math.max(...data.map(r => r.length));
+  info.textContent = `${rows} baris × ${cols} kolom`;
+
+  const header = data[0];
+  let html = '<table><thead><tr>';
+  html += '<th>#</th>';
+  header.forEach(h => { html += `<th>${esc(h)}</th>`; });
+  html += '</tr></thead><tbody>';
+
+  for (let i = 1; i < data.length; i++) {
+    html += `<tr><td style="color:#999;font-size:11px">${i}</td>`;
+    for (let j = 0; j < header.length; j++) {
+      const val = data[i][j] ?? '';
+      html += `<td>${esc(val)}</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  document.getElementById('out').innerHTML = html;
+}
+
+function esc(v) {
+  if (v === null || v === undefined) return '';
+  if (v instanceof Date) return v.toLocaleDateString('id-ID');
+  return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+document.getElementById('search').addEventListener('input', function() {
+  const q = this.value.toLowerCase().trim();
+  if (!q) { renderTable(currentData); return; }
+  const filtered = currentData.filter((row, i) => {
+    if (i === 0) return true;
+    return row.some(cell => String(cell).toLowerCase().includes(q));
+  });
+  renderTable(filtered);
+});
+
+function exportCSV() {
+  if (!wb || !currentSheet) return;
+  const ws = wb.Sheets[currentSheet];
+  const csv = XLSX.utils.sheet_to_csv(ws);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = currentSheet + '.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
