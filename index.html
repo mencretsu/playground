@@ -4,48 +4,74 @@
   <title>main</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="https://github.com/mencretsu.png">
+  <style>
+    body {
+      padding-top: 120px;
+      font-family: Arial, sans-serif;
+    }
+    #header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-bottom: 1px solid #ddd;
+      z-index: 9999;
+    }
+  </style>
 </head>
+
 <body>
-  <div>
-    <a href="https://github.com/mencretsu" target="_blank" title="GitHub">
-      <img src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" width="32" height="32">
-    </a>
+
+  <div id="header">
+
+    <div id="header-top">
+      <a href="https://github.com/mencretsu" target="_blank" title="GitHub">
+        <img
+          src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+          alt="GitHub"
+          width="32"
+          height="32">
+      <h1>Playground</h1></a>
+    </div>
+
+    <input
+      type="text"
+      id="searchInput"
+      placeholder="🔍 Search tool...">
   </div>
-  <!-- ========================================================================================================================== -->
-  <h1>Playground</h1>
+
   <ul id="menu">
     <li><a href="pages/">-</a></li>
     <li><a href="pages/xlsxopener.html">xlsx opener</a></li>
-        <li><a href="pages/soldeployer.html">sol deployer</a></li>    <li><a href="pages/bflistgen.html
-">pass list generator
-</a></li>
-
-        <li><a href="pages/solletcreator.html">solana wallet creator</a></li>
-        <li><a href="pages/base58tojson.html">base 58 to json</a></li>
-            <li><a href="pages/32bto64.html">32 to 64 byte base 58 to json</a></li>
+    <li><a href="pages/soldeployer.html">sol deployer</a></li>
+    <li><a href="pages/bflistgen.html">pass list generator</a></li>
+    <li><a href="pages/solletcreator.html">solana wallet creator</a></li>
+    <li><a href="pages/base58tojson.html">base 58 to json</a></li>
+    <li><a href="pages/32bto64.html">32 to 64 byte base 58 to json</a></li>
     <li><a href="pages/qr_creator.html">Qr CREATOR</a></li>
-        <li><a href="pages/kalkulator_setrum.html">kalkulator setrum</a></li>
+    <li><a href="pages/kalkulator_setrum.html">kalkulator setrum</a></li>
     <li><a href="pages/futures_simulator.html">futures simulator</a></li>
-        <li><a href="pages/webkloner.html">web cloner</a></li>
-                <li><a href="pages/futuresimulator.html">future simulator</a></li>
-    <li><a href="pages/rrcalculator.html">risk reward calclulator</a></li>
-            <li><a href="pages/stoc.html">Stochastic</a></li>
-                <li><a href="pages/stochastic.html">Stochastic v1</a></li>
-                <li><a href="pages/stochastic2.html">Stochastic v2</a></li>
-            <li><a href="pages/trade2.html">whats trade?</a></li>
-                <li><a href="pages/tradingsystem.html">trading sistem</a></li>             
+    <li><a href="pages/webkloner.html">web cloner</a></li>
+    <li><a href="pages/futuresimulator.html">future simulator</a></li>
+    <li><a href="pages/rrcalculator.html">risk reward calculator</a></li>
+    <li><a href="pages/stoc.html">Stochastic</a></li>
+    <li><a href="pages/stochastic.html">Stochastic v1</a></li>
+    <li><a href="pages/stochastic2.html">Stochastic v2</a></li>
+    <li><a href="pages/trade2.html">whats trade?</a></li>
+    <li><a href="pages/tradingsystem.html">trading sistem</a></li>
     <li><a href="pages/tradesistem2.html">trading sistem 2</a></li>
-                <li><a href="pages/geminitrade.html">gemini trading analyst</a></li>   
-    <li><a href="pages/claudetrade.html">claude trading analyst</a></li>     
-    <li><a href="pages/groktrade.html">grok trading analyst</a></li> 
-    <li><a href="pages/chatgpttrade.html">chatgpt trading analyst</a></li> 
+    <li><a href="pages/geminitrade.html">gemini trading analyst</a></li>
+    <li><a href="pages/claudetrade.html">claude trading analyst</a></li>
+    <li><a href="pages/groktrade.html">grok trading analyst</a></li>
+    <li><a href="pages/chatgpttrade.html">chatgpt trading analyst</a></li>
     <li><a href="pages/multitradeanalyst.html">multi trading analyst</a></li>
-    <li><a href="pages/multitrade.html">multi trade</a></li> 
-        <li><a href="pages/weirdtradeds.html">weird trade deepseek</a></li> 
-            <li><a href="pages/weirdtradeclaude.html">weird trade claude</a></li> 
-            <li><a href="pages/hourly_index.html">fear greed - hourly index</a></li>
+    <li><a href="pages/multitrade.html">multi trade</a></li>
+    <li><a href="pages/weirdtradeds.html">weird trade deepseek</a></li>
+    <li><a href="pages/weirdtradeclaude.html">weird trade claude</a></li>
+    <li><a href="pages/hourly_index.html">fear greed - hourly index</a></li>
     <li><a href="pages/geminicheckerv2.html">Gemini API Checker V2</a></li>
-        <li><a href="pages/siliconflowapichecker.html">siliconflow api checker</a></li>
+    <li><a href="pages/siliconflowapichecker.html">siliconflow api checker</a></li>
     <li><a href="pages/gemini_api_sorter.html">Gemini API Sorter</a></li>
     <li><a href="pages/advance_signal.html">advanced crypto signal</a></li>
     <li><a href="pages/gemini_api_checker2.html">gemini project api checker</a></li>
@@ -68,24 +94,35 @@
     <li><a href="pages/dextojava.html">Dex to Java</a></li>
     <li><a href="pages/smali_translator.html">smali translator</a></li>
   </ul>
-<br><br><br><br><br>
-    <script>
+
+  <script>
     const ul = document.getElementById('menu');
     const items = Array.from(ul.querySelectorAll('li'));
 
-    // Pisahin item "-" dari list utama
     const pinned = items.filter(li => li.textContent.trim() === '-');
     const sortable = items.filter(li => li.textContent.trim() !== '-');
 
-    // Sort A-Z case-insensitive
     sortable.sort((a, b) =>
-      a.textContent.trim().toLowerCase().localeCompare(b.textContent.trim().toLowerCase())
+      a.textContent.trim().toLowerCase().localeCompare(
+        b.textContent.trim().toLowerCase()
+      )
     );
 
-    // Render ulang: pinned dulu, baru yang sorted
     ul.innerHTML = '';
     pinned.forEach(li => ul.appendChild(li));
     sortable.forEach(li => ul.appendChild(li));
+
+    const searchInput = document.getElementById('searchInput');
+
+    searchInput.addEventListener('input', function () {
+      const keyword = this.value.toLowerCase();
+
+      document.querySelectorAll('#menu li').forEach(li => {
+        const text = li.textContent.toLowerCase();
+        li.style.display = text.includes(keyword) ? '' : 'none';
+      });
+    });
   </script>
+
 </body>
 </html>
