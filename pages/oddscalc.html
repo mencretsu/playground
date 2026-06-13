@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>odds Calc</title>
+    <style>
+        body {background:#111; color:white; font-family:sans-serif; padding:15px; margin:0;}
+        h1 {text-align:center; font-size:24px; margin:10px;}
+        input {width:100%; padding:18px; font-size:24px; margin:8px 0; background:#222; border:none; border-radius:8px; color:white;}
+        .quick {display:flex; gap:5px; flex-wrap:wrap; margin:8px 0;}
+        .quick button {flex:1; padding:12px; font-size:17px; background:#333;}
+        button.big {width:100%; padding:20px; font-size:22px; background:#0f0; color:black; font-weight:bold; margin:15px 0;}
+        .hasil {background:#002200; padding:25px; font-size:26px; text-align:center; border-radius:12px; min-height:110px;}
+        .small {text-align:center; font-size:13px; color:#888; margin-top:15px;}
+    </style>
+</head>
+<body>
+
+<h1>🔢 Odds Bet Calc</h1>
+
+<input type="number" id="nominal" value="50000" placeholder="Nominal (Rp)">
+
+<div class="quick">
+    <button onclick="setN(25000)">25K</button>
+    <button onclick="setN(50000)">50K</button>
+    <button onclick="setN(100000)">100K</button>
+    <button onclick="setN(250000)">250K</button>
+    <button onclick="setN(500000)">500K</button>
+</div>
+
+<input type="text" id="odds" value="-5" placeholder="Odds (-5 atau 2.55)">
+
+<div class="quick">
+    <button onclick="setO(-5)">-5</button>
+    <button onclick="setO(-1.429)">-1.43</button>
+    <button onclick="setO(2)">2</button>
+    <button onclick="setO(2.55)">2.55</button>
+    <button onclick="setO(4.4)">4.4</button>
+    <button onclick="setO(6)">6</button>
+    <button onclick="setO(12)">12</button>
+</div>
+
+<button class="big" onclick="hitung()">🔥 HITUNG</button>
+
+<div class="hasil" id="hasil">Masukkan nominal + odds lalu tekan HITUNG</div>
+
+<div class="small">
+    Otomatis hitung •
+</div>
+
+<script>
+function setN(v){document.getElementById('nominal').value=v; hitung();}
+function setO(v){document.getElementById('odds').value=v; hitung();}
+
+function hitung(){
+    let n = parseFloat(document.getElementById('nominal').value) || 0;
+    let o = parseFloat(document.getElementById('odds').value);
+
+    if(n <= 0 || isNaN(o)){
+        document.getElementById('hasil').innerHTML = "⚠️ Isi nominal & odds";
+        return;
+    }
+
+    let untung = (o < 0) ? (n / Math.abs(o)) : (n * (o - 1));
+    let total = n + untung;
+
+    document.getElementById('hasil').innerHTML = 
+        Taruhan: Rp ${n.toLocaleString('id-ID')}<br>
+        Odds: <b>${o}</b><br><br>
+        Untung: <b>Rp ${untung.toFixed(0).toLocaleString('id-ID')}</b><br>
+        <b style="color:#0f0">Total Balik: Rp ${total.toFixed(0).toLocaleString('id-ID')}</b>
+    ;
+}
+
+// auto update
+document.getElementById('nominal').oninput = hitung;
+document.getElementById('odds').oninput = hitung;
+window.onload = hitung;
+</script>
+
+</body>
+</html>
