@@ -3,24 +3,54 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>odds Calc</title>
+    <title>Odds Calc</title>
     <style>
-        body {background:#111; color:white; font-family:sans-serif; padding:15px; margin:0;}
-        h1 {text-align:center; font-size:24px; margin:10px;}
-        input {width:100%; padding:18px; font-size:24px; margin:8px 0; background:#222; border:none; border-radius:8px; color:white;}
-        .quick {display:flex; gap:5px; flex-wrap:wrap; margin:8px 0;}
-        .quick button {flex:1; padding:12px; font-size:17px; background:#333;}
-        button.big {width:100%; padding:20px; font-size:22px; background:#0f0; color:black; font-weight:bold; margin:15px 0;}
-        .hasil {background:#002200; padding:25px; font-size:26px; text-align:center; border-radius:12px; min-height:110px;}
-        .small {text-align:center; font-size:13px; color:#888; margin-top:15px;}
+        * { box-sizing: border-box; }
+        body { background: #111; color: white; font-family: sans-serif; padding: 15px; margin: 0; }
+        h1 { text-align: center; font-size: 24px; margin: 10px 0 20px; }
+        label { font-size: 13px; color: #888; display: block; margin-bottom: 4px; }
+        input {
+            width: 100%; padding: 18px; font-size: 24px; margin-bottom: 8px;
+            background: #222; border: 1px solid #333; border-radius: 8px; color: white;
+            outline: none;
+        }
+        input:focus { border-color: #555; }
+        .quick { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 18px; }
+        .quick button {
+            flex: 1; padding: 12px; font-size: 17px;
+            background: #333; color: white; border: 1px solid #444;
+            border-radius: 8px; cursor: pointer;
+        }
+        .quick button:hover { background: #444; }
+        .quick button:active { background: #555; }
+        button.big {
+            width: 100%; padding: 20px; font-size: 22px;
+            background: #0f0; color: black; font-weight: bold;
+            margin: 5px 0 20px; border: none; border-radius: 10px; cursor: pointer;
+        }
+        button.big:hover { background: #00dd00; }
+        button.big:active { background: #00bb00; }
+        .hasil {
+            background: #1a1a1a; border: 1px solid #333;
+            padding: 20px; border-radius: 12px; min-height: 110px;
+        }
+        .row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #2a2a2a; }
+        .row:last-child { border-bottom: none; }
+        .row .label { font-size: 14px; color: #888; }
+        .row .val { font-size: 18px; font-weight: bold; }
+        .total-row { margin-top: 10px; background: #002800; border-radius: 8px; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; }
+        .total-row .label { font-size: 14px; color: #4dff4d; }
+        .total-row .val { font-size: 22px; font-weight: bold; color: #0f0; }
+        .placeholder { text-align: center; color: #555; font-size: 15px; padding: 20px 0; }
+        .small { text-align: center; font-size: 12px; color: #555; margin-top: 15px; }
     </style>
 </head>
 <body>
 
 <h1>🔢 Odds Bet Calc</h1>
 
+<label>Nominal (Rp)</label>
 <input type="number" id="nominal" value="50000" placeholder="Nominal (Rp)">
-
 <div class="quick">
     <button onclick="setN(25000)">25K</button>
     <button onclick="setN(50000)">50K</button>
@@ -29,8 +59,8 @@
     <button onclick="setN(500000)">500K</button>
 </div>
 
+<label>Odds</label>
 <input type="text" id="odds" value="-5" placeholder="Odds (-5 atau 2.55)">
-
 <div class="quick">
     <button onclick="setO(-5)">-5</button>
     <button onclick="setO(-1.429)">-1.43</button>
@@ -43,40 +73,62 @@
 
 <button class="big" onclick="hitung()">🔥 HITUNG</button>
 
-<div class="hasil" id="hasil">Masukkan nominal + odds lalu tekan HITUNG</div>
-
-<div class="small">
-    Otomatis hitung •
+<div class="hasil" id="hasil">
+    <p class="placeholder">Masukkan nominal + odds lalu tekan HITUNG</p>
 </div>
 
+<div class="small">Auto update saat input berubah</div>
+
 <script>
-function setN(v){document.getElementById('nominal').value=v; hitung();}
-function setO(v){document.getElementById('odds').value=v; hitung();}
-
-function hitung(){
-    let n = parseFloat(document.getElementById('nominal').value) || 0;
-    let o = parseFloat(document.getElementById('odds').value);
-
-    if(n <= 0 || isNaN(o)){
-        document.getElementById('hasil').innerHTML = "⚠️ Isi nominal & odds";
-        return;
+    function fmt(n) {
+        return Math.round(n).toLocaleString('id-ID');
     }
 
-    let untung = (o < 0) ? (n / Math.abs(o)) : (n * (o - 1));
-    let total = n + untung;
+    function setN(v) {
+        document.getElementById('nominal').value = v;
+        hitung();
+    }
 
-    document.getElementById('hasil').innerHTML = 
-        Taruhan: Rp ${n.toLocaleString('id-ID')}<br>
-        Odds: <b>${o}</b><br><br>
-        Untung: <b>Rp ${untung.toFixed(0).toLocaleString('id-ID')}</b><br>
-        <b style="color:#0f0">Total Balik: Rp ${total.toFixed(0).toLocaleString('id-ID')}</b>
-    ;
-}
+    function setO(v) {
+        document.getElementById('odds').value = v;
+        hitung();
+    }
 
-// auto update
-document.getElementById('nominal').oninput = hitung;
-document.getElementById('odds').oninput = hitung;
-window.onload = hitung;
+    function hitung() {
+        var n = parseFloat(document.getElementById('nominal').value) || 0;
+        var o = parseFloat(document.getElementById('odds').value);
+        var el = document.getElementById('hasil');
+
+        if (n <= 0 || isNaN(o)) {
+            el.innerHTML = '<p class="placeholder">⚠️ Isi nominal & odds yang valid</p>';
+            return;
+        }
+
+        var untung = (o < 0) ? (n / Math.abs(o)) : (n * (o - 1));
+        var total = n + untung;
+
+        el.innerHTML =
+            '<div class="row">' +
+                '<span class="label">Taruhan</span>' +
+                '<span class="val">Rp ' + fmt(n) + '</span>' +
+            '</div>' +
+            '<div class="row">' +
+                '<span class="label">Odds</span>' +
+                '<span class="val">' + o + '</span>' +
+            '</div>' +
+            '<div class="row">' +
+                '<span class="label">Potensi untung</span>' +
+                '<span class="val" style="color:#0f0;">+Rp ' + fmt(untung) + '</span>' +
+            '</div>' +
+            '<div class="total-row">' +
+                '<span class="label">Total balik</span>' +
+                '<span class="val">Rp ' + fmt(total) + '</span>' +
+            '</div>';
+    }
+
+    document.getElementById('nominal').addEventListener('input', hitung);
+    document.getElementById('odds').addEventListener('input', hitung);
+    window.onload = hitung;
 </script>
 
 </body>
