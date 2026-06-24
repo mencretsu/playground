@@ -1,28 +1,46 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Martingale Calculator</title>
+
 <style>
 body{
-    font-family:Arial,sans-serif;
-    max-width:400px;
-    margin:30px auto;
-    padding:20px;
+    font-family: Arial, sans-serif;
+    max-width: 500px;
+    margin: 30px auto;
+    padding: 20px;
 }
+
+h2{
+    margin-bottom: 15px;
+}
+
 input{
     width:100%;
-    padding:8px;
+    padding:10px;
     margin:5px 0 15px;
     box-sizing:border-box;
 }
+
 button{
     width:100%;
     padding:10px;
+    cursor:pointer;
 }
-#result{
+
+.card{
     margin-top:20px;
-    font-size:18px;
+    padding:15px;
+    border:1px solid #ccc;
+    border-radius:10px;
+}
+
+.result{
+    margin-top:10px;
+    line-height:1.8;
+    font-size:16px;
 }
 </style>
 </head>
@@ -39,25 +57,65 @@ button{
 <label>Tahan Loss</label>
 <input type="number" id="losses" value="7">
 
-<button onclick="hitung()">Hitung</button>
+<button onclick="hitungMartingale()">Hitung</button>
 
-<div id="result"></div>
+<div class="card">
+    <h3>Hasil</h3>
+    <div id="result" class="result">
+        Belum dihitung...
+    </div>
+</div>
+
+<div class="card">
+    <h3>Converter Persen → Desimal</h3>
+
+    <label>Masukkan Persen</label>
+    <input type="number" id="percentInput" placeholder="Contoh: 0.38 atau 20" step="0.01">
+
+    <button onclick="convertPercent()">Convert</button>
+
+    <div id="convertResult" class="result">
+        Belum ada hasil...
+    </div>
+</div>
 
 <script>
-function hitung() {
+function hitungMartingale() {
     const balance = parseFloat(document.getElementById('balance').value);
     const multi = parseFloat(document.getElementById('multi').value);
     const losses = parseInt(document.getElementById('losses').value);
 
+    if (!balance || !multi || !losses) {
+        return;
+    }
+
     const factor = (Math.pow(multi, losses) - 1) / (multi - 1);
     const startBet = balance / factor;
     const percent = (startBet / balance) * 100;
+    const decimal = percent / 100;
 
     document.getElementById('result').innerHTML = `
         <b>Start Bet:</b> $${startBet.toFixed(4)}<br>
-        <b>Persen Saldo:</b> ${percent.toFixed(4)}%
+        <b>Persen Saldo:</b> ${percent.toFixed(4)}%<br>
+        <b>Format Desimal:</b> ${decimal.toFixed(6)}
     `;
 }
+
+function convertPercent() {
+    const percent = parseFloat(document.getElementById('percentInput').value);
+
+    if (isNaN(percent)) {
+        return;
+    }
+
+    const decimal = percent / 100;
+
+    document.getElementById('convertResult').innerHTML = `
+        <b>${percent}%</b> = <b>${decimal}</b>
+    `;
+}
+
+hitungMartingale();
 </script>
 
 </body>
