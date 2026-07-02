@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Martingale Ladder</title>
+<style>
+  :root{
+    --bg:#0b0e0d; --panel:#12ffcf-0a; --line:#1e2422;
+    --text:#e8ece9; --dim:#7c8a83; --accent:#12ffcf; --danger:#ff4d5e;
+    --safe:#12ffcf; --cap:#ffb020;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:'SF Mono',ui-monospace,Consolas,monospace;
+    padding:16px 14px 40px; font-size:15px;
+  }
+  h1{
+    font-size:15px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--dim); font-weight:600; margin:0 0 16px;
+  }
+  h1 span{color:var(--accent);}
+  .grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:8px 10px; margin-bottom:6px;
+  }
+  label{
+    display:block; font-size:10px; text-transform:uppercase; letter-spacing:.08em;
+    color:var(--dim); margin-bottom:4px;
+  }
+  input{
+    width:100%; background:#0f1412; border:1px solid var(--line); color:var(--text);
+    padding:10px 10px; border-radius:6px; font-size:16px; font-family:inherit;
+  }
+  input:focus{outline:none; border-color:var(--accent);}
+  .field{margin-bottom:10px;}
+  button{
+    width:100%; margin-top:10px; padding:14px; border:none; border-radius:8px;
+    background:var(--accent); color:#04110c; font-weight:700; font-size:14px;
+    letter-spacing:.06em; text-transform:uppercase; font-family:inherit;
+  }
+  button:active{opacity:.8;}
+  .summary{
+    margin-top:20px; padding:14px; border:1px solid var(--line); border-radius:8px;
+    background:#0f1412;
+  }
+  .summary-row{
+    display:flex; justify-content:space-between; padding:5px 0; font-size:13px;
+  }
+  .summary-row span:first-child{color:var(--dim);}
+  .summary-row b{color:var(--accent);}
+  .summary-row b.warn{color:var(--danger);}
+  table{width:100%; border-collapse:collapse; margin-top:16px; font-size:12.5px;}
+  th{
+    text-align:right; font-size:10px; text-transform:uppercase; color:var(--dim);
+    padding:6px 4px; border-bottom:1px solid var(--line); letter-spacing:.05em;
+  }
+  th:first-child, td:first-child{text-align:left;}
+  td{padding:8px 4px; text-align:right; border-bottom:1px solid #171c1a;}
+  tr.cap td{color:var(--cap);}
+  tr.cap td:first-child::after{content:" ⚠";}
+  .lvl{color:var(--dim);}
+  .loss{color:var(--danger);}
+  .profit{color:var(--safe);}
+  .note{font-size:11px; color:var(--dim); margin-top:14px; line-height:1.5;}
+</style>
+</head>
+<body>
+
+<h1>Martingale <span>Ladder</span></h1>
+
+<div class="grid">
+  <div class="field"><label>Balance ($)</label><input id="balance" type="number" value="700" inputmode="decimal"></div>
+  <div class="field"><label>Margin Base ($)</label><input id="base" type="number" value="10" inputmode="decimal"></div>
+  <div class="field"><label>Multiplier</label><input id="mult" type="number" value="1.8" step="0.1" inputmode="decimal"></div>
+  <div class="field"><label>Max Margin Cap ($)</label><input id="cap" type="number" value="500" inputmode="decimal"></div>
+  <div class="field"><label>Max Level</label><input id="maxlvl" type="number" value="10" inputmode="decimal"></div>
+  <div class="field"><label>Total Exposure Cap (%)</label><input id="exp" type="number" value="90" inputmode="decimal"></div>
+  <div class="field"><label>Leverage (x)</label><input id="lev" type="number" value="10" inputmode="decimal"></div>
+  <div class="field"><label>SL (%)</label><input id="sl" type="number" value="0.5" step="0.1" inputmode="decimal"></div>
+  <div class="field"><label>TP (%)</label><input id="tp" type="number" value="1" step="0.1" inputmode="decimal"></div>
+</div>
+
+<button onclick="calc()">Hitung</button>
+
+<div class="summary" id="summary" style="display:none">
+  <div class="summary-row"><span>Tangga sampai cap</span><b id="s-levels"></b></div>
+  <div class="summary-row"><span>Total margin terpakai (worst case)</span><b id="s-totalmargin"></b></div>
+  <div class="summary-row"><span>Total kerugian kumulatif</span><b class="warn" id="s-totalloss"></b></div>
+  <div class="summary-row"><span>Exposure cap ($)</span><b id="s-expcap"></b></div>
+  <div class="summary-row"><span>Balance sisa setelah worst case</span><b class="warn" id="s-remain"></b></div>
+</div>
+
+<table id="tbl" style="display:none">
+  <thead><tr><th>Lvl</th><th>Margin ($)</th><th>Loss ($)</th><th>Kumulatif ($)</th></tr></thead>
+  <tbody id="tbody"></tbody>
+</table>
+
+<div class="note" id="note"></div>
+
+<h1 style="margin-top:26px" id="profit-title">Profit <span>Table</span></h1>
+<div class="note" style="margin-top:-8px; margin-bottom:10px;">Kalau TP kena di level itu (bukan loss beruntun) — 1x win langsung reset ke level 0.</div>
+<table id="tblProfit" style="display:none">
+  <thead><tr><th>Lvl</th><th>Margin ($)</th><th>Profit ($)</th><th>Net vs kerugian sebelumnya ($)</th></tr></thead>
+  <tbody id="tbodyProfit"></tbody>
+</table>
+
+<script>
+function calc(){
+  const balance = parseFloat(document.getElementById('balance').value) || 0;
+  const base    = parseFloat(document.getElementById('base').value) || 0;
+  const mult    = parseFloat(document.getElementById('mult').value) || 1;
+  const cap     = parseFloat(document.getElementById('cap').value) || 0;
+  const maxlvl  = parseInt(document.getElementById('maxlvl').value) || 0;
+  const expPct  = parseFloat(document.getElementById('exp').value) || 100;
+  const lev     = parseFloat(document.getElementById('lev').value) || 1;
+  const slPct   = parseFloat(document.getElementById('sl').value) || 0;
+  const tpPct   = parseFloat(document.getElementById('tp').value) || 0;
+
+  const expCap = balance * (expPct / 100);
+
+  let margin = base;
+  let cumulativeLoss = 0;
+  let cumulativeMargin = 0;
+  let levelsToCap = null;
+  const rows = [];
+
+  for(let lvl = 0; lvl <= maxlvl; lvl++){
+    const displayMargin = Math.min(margin, cap);
+    const hitCap = displayMargin >= cap && margin >= cap;
+    // loss di level ini = margin * leverage * SL%  (rugi nominal saat SL kena)
+    const lossThisLevel = displayMargin * lev * (slPct / 100);
+    cumulativeLoss += lossThisLevel;
+    cumulativeMargin += displayMargin;
+
+    if(hitCap && levelsToCap === null) levelsToCap = lvl;
+
+    const prevCum = cumulativeLoss - lossThisLevel;
+    rows.push({lvl, margin: displayMargin, loss: lossThisLevel, cum: cumulativeLoss, prevCum, cap: hitCap});
+
+    if(cumulativeMargin > expCap && lvl > 0){
+      rows[rows.length-1].expBlocked = true;
+      break;
+    }
+    margin = Math.min(margin * mult, cap);
+  }
+
+  document.getElementById('summary').style.display = 'block';
+  document.getElementById('tbl').style.display = 'table';
+
+  document.getElementById('s-levels').textContent = levelsToCap !== null ? levelsToCap + ' loss beruntun' : 'ga sampai cap (max level duluan)';
+  document.getElementById('s-totalmargin').textContent = '$' + cumulativeMargin.toFixed(2);
+  document.getElementById('s-totalloss').textContent = '-$' + cumulativeLoss.toFixed(2);
+  document.getElementById('s-expcap').textContent = '$' + expCap.toFixed(2);
+  const remain = balance - cumulativeLoss;
+  const remainEl = document.getElementById('s-remain');
+  remainEl.textContent = '$' + remain.toFixed(2);
+  remainEl.className = remain < balance * 0.3 ? 'warn' : '';
+
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    if(r.cap) tr.className = 'cap';
+    tr.innerHTML = `<td class="lvl">${r.lvl}</td><td>${r.margin.toFixed(2)}</td><td class="loss">-${r.loss.toFixed(2)}</td><td>-${r.cum.toFixed(2)}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('tblProfit').style.display = 'table';
+  const tbodyProfit = document.getElementById('tbodyProfit');
+  tbodyProfit.innerHTML = '';
+  rows.forEach(r => {
+    const profit = r.margin * lev * (tpPct / 100);
+    const net = profit - r.prevCum;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td class="lvl">${r.lvl}</td><td>${r.margin.toFixed(2)}</td><td class="profit">+${profit.toFixed(2)}</td><td class="${net >= 0 ? 'profit' : 'loss'}">${net >= 0 ? '+' : ''}${net.toFixed(2)}</td>`;
+    tbodyProfit.appendChild(tr);
+  });
+
+  const note = document.getElementById('note');
+  if(cumulativeMargin > expCap){
+    note.textContent = `⚠ Exposure cap ($${expCap.toFixed(2)}) kena sebelum margin cap. Entry berikutnya bakal dipangkas/diskip sesuai logic bot.`;
+  } else if(levelsToCap !== null){
+    note.textContent = `Setelah level ${levelsToCap}, margin tetap flat di $${cap.toFixed(2)} tiap loss berikutnya (sampai max level ${maxlvl}).`;
+  } else {
+    note.textContent = `Margin cap $${cap.toFixed(2)} ga kesentuh dalam ${maxlvl} level — multiplier/base kekecilan relatif ke cap.`;
+  }
+}
+calc();
+</script>
+</body>
+</html>
