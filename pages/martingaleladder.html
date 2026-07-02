@@ -81,6 +81,14 @@
   <div class="field"><label>TP (%)</label><input id="tp" type="number" value="1" step="0.1" inputmode="decimal"></div>
 </div>
 
+<h1 style="margin-top:26px">Reverse <span>Solve</span></h1>
+<div class="note" style="margin-top:-8px; margin-bottom:10px;">Kasih target level, keluar base margin yang dibutuhkan (dihitung dari exposure cap, pake balance/multiplier/exposure% di atas).</div>
+<div class="grid">
+  <div class="field"><label>Target Level (tangga)</label><input id="targetLvl" type="number" value="10" inputmode="decimal" oninput="solve()"></div>
+  <div class="field"><label>Base Dibutuhkan ($)</label><input id="solvedBase" type="text" readonly style="color:var(--accent); font-weight:700;"></div>
+</div>
+<div class="note" id="solveNote"></div>
+
 <button onclick="calc()">Hitung</button>
 
 <div class="summary" id="summary" style="display:none">
@@ -185,8 +193,32 @@ function calc(){
   } else {
     note.textContent = `Margin cap $${cap.toFixed(2)} ga kesentuh dalam ${maxlvl} level — multiplier/base kekecilan relatif ke cap.`;
   }
+  solve();
 }
 calc();
+
+function solve(){
+  const balance = parseFloat(document.getElementById('balance').value) || 0;
+  const mult    = parseFloat(document.getElementById('mult').value) || 1;
+  const expPct  = parseFloat(document.getElementById('exp').value) || 100;
+  const cap     = parseFloat(document.getElementById('cap').value) || Infinity;
+  const targetLvl = parseInt(document.getElementById('targetLvl').value) || 0;
+
+  const expCap = balance * (expPct / 100);
+  const neededBase = expCap / Math.pow(mult, targetLvl);
+
+  document.getElementById('solvedBase').value = '$' + neededBase.toFixed(4);
+
+  const note = document.getElementById('solveNote');
+  if(neededBase > cap){
+    note.textContent = `⚠ Base ini bakal bikin margin di level ${targetLvl} nabrak cap field ($${cap.toFixed(2)}) sebelum exposure cap. Naikin cap field, atau base efektif lo ke-clamp lebih awal dari level ${targetLvl}.`;
+  } else if(neededBase < 1){
+    note.textContent = `⚠ Base < $1 kemungkinan besar kebentur minimum order size exchange. Pertimbangkan turunin multiplier atau target level.`;
+  } else {
+    note.textContent = `Base $${neededBase.toFixed(4)} bikin margin persis pas di exposure cap ($${expCap.toFixed(2)}) di level ${targetLvl}.`;
+  }
+}
+solve();
 </script>
 </body>
 </html>
