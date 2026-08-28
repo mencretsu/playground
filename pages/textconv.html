@@ -26,6 +26,7 @@ Kecuali: <span id="daftarKecuali"></span> (tidak ikut dieja).</p>
 
 <span class="label">Hasil:</span>
 <div id="hasil"></div>
+<button onclick="salinHasil()" id="btnCopy">Copy</button>
 
 <script>
 const angka = {
@@ -52,7 +53,16 @@ function ejaSingkatan(str) {
 const pengecualian = ['JAKARTA', 'KOMPASTV'];
 document.getElementById('daftarKecuali').textContent = pengecualian.join(', ');
 
-function konversi() {
+function salinHasil() {
+  const teks = document.getElementById('hasil').textContent;
+  if (!teks) return;
+  navigator.clipboard.writeText(teks).then(() => {
+    const btn = document.getElementById('btnCopy');
+    const asli = btn.textContent;
+    btn.textContent = 'Tersalin!';
+    setTimeout(() => { btn.textContent = asli; }, 1500);
+  });
+}
   const teks = document.getElementById('input').value;
 
   // pisahkan berdasarkan kata (pertahankan spasi & tanda baca)
